@@ -3,8 +3,6 @@ export interface PhotocopySettings {
   darkness: number;
   /** 0–100. Strength of the grain speckle. */
   grain: number;
-  /** 1–5. Size of each grain speck. */
-  grainSize: number;
   /** 0–100. How strongly local edges and texture are pulled out. */
   contrast: number;
   seed: number;
@@ -18,7 +16,6 @@ export interface PhotocopySettings {
 export const DEFAULT_SETTINGS: PhotocopySettings = {
   darkness: 50,
   grain: 58,
-  grainSize: 2,
   contrast: 44,
   seed: 1,
 };
@@ -42,22 +39,22 @@ export const PRESETS: PhotocopyPreset[] = [
   {
     id: "clean",
     title: "Clean",
-    look: { darkness: 50, grain: 22, grainSize: 1.5, contrast: 30 },
+    look: { darkness: 50, grain: 22, contrast: 30 },
   },
   {
     id: "heavy",
     title: "Heavy grain",
-    look: { darkness: 46, grain: 100, grainSize: 1.5, contrast: 44 },
+    look: { darkness: 46, grain: 100, contrast: 44 },
   },
   {
     id: "bold",
     title: "Bold",
-    look: { darkness: 72, grain: 36, grainSize: 2, contrast: 90 },
+    look: { darkness: 72, grain: 36, contrast: 90 },
   },
   {
     id: "faded",
     title: "Faded",
-    look: { darkness: 34, grain: 66, grainSize: 2, contrast: 28 },
+    look: { darkness: 20, grain: 66, contrast: 28 },
   },
 ];
 
@@ -80,6 +77,11 @@ const WHITE = 255;
 const EDGE_RADIUS = 4;
 /** Slight softening before printing, matching Stamp's Smoothness of 1. */
 const SOFTEN_SIGMA = 0.8;
+/**
+ * How far each grain speck spreads, in artboard pixels: about one pixel, the
+ * finest grain that still reads as specks rather than per-pixel noise.
+ */
+const GRAIN_SIGMA = 0.6;
 
 /** Small, fast seeded PRNG so the same seed always gives the same grain. */
 export function mulberry32(seed: number) {
@@ -230,7 +232,7 @@ export function photocopy(
     width,
     height,
     settings.grain * 0.72,
-    settings.grainSize * 0.6 * pixelScale,
+    GRAIN_SIGMA * pixelScale,
     settings.seed,
   );
 

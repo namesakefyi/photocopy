@@ -1,6 +1,6 @@
 /** A tiny promise wrapper around one IndexedDB database with two stores. */
 
-const DB_NAME = "copyshop";
+const DB_NAME = "photocopy";
 const DB_VERSION = 1;
 export const STATE_STORE = "state";
 export const BLOB_STORE = "blobs";

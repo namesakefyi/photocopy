@@ -16,14 +16,23 @@ export function AboutDialog({ isOpen, onOpenChange }: AboutDialogProps) {
     >
       <Modal className="about-window">
         <Dialog className="about">
-          <Heading slot="title">Copyshop</Heading>
+          <Heading slot="title">Photocopy</Heading>
           <p className="about-version">Version {version}</p>
           <p>Create photocopy-style collages.</p>
           <p className="about-credit">
-            Made by{" "}
+            By{" "}
             <a href="https://namesake.fyi" target="_blank" rel="noreferrer">
               Namesake
             </a>
+            . Code on{" "}
+            <a
+              href="https://github.com/namesakefyi/photocopy"
+              target="_blank"
+              rel="noreferrer"
+            >
+              GitHub
+            </a>
+            .
           </p>
         </Dialog>
       </Modal>

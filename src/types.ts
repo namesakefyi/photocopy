@@ -21,7 +21,7 @@ export interface Layer {
   backgroundRemoved: boolean;
   /** Where the source sits within the photo as loaded, after crop to fit. */
   crop: Region | null;
-  /** Source with the mask applied; what the bed and copies draw. */
+  /** Source with the mask applied; what the canvas and copies draw. */
   composed: HTMLCanvasElement;
   /** Center of the layer, in artboard pixels. */
   x: number;

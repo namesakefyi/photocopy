@@ -1,13 +1,11 @@
 export interface Theme {
   id: string;
   name: string;
-  /** Saved behind the copy; null leaves it transparent. */
-  color: string | null;
+  color: string;
 }
 
-/** Transparent, then the Namesake brand colors from namesake.fyi/brand-assets. */
+/** The Namesake brand colors from namesake.fyi/brand-assets. */
 export const THEMES: Theme[] = [
-  { id: "transparent", name: "Transparent", color: null },
   { id: "purple", name: "Namesake Purple", color: "#cda5ef" },
   { id: "pink", name: "Pastel Pink", color: "#ecadd4" },
   { id: "blue", name: "Pastel Blue", color: "#96c7f2" },
@@ -17,22 +15,41 @@ export const THEMES: Theme[] = [
   { id: "white", name: "Photocopy White", color: "#e1e1e1" },
 ];
 
-const STORAGE_KEY = "copyshop-theme";
+/** The canvas background: a color, or none for transparent. */
+export interface Background {
+  theme: Theme | null;
+  /** Fills the export with the color; otherwise it only shows on the canvas. */
+  includeInExport: boolean;
+}
 
-export function savedTheme(): Theme {
+export const NO_BACKGROUND: Background = { theme: null, includeInExport: true };
+
+const STORAGE_KEY = "photocopy-background";
+const EXPORT_KEY = "photocopy-background-export";
+
+export function savedBackground(): Background {
   try {
     const id = localStorage.getItem(STORAGE_KEY);
-    return THEMES.find((theme) => theme.id === id) ?? THEMES[0];
+    return {
+      theme: THEMES.find((theme) => theme.id === id) ?? null,
+      includeInExport: localStorage.getItem(EXPORT_KEY) !== "false",
+    };
   } catch {
-    return THEMES[0];
+    return NO_BACKGROUND;
   }
 }
 
-/** Remembers the theme. It only colors the canvas, never the interface. */
-export function saveTheme(theme: Theme) {
+/** Remembers the background. It only colors the canvas, never the interface. */
+export function saveBackground({ theme, includeInExport }: Background) {
   try {
-    localStorage.setItem(STORAGE_KEY, theme.id);
+    localStorage.setItem(STORAGE_KEY, theme?.id ?? "transparent");
+    localStorage.setItem(EXPORT_KEY, String(includeInExport));
   } catch {
-    // Storage can be unavailable (private windows); the theme still applies.
+    // Storage can be unavailable (private windows); the background still applies.
   }
+}
+
+/** The color to fill an export with, or null to leave it transparent. */
+export function exportFill({ theme, includeInExport }: Background) {
+  return includeInExport ? (theme?.color ?? null) : null;
 }

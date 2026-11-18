@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "copyshop",
+  "name": "photocopy",
   "compatibility_date": "2026-11-16",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,

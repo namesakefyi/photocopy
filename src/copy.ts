@@ -16,18 +16,24 @@ export interface CopyOptions {
   trim: boolean;
   /** Fill behind the copy, or null to leave it transparent. */
   background: string | null;
+  /** The largest side in pixels; bigger regions are exported scaled down. */
+  maxSize: number;
 }
 
-/** Renders a region at full size, photocopies it, and encodes a PNG. */
+/**
+ * Renders a region at full size (or scaled down to `maxSize`), photocopies
+ * it, and encodes a PNG.
+ */
 export async function makeCopy(
   layers: Layer[],
   region: Region,
   settings: PhotocopySettings,
-  { trim, background }: CopyOptions,
+  { trim, background, maxSize }: CopyOptions,
 ): Promise<Copy | null> {
-  const { canvas, ctx } = renderRegion(layers, region, 1);
+  const scale = Math.min(1, maxSize / region.width, maxSize / region.height);
+  const { canvas, ctx } = renderRegion(layers, region, scale);
   const flat = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const result = await photocopyImageData(flat, settings, 1);
+  const result = await photocopyImageData(flat, settings, scale);
 
   const bounds = trim
     ? contentBounds(result)

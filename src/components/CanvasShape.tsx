@@ -25,13 +25,3 @@ export function CanvasShape({
     </span>
   );
 }
-
-export function simplifiedRatio(width: number, height: number) {
-  const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
-  const divisor = gcd(Math.round(width), Math.round(height)) || 1;
-  const ratioWidth = width / divisor;
-  const ratioHeight = height / divisor;
-  return ratioWidth <= 50 && ratioHeight <= 50
-    ? `${ratioWidth}:${ratioHeight}`
-    : `${(width / height).toFixed(2)}:1`;
-}

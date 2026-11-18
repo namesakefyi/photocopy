@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, Heading, Modal, ModalOverlay } from "react-aria-components";
+import { Dialog, Modal, ModalOverlay } from "react-aria-components";
 import { formatCredit } from "../commons";
 import type { Copy } from "../copy";
 import type { Credit } from "../types";
@@ -12,7 +12,13 @@ export interface CopyResultProps {
 }
 
 export function CopyResult({ copy, credits, onClose }: CopyResultProps) {
-  const [hasCopiedCredits, setHasCopiedCredits] = useState(false);
+  // Keyed to the export's URL, so a new export starts fresh.
+  const [copyStatus, setCopyStatus] = useState<{
+    url: string;
+    status: "copied" | "failed";
+  } | null>(null);
+  const status =
+    copy && copyStatus?.url === copy.url ? copyStatus.status : null;
   const creditText = credits.map(formatCredit).join("\n");
 
   return (
@@ -25,8 +31,7 @@ export function CopyResult({ copy, credits, onClose }: CopyResultProps) {
       }}
     >
       <Modal className="modal">
-        <Dialog className="copy-result">
-          <Heading slot="title">Your copy</Heading>
+        <Dialog className="copy-result" aria-label="Export">
           {copy && (
             <>
               <div className="result">
@@ -42,11 +47,19 @@ export function CopyResult({ copy, credits, onClose }: CopyResultProps) {
                     <Button
                       variant="quiet"
                       onPress={async () => {
-                        await navigator.clipboard.writeText(creditText);
-                        setHasCopiedCredits(true);
+                        try {
+                          await navigator.clipboard.writeText(creditText);
+                          setCopyStatus({ url: copy.url, status: "copied" });
+                        } catch {
+                          setCopyStatus({ url: copy.url, status: "failed" });
+                        }
                       }}
                     >
-                      {hasCopiedCredits ? "Copied" : "Copy credits"}
+                      {status === "copied"
+                        ? "Copied"
+                        : status === "failed"
+                          ? "Couldn’t copy"
+                          : "Copy credits"}
                     </Button>
                   </div>
                   <ul>

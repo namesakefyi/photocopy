@@ -21,18 +21,14 @@ interface SavedLayer {
   scale: number;
   rotation: number;
   flipX: boolean;
-  /** Missing in sessions saved before vertical flip existed. */
-  flipY?: boolean;
+  flipY: boolean;
   visible: boolean;
   credit?: Credit;
-  backgroundRemoved?: boolean;
-  /** Older sessions: the stored automatic cutout meant background removed. */
-  hasAutoMask?: boolean;
-  /** Missing in sessions saved before crop to fit existed. */
-  crop?: Region | null;
+  backgroundRemoved: boolean;
+  crop: Region | null;
 }
 
-interface SavedState {
+export interface SavedState {
   version: 1;
   layers: SavedLayer[];
   settings: PhotocopySettings;
@@ -72,9 +68,9 @@ async function restoreLayer(saved: SavedLayer): Promise<Layer | null> {
     scale: saved.scale,
     rotation: saved.rotation,
     flipX: saved.flipX,
-    flipY: saved.flipY ?? false,
+    flipY: saved.flipY,
     visible: saved.visible,
-    backgroundRemoved: saved.backgroundRemoved ?? saved.hasAutoMask ?? false,
+    backgroundRemoved: saved.backgroundRemoved,
   };
 
   const mask = await storage.get<Blob>(
@@ -107,16 +103,26 @@ async function removeUnusedFiles(liveIds: Set<string>) {
 
 export async function restoreSession() {
   try {
-    const state = await storage.get<SavedState>(storage.STATE_STORE, STATE_KEY);
+    const saved = await storage.get<SavedState>(storage.STATE_STORE, STATE_KEY);
+    const state = saved?.version === 1 ? saved : null;
     await removeUnusedFiles(
-      new Set(
-        state?.version === 1 ? state.layers.map((layer) => layer.id) : [],
-      ),
+      new Set(state ? state.layers.map((layer) => layer.id) : []),
     );
-    if (state?.version !== 1) return null;
-    const layers = await Promise.all(state.layers.map(restoreLayer));
+    if (!state) return null;
+    // One photo that won't load (a corrupt or unsupported file) is dropped,
+    // rather than losing the whole session with it.
+    const restored = (
+      await Promise.all(
+        state.layers.map((saved) =>
+          restoreLayer(saved).catch((cause) => {
+            console.warn(`Couldn’t restore “${saved.name}”`, cause);
+            return null;
+          }),
+        ),
+      )
+    ).filter((layer): layer is Layer => layer !== null);
     return {
-      layers: layers.filter((layer): layer is Layer => layer !== null),
+      layers: restored,
       settings: state.settings,
       canvasFormat: state.canvasFormat,
     };
@@ -145,42 +151,52 @@ function toSaved(layer: Layer): SavedLayer {
 
 /**
  * Saves the session shortly after anything changes. Masks are re-encoded
- * only when their revision changes.
+ * only when their revision changes. Saves run one at a time, in order, and a
+ * save that a newer one has replaced is skipped, so an older state can never
+ * finish last and overwrite a newer one.
  */
 export function useAutosave(
   layers: Layer[],
   settings: PhotocopySettings,
   canvasFormat: CanvasFormat,
   isRestored: boolean,
+  /** How long changes settle before saving; tests shorten it. */
+  delay = SAVE_DELAY,
 ) {
   const savedRevisions = useRef(new Map<string, number>());
+  const queue = useRef<Promise<void>>(Promise.resolve());
+  const latestSave = useRef(0);
 
   useEffect(() => {
     if (!isRestored) return;
-    const timer = setTimeout(async () => {
-      try {
-        for (const layer of layers) {
-          if (savedRevisions.current.get(layer.id) !== layer.revision) {
-            await storage.put(
-              storage.BLOB_STORE,
-              blobKey(layer.id, "mask"),
-              await canvasToBlob(layer.mask),
-            );
-            savedRevisions.current.set(layer.id, layer.revision);
+    const timer = setTimeout(() => {
+      const save = ++latestSave.current;
+      queue.current = queue.current.then(async () => {
+        if (save !== latestSave.current) return;
+        try {
+          for (const layer of layers) {
+            if (savedRevisions.current.get(layer.id) !== layer.revision) {
+              await storage.put(
+                storage.BLOB_STORE,
+                blobKey(layer.id, "mask"),
+                await canvasToBlob(layer.mask),
+              );
+              savedRevisions.current.set(layer.id, layer.revision);
+            }
           }
-        }
 
-        const state: SavedState = {
-          version: 1,
-          layers: layers.map(toSaved),
-          settings,
-          canvasFormat,
-        };
-        await storage.put(storage.STATE_STORE, STATE_KEY, state);
-      } catch (cause) {
-        console.warn("Couldn’t save the session locally", cause);
-      }
-    }, SAVE_DELAY);
+          const state: SavedState = {
+            version: 1,
+            layers: layers.map(toSaved),
+            settings,
+            canvasFormat,
+          };
+          await storage.put(storage.STATE_STORE, STATE_KEY, state);
+        } catch (cause) {
+          console.warn("Couldn’t save the session locally", cause);
+        }
+      });
+    }, delay);
     return () => clearTimeout(timer);
-  }, [layers, settings, canvasFormat, isRestored]);
+  }, [layers, settings, canvasFormat, isRestored, delay]);
 }

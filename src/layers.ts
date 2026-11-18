@@ -24,6 +24,18 @@ function fillOpaque(canvas: HTMLCanvasElement) {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
+let lastRevision = 0;
+
+/**
+ * A number for a new version of a photo's pixels, never reused in a session.
+ * Undo history and autosave key mask snapshots by it, so a new edit after an
+ * undo must never get the number of an edit that was undone.
+ */
+export function nextRevision() {
+  lastRevision += 1;
+  return lastRevision;
+}
+
 export async function loadPhoto(
   file: File,
   placement: { x: number; y: number; maxWidth: number; maxHeight: number },
@@ -65,7 +77,7 @@ export async function loadPhoto(
     flipY: false,
     visible: true,
     credit,
-    revision: 0,
+    revision: nextRevision(),
   };
   composeLayer(layer);
   return layer;
@@ -203,6 +215,6 @@ export function cropToVisible(layer: Layer): Layer | null {
     ...cropped,
     x: layer.x + localX * Math.cos(angle) - localY * Math.sin(angle),
     y: layer.y + localX * Math.sin(angle) + localY * Math.cos(angle),
-    revision: layer.revision + 1,
+    revision: nextRevision(),
   };
 }

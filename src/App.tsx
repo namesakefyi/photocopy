@@ -6,21 +6,25 @@ import {
   useRef,
   useState,
 } from "react";
-import { canvasSize, DEFAULT_CANVAS } from "./canvasFormat";
+import {
+  canvasSize,
+  DEFAULT_CANVAS,
+  type FitMemory,
+  fitLayersToCanvas,
+  MAX_CANVAS_SIZE,
+} from "./canvasFormat";
 import { AboutDialog } from "./components/AboutDialog";
-import { Bed } from "./components/Bed";
+import { Canvas, type CanvasHandle } from "./components/Canvas";
+import { CanvasPanel, CanvasPresetPicker } from "./components/CanvasPanel";
 import { CommonsSearch } from "./components/CommonsSearch";
 import { ControlStrip } from "./components/ControlStrip";
 import { CopyResult } from "./components/CopyResult";
-import { CustomSizeDialog } from "./components/CustomSizeDialog";
-import { ImagePanel } from "./components/ImagePanel";
 import { LayerList } from "./components/LayerList";
 import {
-  LayerMenu,
-  type LayerMenuProps,
-  type MenuAction,
-  MenuBar,
-} from "./components/MenuBar";
+  type LayerAction,
+  type LayerActionsProps,
+  LayerToolbar,
+} from "./components/LayerToolbar";
 import { type Copy, makeCopy } from "./copy";
 import { type DocumentState, useHistory } from "./history";
 import {
@@ -28,14 +32,26 @@ import {
   croppableBounds,
   cropToVisible,
   loadPhoto,
+  nextRevision,
   setMask,
 } from "./layers";
 import { restoreSession, saveSource, useAutosave } from "./persistence";
 import { DEFAULT_SETTINGS, type PhotocopySettings } from "./photocopy";
 import { photocopyImageData } from "./photocopyClient";
 import { removeBackground } from "./removeBackground";
-import { layerBounds, renderRegion } from "./render";
-import { savedTheme, saveTheme, type Theme } from "./themes";
+import {
+  layerBounds,
+  nextPreviewRegion,
+  renderRegion,
+  sameRegion,
+} from "./render";
+import { shortcutFor } from "./shortcuts";
+import {
+  type Background,
+  exportFill,
+  saveBackground,
+  savedBackground,
+} from "./themes";
 import type {
   CanvasFormat,
   Credit,
@@ -47,6 +63,22 @@ import type {
 } from "./types";
 
 const PREVIEW_DELAY = 150;
+/** A trimmed preview covers this much more on each side, so small pans reuse it. */
+const PREVIEW_MARGIN = 0.25;
+
+/**
+ * Preview pixels per artboard pixel for a given zoom: rounded up to steps of
+ * √2, so small zoom changes reuse the last preview (Konva scales it), and
+ * never above 1, past which zooming in shows nothing new.
+ */
+function previewResolution(screenScale: number) {
+  return Math.min(
+    1,
+    Math.SQRT2 ** Math.ceil(Math.log(screenScale) / Math.log(Math.SQRT2)),
+  );
+}
+/** …until the view has zoomed in so far that it renders mostly unseen pixels. */
+const PREVIEW_MAX_GROWTH = 3;
 const MIN_BRUSH = 4;
 const MAX_BRUSH = 300;
 const BRUSH_STEP = 1.25;
@@ -69,21 +101,28 @@ export function App() {
     canvas: HTMLCanvasElement;
     region: Region;
   } | null>(null);
-  const [view, setView] = useState<{ scale: number; region: Region }>({
-    scale: 0.2,
-    region: { x: 0, y: 0, width: 3000, height: 3000 },
-  });
+  // What the preview should cover, and at what resolution. Updated from the
+  // canvas's view only when one of them changes, so panning and zooming
+  // don't re-render the whole app.
+  const [previewTarget, setPreviewTarget] = useState<{
+    scale: number;
+    region: Region;
+  }>({ scale: 1, region: { x: 0, y: 0, width: 0, height: 0 } });
+  const canvasRef = useRef<CanvasHandle>(null);
   const [removals, setRemovals] = useState<Record<string, Removal>>({});
   const [copy, setCopy] = useState<Copy | null>(null);
   const [isCopying, setIsCopying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [theme, setTheme] = useState<Theme>(savedTheme);
+  const [background, setBackground] = useState<Background>(savedBackground);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSizingBrush, setIsSizingBrush] = useState(false);
-  const [isCustomSizeOpen, setIsCustomSizeOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const sizingTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const fileInput = useRef<HTMLInputElement>(null);
+  const fitMemory = useRef<FitMemory>({});
+  // For async work that finishes later, like background removal.
+  const latestLayers = useRef(layers);
+  latestLayers.current = layers;
   const [isRestored, setIsRestored] = useState(false);
 
   useEffect(() => {
@@ -108,7 +147,7 @@ export function App() {
     setLayers(state.layers);
     setSettings(state.settings);
     setCanvasFormat(state.canvasFormat);
-    setTheme(state.theme);
+    setBackground(state.background);
     setSelectedId((id) =>
       state.layers.some((layer) => layer.id === id) ? id : null,
     );
@@ -116,13 +155,14 @@ export function App() {
   }, []);
 
   const history = useHistory(
-    { layers, settings, canvasFormat, theme },
+    { layers, settings, canvasFormat, background },
     isRestored,
     applyHistory,
   );
   const previewRequest = useRef(0);
 
   const artboard = canvasSize(canvasFormat);
+  const { width: artboardWidth, height: artboardHeight } = artboard;
   const credits = [
     ...new Map(
       layers
@@ -131,19 +171,39 @@ export function App() {
     ).values(),
   ];
   const isTrimmed = canvasFormat.preset === "trimmed";
-  // Trimmed canvases have no edges, so the preview covers whatever the bed shows.
-  const previewRegion: Region = isTrimmed
-    ? view.region
-    : { x: 0, y: 0, ...artboard };
+  const { region: previewRegion, scale: previewScale } = previewTarget;
+
+  // Trimmed canvases have no edges, so the preview covers whatever the canvas
+  // shows, plus a margin; otherwise it covers the artboard.
+  const handleView = useCallback(
+    (view: { scale: number; region: Region }) =>
+      setPreviewTarget((current) => {
+        const scale = previewResolution(view.scale * window.devicePixelRatio);
+        const region = isTrimmed
+          ? nextPreviewRegion(
+              current.region,
+              view.region,
+              PREVIEW_MARGIN,
+              PREVIEW_MAX_GROWTH,
+            )
+          : { x: 0, y: 0, width: artboardWidth, height: artboardHeight };
+        return scale === current.scale && sameRegion(region, current.region)
+          ? current
+          : { scale, region };
+      }),
+    [isTrimmed, artboardWidth, artboardHeight],
+  );
   const selectedIndex = layers.findIndex((layer) => layer.id === selectedId);
   const selected = layers[selectedIndex] ?? null;
   const removal = selected ? removals[selected.id] : undefined;
+  // Background removal replaces the mask, so mask edits wait for it.
+  const canEditMask = selected !== null && removal === undefined;
   const status = removal
     ? `${removal.label}… ${Math.round(removal.fraction * 100)}%`
     : tool !== "move"
-      ? `${BRUSH_LABELS[tool]} · ${brushSize} px · Esc to stop`
+      ? `${BRUSH_LABELS[tool]} · Esc to stop`
       : isRefining
-        ? "Mask shown: choose Add to Mask or Subtract from Mask"
+        ? "Choose a brush to paint the mask"
         : null;
   // Reads the selected photo's pixels, so only when its mask or crop changes.
   // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the canvas and revision, not the layer object
@@ -219,6 +279,8 @@ export function App() {
 
   async function cutOut(layer: Layer) {
     setError(null);
+    // The cutout replaces the mask, so mask editing waits until it's done.
+    if (layer.id === selectedId) changeRefining(false);
     setRemovals((current) => ({
       ...current,
       [layer.id]: { label: "Starting", fraction: 0 },
@@ -233,12 +295,24 @@ export function App() {
           [layer.id]: { label, fraction },
         }));
       });
-      setMask(layer, cutout);
+      // Undo, or a crop or stroke from the right-click menu, may have changed
+      // the photo meanwhile; the cutout only fits the version it started from.
+      const current = latestLayers.current.find(
+        (other) => other.id === layer.id,
+      );
+      if (!current || current.revision !== layer.revision) {
+        cutout.close();
+        if (current) {
+          setError("The photo changed during background removal. Try again.");
+        }
+        return;
+      }
+      setMask(current, cutout);
       cutout.close();
-      composeLayer(layer);
-      updateLayer(layer.id, {
+      composeLayer(current);
+      updateLayer(current.id, {
         backgroundRemoved: true,
-        revision: layer.revision + 1,
+        revision: nextRevision(),
       });
     } catch (cause) {
       console.error(cause);
@@ -282,7 +356,7 @@ export function App() {
     sizingTimer.current = setTimeout(() => setIsSizingBrush(false), 700);
   }
 
-  function handleMenuAction(action: MenuAction) {
+  function handleAction(action: LayerAction) {
     switch (action) {
       case "upload":
         fileInput.current?.click();
@@ -304,9 +378,6 @@ export function App() {
     switch (action) {
       case "delete":
         deleteLayer(selected.id);
-        break;
-      case "deselect":
-        select(null);
         break;
       case "removeBackground":
         if (!selected.backgroundRemoved) cutOut(selected);
@@ -344,30 +415,30 @@ export function App() {
     ) {
       return;
     }
-    const mod = event.metaKey || event.ctrlKey;
-    const key = event.key.toLowerCase();
-    let action: MenuAction | null = null;
-    if (mod && key === "z") action = event.shiftKey ? "redo" : "undo";
-    else if (mod && key === "y") action = "redo";
-    else if (mod && key === "e") action = "export";
-    else if (mod && key === "]") action = "forward";
-    else if (mod && key === "[") action = "back";
-    else if (mod) return;
-    else if (key === "]") action = "brushLarger";
-    else if (key === "[") action = "brushSmaller";
-    else if ((key === "delete" || key === "backspace") && selected)
-      action = "delete";
-    else if (key === "b" && selected) {
-      changeTool("restore");
-    } else if (key === "e" && selected) {
-      changeTool("erase");
-    } else if (key === "escape") {
-      if (tool !== "move") setTool("move");
-      else if (isRefining) changeRefining(false);
-      else select(null);
-    } else return;
+    const command = shortcutFor(event);
+    if (!command) return;
+    if (command === "delete" && !selected) return;
+    if ((command === "restore" || command === "erase") && !canEditMask) return;
     event.preventDefault();
-    if (action) handleMenuAction(action);
+    switch (command) {
+      case "zoomIn":
+      case "zoomOut":
+      case "zoomActual":
+      case "zoomFit":
+        canvasRef.current?.zoom(command);
+        return;
+      case "restore":
+      case "erase":
+        changeTool(command);
+        return;
+      case "escape":
+        if (tool !== "move") setTool("move");
+        else if (isRefining) changeRefining(false);
+        else select(null);
+        return;
+      default:
+        handleAction(command);
+    }
   });
 
   useEffect(() => {
@@ -375,19 +446,11 @@ export function App() {
     return () => window.removeEventListener("keydown", handleShortcut);
   }, []);
 
-  /** Keeps photos in the same relative spot when the canvas changes size. */
   function changeCanvas(changes: Partial<CanvasFormat>) {
     const next = canvasSize({ ...canvasFormat, ...changes });
-    const scaleX = next.width / artboard.width;
-    const scaleY = next.height / artboard.height;
-    setLayers((current) =>
-      current.map((layer) => ({
-        ...layer,
-        x: layer.x * scaleX,
-        y: layer.y * scaleY,
-        scale: layer.scale * Math.min(scaleX, scaleY),
-      })),
-    );
+    const fitted = fitLayersToCanvas(layers, artboard, next, fitMemory.current);
+    fitMemory.current = fitted.memory;
+    setLayers(fitted.layers);
     setCanvasFormat((current) => ({ ...current, ...changes }));
   }
 
@@ -402,7 +465,8 @@ export function App() {
         region &&
         (await makeCopy(layers, region, settings, {
           trim: isTrimmed,
-          background: theme.color,
+          background: exportFill(background),
+          maxSize: MAX_CANVAS_SIZE,
         }));
       if (!result) {
         setError("Nothing to export: the canvas is empty.");
@@ -420,72 +484,62 @@ export function App() {
     }
   }
 
-  useEffect(() => saveTheme(theme), [theme]);
+  useEffect(() => saveBackground(background), [background]);
 
   // The region's numbers are the dependencies, not its object identity.
   // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   useEffect(() => {
-    if (layers.length === 0) {
+    if (layers.length === 0 || previewRegion.width === 0) {
+      // Also retires any preview still rendering, so it can't land afterward.
+      previewRequest.current += 1;
       setPreview(null);
       return;
     }
     const region = previewRegion;
     const request = ++previewRequest.current;
+    const pixelScale = previewScale;
     const timer = setTimeout(async () => {
-      const pixelScale = Math.min(1, view.scale * window.devicePixelRatio);
-      const { canvas, ctx } = renderRegion(layers, region, pixelScale);
-      const flat = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const result = await photocopyImageData(flat, settings, pixelScale);
-      if (request !== previewRequest.current) return;
-      ctx.putImageData(result, 0, 0);
-      setPreview({ canvas, region });
+      try {
+        const { canvas, ctx } = renderRegion(layers, region, pixelScale);
+        const flat = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const result = await photocopyImageData(flat, settings, pixelScale);
+        if (request !== previewRequest.current) return;
+        ctx.putImageData(result, 0, 0);
+        setPreview({ canvas, region });
+      } catch (cause) {
+        // The canvas keeps showing the photos themselves; the next change retries.
+        console.warn("Preview failed", cause);
+        if (request === previewRequest.current) setPreview(null);
+      }
     }, PREVIEW_DELAY);
     return () => clearTimeout(timer);
   }, [
     layers,
     settings,
-    view.scale,
+    previewScale,
     previewRegion.x,
     previewRegion.y,
     previewRegion.width,
     previewRegion.height,
   ]);
 
-  const layerMenu: LayerMenuProps = {
+  const layerActions: LayerActionsProps = {
     hasSelection: selected !== null,
-    canRemoveBackground:
-      selected !== null &&
-      !selected.backgroundRemoved &&
-      removals[selected.id] === undefined,
-    canCrop: canCropSelected,
+    canEditMask,
+    canRemoveBackground: canEditMask && !selected.backgroundRemoved,
+    canCrop: canCropSelected && removal === undefined,
     canBringForward: selected !== null && selectedIndex < layers.length - 1,
     canSendBack: selected !== null && selectedIndex > 0,
     isRefining,
     tool,
-    onAction: handleMenuAction,
+    onAction: handleAction,
     onRefining: changeRefining,
     onTool: changeTool,
   };
 
   return (
-    <div className="app" data-has-layers={layers.length > 0 || undefined}>
-      <h1 className="visually-hidden">Copyshop</h1>
-      <MenuBar
-        {...layerMenu}
-        canExport={!isCopying && layers.some((layer) => layer.visible)}
-        canUndo={history.canUndo}
-        canRedo={history.canRedo}
-        status={status}
-        canvasFormat={canvasFormat}
-        onCanvasPreset={(preset) => changeCanvas({ preset })}
-        onCustomSize={() => {
-          changeCanvas({ preset: "custom" });
-          setIsCustomSizeOpen(true);
-        }}
-        theme={theme}
-        onTheme={setTheme}
-        onAbout={() => setIsAboutOpen(true)}
-      />
+    <div className="app">
+      <h1 className="visually-hidden">Photocopy</h1>
       <input
         ref={fileInput}
         type="file"
@@ -498,68 +552,71 @@ export function App() {
           if (files.length > 0) addFiles(files);
         }}
       />
-      <Bed
+      <main className="workspace">
+        <LayerToolbar
+          {...layerActions}
+          status={status}
+          brushSize={brushSize}
+          canUndo={history.canUndo}
+          canRedo={history.canRedo}
+          onAbout={() => setIsAboutOpen(true)}
+        />
+        <Canvas
+          layers={layers}
+          artboard={artboard}
+          selectedId={selectedId}
+          tool={tool}
+          brushSize={brushSize}
+          isSizingBrush={isSizingBrush && selected !== null}
+          isMaskMode={isRefining}
+          preview={preview}
+          isTrimmed={isTrimmed}
+          canvasFill={background.theme?.color ?? null}
+          onSelect={select}
+          onChange={updateLayer}
+          onFiles={addFiles}
+          onView={handleView}
+          ref={canvasRef}
+        />
+      </main>
+      <ControlStrip
         layers={layers}
-        artboard={artboard}
-        selectedId={selectedId}
-        tool={tool}
-        brushSize={brushSize}
-        isSizingBrush={isSizingBrush && selected !== null}
-        isMaskMode={isRefining}
-        preview={preview}
-        isTrimmed={isTrimmed}
-        canvasFill={theme.color}
-        onSelect={select}
-        onTool={setTool}
-        onChange={updateLayer}
-        onDelete={deleteLayer}
-        onFiles={addFiles}
+        settings={settings}
+        isCopying={isCopying}
+        error={error}
+        onSettings={(changes) =>
+          setSettings((current) => ({ ...current, ...changes }))
+        }
+        onCopy={runCopy}
         onUpload={() => fileInput.current?.click()}
         onSearch={() => setIsSearchOpen(true)}
-        layerMenu={<LayerMenu {...layerMenu} />}
-        onView={setView}
+        canvasPanel={
+          <CanvasPanel
+            canvasFormat={canvasFormat}
+            onCanvas={changeCanvas}
+            background={background}
+            onBackground={setBackground}
+          />
+        }
+        canvasPresetPicker={
+          <CanvasPresetPicker
+            canvasFormat={canvasFormat}
+            onCanvas={changeCanvas}
+          />
+        }
+        layerList={
+          <LayerList
+            layers={layers}
+            selectedId={selectedId}
+            onSelect={select}
+            onReorder={setLayers}
+            onToggleVisible={(layer) =>
+              updateLayer(layer.id, { visible: !layer.visible })
+            }
+          />
+        }
       />
-      {layers.length > 0 && (
-        <ControlStrip
-          layers={layers}
-          settings={settings}
-          isCopying={isCopying}
-          error={error}
-          onSettings={(changes) =>
-            setSettings((current) => ({ ...current, ...changes }))
-          }
-          onCopy={runCopy}
-          onUpload={() => fileInput.current?.click()}
-          onSearch={() => setIsSearchOpen(true)}
-          imagePanel={
-            <ImagePanel
-              canvasFormat={canvasFormat}
-              onCanvasPreset={(preset) => changeCanvas({ preset })}
-              onCustomSize={() => setIsCustomSizeOpen(true)}
-              theme={theme}
-              onTheme={setTheme}
-            />
-          }
-          layerList={
-            <LayerList
-              layers={layers}
-              selectedId={selectedId}
-              onSelect={select}
-              onReorder={setLayers}
-              onToggleVisible={(layer) =>
-                updateLayer(layer.id, { visible: !layer.visible })
-              }
-            />
-          }
-        />
-      )}
       <AboutDialog isOpen={isAboutOpen} onOpenChange={setIsAboutOpen} />
-      <CustomSizeDialog
-        isOpen={isCustomSizeOpen}
-        onOpenChange={setIsCustomSizeOpen}
-        canvasFormat={canvasFormat}
-        onCanvas={changeCanvas}
-      />
       <CommonsSearch
         isOpen={isSearchOpen}
         onOpenChange={setIsSearchOpen}

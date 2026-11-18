@@ -71,7 +71,7 @@ async function query(params: Record<string, string>) {
   }).toString();
   const response = await fetch(url, {
     headers: {
-      "Api-User-Agent": "Namesake-Copyshop/0.1 (https://namesake.fyi)",
+      "Api-User-Agent": "Namesake-Photocopy/0.1 (https://namesake.fyi)",
     },
   });
   if (!response.ok) throw new Error(`Commons returned ${response.status}`);

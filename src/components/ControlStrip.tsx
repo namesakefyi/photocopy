@@ -1,4 +1,5 @@
 import {
+  Keyboard,
   Menu,
   MenuItem,
   MenuTrigger,
@@ -6,6 +7,7 @@ import {
   Text,
 } from "react-aria-components";
 import type { PhotocopySettings } from "../photocopy";
+import { SHORTCUTS } from "../shortcuts";
 import type { Layer } from "../types";
 import { PresetPicker } from "./PresetPicker";
 import { Button } from "./ui/Button";
@@ -19,7 +21,9 @@ export interface ControlStripProps {
   error: string | null;
   layerList: React.ReactNode;
   /** Size and background, shown below Appearance. */
-  imagePanel: React.ReactNode;
+  canvasPanel: React.ReactNode;
+  /** Preset dropdown shown in the Canvas heading. */
+  canvasPresetPicker: React.ReactNode;
   onSettings: (changes: Partial<PhotocopySettings>) => void;
   onCopy: () => void;
   onUpload: () => void;
@@ -32,7 +36,8 @@ export function ControlStrip({
   isCopying,
   error,
   layerList,
-  imagePanel,
+  canvasPanel,
+  canvasPresetPicker,
   onSettings,
   onCopy,
   onUpload,
@@ -77,7 +82,7 @@ export function ControlStrip({
             />
           </div>
           <Slider
-            label="Darkness"
+            label="Ink"
             minValue={0}
             maxValue={100}
             value={settings.darkness}
@@ -91,14 +96,6 @@ export function ControlStrip({
             onChange={(grain) => onSettings({ grain })}
           />
           <Slider
-            label="Grain size"
-            minValue={1}
-            maxValue={5}
-            step={0.5}
-            value={settings.grainSize}
-            onChange={(grainSize) => onSettings({ grainSize })}
-          />
-          <Slider
             label="Edge contrast"
             minValue={0}
             maxValue={100}
@@ -108,8 +105,11 @@ export function ControlStrip({
         </section>
 
         <section>
-          <h2>Image</h2>
-          {imagePanel}
+          <div className="section-heading">
+            <h2>Canvas</h2>
+            {canvasPresetPicker}
+          </div>
+          {canvasPanel}
         </section>
       </div>
 
@@ -126,6 +126,9 @@ export function ControlStrip({
           isDisabled={isCopying || !layers.some((layer) => layer.visible)}
         >
           {isCopying ? "Exporting…" : "Export"}
+          {!isCopying && (
+            <Keyboard className="shortcut">{SHORTCUTS.export}</Keyboard>
+          )}
         </Button>
       </div>
     </aside>

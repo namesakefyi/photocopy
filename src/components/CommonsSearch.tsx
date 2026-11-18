@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Dialog,
   Form,
@@ -34,26 +34,51 @@ export function CommonsSearch({
   const [adding, setAdding] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [noAttributionOnly, setNoAttributionOnly] = useState(false);
+  // The query behind the results shown, so "Load more" continues it even if
+  // the search box has been edited since.
+  const [shownQuery, setShownQuery] = useState<{
+    search: string;
+    noAttributionOnly: boolean;
+  } | null>(null);
+  // Only the newest request's response is used; slower, older ones are dropped.
+  const latestRequest = useRef(0);
 
-  async function runSearch(offset = 0, onlyNoAttribution = noAttributionOnly) {
-    const trimmed = search.trim();
+  async function runSearch(query: {
+    search: string;
+    noAttributionOnly: boolean;
+    offset: number;
+  }) {
+    const trimmed = query.search.trim();
     if (!trimmed) return;
+    const request = ++latestRequest.current;
     setIsSearching(true);
     setError(null);
     try {
       const page = await searchCommons(trimmed, {
-        offset,
-        noAttributionOnly: onlyNoAttribution,
+        offset: query.offset,
+        noAttributionOnly: query.noAttributionOnly,
       });
-      setResults((current) =>
-        offset === 0 ? page.results : [...current, ...page.results],
-      );
+      if (request !== latestRequest.current) return;
+      setResults((current) => {
+        if (query.offset === 0) return page.results;
+        // Pages can overlap when Commons reorders between requests.
+        const seen = new Set(current.map((result) => result.title));
+        return [
+          ...current,
+          ...page.results.filter((result) => !seen.has(result.title)),
+        ];
+      });
       setNextOffset(page.nextOffset);
+      setShownQuery({
+        search: trimmed,
+        noAttributionOnly: query.noAttributionOnly,
+      });
       setHasSearched(true);
     } catch {
+      if (request !== latestRequest.current) return;
       setError("Couldn’t reach Wikimedia Commons. Try again.");
     } finally {
-      setIsSearching(false);
+      if (request === latestRequest.current) setIsSearching(false);
     }
   }
 
@@ -89,7 +114,7 @@ export function CommonsSearch({
             className="commons-form"
             onSubmit={(event) => {
               event.preventDefault();
-              runSearch();
+              runSearch({ search, noAttributionOnly, offset: 0 });
             }}
           >
             <SearchField
@@ -108,7 +133,14 @@ export function CommonsSearch({
             isSelected={noAttributionOnly}
             onChange={(isSelected) => {
               setNoAttributionOnly(isSelected);
-              if (hasSearched) runSearch(0, isSelected);
+              // Re-runs the search on screen with the new filter.
+              if (shownQuery) {
+                runSearch({
+                  search: shownQuery.search,
+                  noAttributionOnly: isSelected,
+                  offset: 0,
+                });
+              }
             }}
           >
             No attribution required
@@ -154,7 +186,9 @@ export function CommonsSearch({
           </GridList>
           {nextOffset !== null && (
             <Button
-              onPress={() => runSearch(nextOffset)}
+              onPress={() =>
+                shownQuery && runSearch({ ...shownQuery, offset: nextOffset })
+              }
               isDisabled={isSearching}
             >
               {isSearching ? "Loading…" : "Load more"}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { composeLayer } from "./layers";
 import type { PhotocopySettings } from "./photocopy";
-import type { Theme } from "./themes";
+import type { Background } from "./themes";
 import type { CanvasFormat, Layer } from "./types";
 
 /** Changes this close together (like one slider drag) are one undo step. */
@@ -12,7 +12,7 @@ export interface DocumentState {
   layers: Layer[];
   settings: PhotocopySettings;
   canvasFormat: CanvasFormat;
-  theme: Theme;
+  background: Background;
 }
 
 const maskKey = (layer: Layer) => `${layer.id}:${layer.revision}`;
@@ -62,7 +62,7 @@ export function useHistory(
   latest.current = current;
   const [position, setPosition] = useState({ index: -1, length: 0 });
 
-  const { layers, settings, canvasFormat, theme } = current;
+  const { layers, settings, canvasFormat, background } = current;
 
   useEffect(() => {
     if (!isReady) return;
@@ -70,7 +70,7 @@ export function useHistory(
       isApplying.current = false;
       return;
     }
-    const state = { layers, settings, canvasFormat, theme };
+    const state = { layers, settings, canvasFormat, background };
     for (const layer of layers) {
       const key = maskKey(layer);
       if (!masks.current.has(key)) masks.current.set(key, captureAlpha(layer));
@@ -95,7 +95,7 @@ export function useHistory(
       if (!referenced.has(key)) masks.current.delete(key);
     }
     setPosition({ index: index.current, length: steps.current.length });
-  }, [layers, settings, canvasFormat, theme, isReady]);
+  }, [layers, settings, canvasFormat, background, isReady]);
 
   const goTo = useCallback(
     (target: number) => {
@@ -111,7 +111,7 @@ export function useHistory(
         now.layers !== state.layers ||
         now.settings !== state.settings ||
         now.canvasFormat !== state.canvasFormat ||
-        now.theme !== state.theme;
+        now.background !== state.background;
       index.current = target;
       lastChange.current = 0;
       apply(state);

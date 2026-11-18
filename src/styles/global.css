@@ -8,8 +8,14 @@
   --gray-3: rgb(225 225 225 / 0.25);
   --gray-4: rgb(225 225 225 / 0.5);
   --gray-5: rgb(225 225 225 / 0.72);
-  --bed: #161616;
+  /* Opaque equivalents on --bg, for icons whose overlapping strokes would
+     otherwise show through each other. */
+  --gray-3-solid: #505050;
+  --gray-5-solid: #ababab;
+  --canvas-bg: #161616;
   --strip-width: 260px;
+  /* The toolbar above the canvas. */
+  --bar-height: 44px;
   --radius: 3px;
   /* Popovers inset their items, so their corners nest around the items'. */
   --popover-inset: 4px;
@@ -17,6 +23,8 @@
   /* Borderless popovers sit a shade above the interface to stay distinct. */
   --popover-bg: #262626;
   --gap: 12px;
+  /* Between stacked rows: layers, sliders. */
+  --row-gap: 6px;
   --rule: 1px solid var(--ink);
   --font:
     ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
@@ -42,13 +50,8 @@ body,
   margin: 0;
 }
 
-h2 {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--gray-5);
-}
-
+/* Section headings, the same size as the toolbar text. */
+h2,
 h3 {
   margin: 0;
   font-size: 12px;
@@ -77,75 +80,122 @@ p {
 
 .app {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) var(--strip-width);
   height: 100dvh;
 
-  /* The sidebar only exists once there's a layer to list. */
-  &[data-has-layers] {
-    grid-template-columns: minmax(0, 1fr) var(--strip-width);
-  }
-
   @media (width < 760px) {
-    &[data-has-layers] {
-      grid-template-rows: auto 60dvh auto;
-      grid-template-columns: 1fr;
-      height: auto;
-    }
+    grid-template-rows: 60dvh auto;
+    grid-template-columns: 1fr;
+    height: auto;
   }
 }
 
 /* Menu bar */
 
-.menubar {
+/* Workspace: the layer toolbar above the canvas */
+
+.workspace {
   display: flex;
-  grid-column: 1 / -1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* One fixed-height row: the actions scroll sideways rather than wrap. */
+.layer-toolbar {
+  display: flex;
+  flex-shrink: 0;
   gap: 8px;
   align-items: center;
-  min-height: 40px;
+  height: var(--bar-height);
   padding: 0 8px;
-  font-size: 13px;
+  font-size: 12px;
   user-select: none;
   background: var(--bg);
   border-block-end: 1px solid var(--gray-2);
 }
 
-.menubar-button.app-menu {
-  font-weight: 700;
-}
-
-.menubar-menus {
+/* Scrolls sideways when the actions don't fit; the app name stays put. */
+.layer-toolbar-scroll {
   display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  align-self: stretch;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-color: var(--gray-3) transparent;
+  scrollbar-width: thin;
+
+  /* With nothing selected, the ways to add a layer sit after the empty status, at the right. */
+  &[data-add-layer] {
+    order: 1;
+  }
 }
 
-.menubar-button {
-  padding: 6px 10px;
-  font: inherit;
-  color: inherit;
-  cursor: default;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius);
+.layer-toolbar-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+  align-items: center;
+  align-self: stretch;
 
-  &[data-hovered],
-  &[data-pressed],
-  &[aria-expanded="true"] {
+  > *,
+  .react-aria-Group > *,
+  .toolbar-group > * {
+    flex-shrink: 0;
+  }
+
+  .react-aria-Group,
+  .toolbar-group {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+  }
+
+  .react-aria-Separator {
+    align-self: stretch;
+    width: 1px;
+    margin: 8px 4px;
     background: var(--gray-2);
-  }
-
-  &[data-focus-visible] {
-    outline: 2px solid var(--ink);
-    outline-offset: -2px;
+    border: none;
   }
 }
 
-.menubar-status {
-  margin-inline-start: auto;
+/* Takes only the leftover space, and truncates before the actions shrink. */
+.layer-toolbar-status {
+  flex: 1 1 0;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   font-variant-numeric: tabular-nums;
   color: var(--gray-5);
+  text-align: end;
   white-space: nowrap;
+}
+
+/* The brush diameter, between the smaller and larger buttons. */
+.brush-size {
+  min-width: 44px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  text-align: center;
+}
+
+.tooltip {
+  display: flex;
+  gap: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--popover-bg);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.5);
+
+  .shortcut {
+    font-family: inherit;
+    color: var(--gray-4);
+  }
 }
 
 .menu-popover {
@@ -161,26 +211,27 @@ p {
 
   .react-aria-MenuItem {
     display: grid;
-    grid-template-columns: 18px 1fr auto;
+    grid-template-columns: 1fr auto;
     align-items: center;
-    padding: 5px 8px 5px 2px;
+    padding: 5px 8px;
     font-size: 13px;
     cursor: default;
     outline: none;
     border-radius: var(--radius);
 
     [slot="label"] {
-      grid-column: 2;
+      grid-column: 1;
     }
 
     kbd {
-      grid-column: 3;
+      grid-column: 2;
       padding-inline-start: 24px;
       font-family: inherit;
       color: var(--gray-4);
     }
 
-    &[data-focused] {
+    &[data-focused],
+    &[data-open] {
       color: var(--bg);
       background: var(--ink);
 
@@ -193,27 +244,16 @@ p {
       color: var(--gray-3);
     }
   }
-
-  .react-aria-Separator {
-    height: 1px;
-    margin: 4px 0;
-    background: var(--gray-2);
-    border: none;
-  }
 }
 
-.menu-check {
-  grid-column: 1;
-  text-align: center;
-}
+/* Canvas */
 
-/* Bed */
-
-.bed {
+.canvas {
   position: relative;
+  flex: 1;
   min-width: 0;
   min-height: 0;
-  background: var(--bed);
+  background: var(--canvas-bg);
 
   &[data-drop-target] {
     outline: 2px dashed var(--ink);
@@ -221,14 +261,36 @@ p {
   }
 }
 
-.context-guard {
-  display: contents;
+/* Zoom out, level (opens a menu), zoom in; floating at the canvas's bottom left. */
+.zoom-controls {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 1;
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  padding: 2px;
+  font-size: 12px;
+  background: var(--popover-bg);
+  border-radius: calc(var(--popover-radius) + 2px);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.4);
+
+  .zoom-level {
+    min-width: 52px;
+    padding: 0 6px;
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 .stage {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  /* The canvas handles its own panning and pinching. */
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
 
   &[data-brushing] {
     cursor: none;
@@ -239,20 +301,6 @@ p {
   }
 }
 
-.empty {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  align-items: center;
-  justify-content: center;
-  color: var(--gray-4);
-  /* Lets drops and clicks reach the bed, except on the buttons. */
-  pointer-events: none;
-}
-
 /* Control strip */
 
 .strip {
@@ -260,6 +308,7 @@ p {
   flex-direction: column;
   min-height: 0;
   background: var(--bg);
+  border-inline-start: 1px solid var(--gray-2);
 }
 
 /* Contains React Aria's visually hidden elements, which are absolutely positioned. */
@@ -273,7 +322,9 @@ p {
   display: flex;
   flex-direction: column;
   gap: var(--gap);
-  padding: 16px;
+  /* Centers the 24px heading row on the toolbar's row (less its bottom border),
+     so the first heading shares a baseline with the toolbar text. */
+  padding: calc((var(--bar-height) - 1px - 24px) / 2) 16px 16px;
   border-block-end: 1px solid var(--gray-2);
 
   &:last-child {
@@ -308,31 +359,65 @@ p {
 }
 
 .error {
-  padding: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
   color: var(--ink);
-  background: var(--gray-1);
-  border: var(--rule);
-  border-radius: var(--radius);
+  background: var(--gray-2);
+  border-radius: var(--popover-radius);
 }
 
 /* Buttons */
 
-.button {
+/*
+ * Every button-like control shares one flat base: a soft fill that brightens
+ * on hover and press, and the same focus ring. Quiet ones have no fill until
+ * hovered. Each kind further down adds only its size and layout.
+ */
+.button,
+.toolbar-button,
+.compact-select-button,
+.field-select-button {
   display: inline-flex;
   gap: 6px;
   align-items: center;
   justify-content: center;
-  min-height: 32px;
-  padding: 0 12px;
   font: inherit;
   color: var(--ink);
+  white-space: nowrap;
   text-decoration: none;
   cursor: default;
-  background: var(--bg);
-  border: var(--rule);
-  border-radius: var(--radius);
+  user-select: none;
+  background: var(--gray-1);
+  border: none;
+  border-radius: var(--popover-radius);
 
   &[data-hovered] {
+    background: var(--gray-2);
+  }
+
+  &[data-pressed] {
+    background: var(--gray-3);
+  }
+
+  &[data-focus-visible] {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  &[data-disabled] {
+    color: var(--gray-3);
+    background: var(--gray-1);
+  }
+}
+
+.button.quiet,
+.toolbar-button,
+.compact-select-button {
+  color: var(--gray-5);
+  background: transparent;
+
+  &[data-hovered] {
+    color: var(--ink);
     background: var(--gray-1);
   }
 
@@ -341,8 +426,17 @@ p {
   }
 
   &[data-disabled] {
-    color: var(--gray-4);
-    border-color: var(--gray-3);
+    background: transparent;
+  }
+}
+
+.button {
+  min-height: 32px;
+  padding: 0 12px;
+
+  &.quiet {
+    min-height: 24px;
+    padding: 0 6px;
   }
 
   &.primary {
@@ -357,46 +451,57 @@ p {
     &[data-disabled] {
       color: var(--gray-4);
       background: var(--gray-2);
-      border-color: var(--gray-3);
     }
   }
+}
 
-  &.quiet {
-    min-height: 24px;
-    padding: 0 6px;
-    color: var(--gray-5);
-    background: transparent;
-    border-color: transparent;
+/* Toolbar buttons: quiet, 28px, with opaque grays for the icons. */
+.toolbar-button {
+  height: 28px;
+  padding: 0 10px;
+  /* Opaque, so icons' overlapping strokes don't show through each other. */
+  color: var(--gray-5-solid);
 
-    &[data-hovered] {
-      color: var(--ink);
-      background: var(--gray-1);
-    }
+  &.icon {
+    width: 28px;
+    padding: 0;
+  }
+
+  /* The app name, which opens the About window. */
+  &.brand {
+    flex-shrink: 0;
+    padding: 0 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  &[data-selected] {
+    color: var(--ink);
+    background: var(--gray-2);
+  }
+
+  &[data-disabled] {
+    color: var(--gray-3-solid);
+  }
+
+  /* Inside the button, since the toolbar's scrolling row clips outside it. */
+  &[data-focus-visible] {
+    outline-offset: -2px;
   }
 }
 
 .copy-button {
-  min-height: 72px;
+  gap: 10px;
+  min-height: 48px;
   font-size: 18px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-}
 
-/* Buttons on the empty bed, styled like the dropdowns */
-.empty-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  pointer-events: auto;
-
-  .button {
-    border-color: var(--gray-3);
-
-    &[data-hovered] {
-      border-color: var(--ink);
-    }
+  .shortcut {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 400;
+    opacity: 0.55;
   }
 }
 
@@ -469,7 +574,7 @@ p {
 
 /* The Appearance sliders sit close together as one group. */
 .slider + .slider {
-  margin-block-start: -6px;
+  margin-block-start: calc(var(--row-gap) - var(--gap));
 }
 
 /* Same size as the Preset label above them. */
@@ -488,19 +593,22 @@ p {
     position: relative;
     width: 28px;
     height: 16px;
-    background: var(--bg);
-    border: var(--rule);
-    border-radius: var(--radius);
+    background: var(--gray-2);
+    border-radius: 8px;
+    transition: background 120ms;
 
     &::before {
       position: absolute;
       top: 2px;
       left: 2px;
-      width: 10px;
-      height: 10px;
+      width: 12px;
+      height: 12px;
       content: "";
-      background: var(--ink);
-      transition: translate 120ms;
+      background: var(--gray-5);
+      border-radius: 50%;
+      transition:
+        translate 120ms,
+        background 120ms;
     }
   }
 
@@ -523,6 +631,42 @@ p {
   }
 }
 
+/* Text inputs: flat and rounded like the sliders, layer rows and dropdowns. */
+
+.number-field input,
+.commons-form input {
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  outline: none;
+  background: var(--gray-1);
+  border: none;
+  border-radius: var(--popover-radius);
+
+  &::placeholder {
+    color: var(--gray-5);
+  }
+
+  &[data-hovered] {
+    background: var(--gray-2);
+  }
+
+  &[data-focused] {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+    background: var(--gray-2);
+  }
+
+  &[data-disabled] {
+    color: var(--gray-5);
+    background: var(--gray-1);
+  }
+}
+
 /* Number field */
 
 .number-field {
@@ -531,14 +675,12 @@ p {
   flex-direction: column;
   gap: 6px;
 
+  > .react-aria-Label {
+    font-size: 12px;
+  }
+
   input {
-    width: 100%;
-    min-height: 32px;
-    padding: 0 8px;
-    font: inherit;
     font-variant-numeric: tabular-nums;
-    border: var(--rule);
-    border-radius: var(--radius);
   }
 }
 
@@ -548,14 +690,15 @@ p {
 .layer-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--row-gap);
 
   .react-aria-GridListItem {
     display: flex;
     gap: 4px;
     align-items: center;
-    min-height: 32px;
-    padding: 0 4px;
+    height: 28px;
+    padding: 0 2px;
+    font-size: 12px;
     cursor: default;
     outline: none;
     background: var(--gray-1);
@@ -618,9 +761,9 @@ p {
   max-width: min(960px, 100%);
   max-height: 100%;
   overflow: auto;
-  background: var(--bg);
-  border: var(--rule);
-  border-radius: var(--radius);
+  background: var(--popover-bg);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.6);
 }
 
 .copy-result {
@@ -630,14 +773,16 @@ p {
   padding: 16px;
   outline: none;
 
-  h2 {
-    font-size: 11px;
-  }
-
   .result {
     display: grid;
     place-items: center;
-    padding: 16px;
+  }
+
+  /* The checkerboard sits behind the image only, so its edges are the export's. */
+  img {
+    display: block;
+    max-width: 100%;
+    max-height: 65dvh;
     /* Light, like the canvas, so black ink stays visible. */
     background-color: #fff;
     background-image: conic-gradient(
@@ -649,23 +794,12 @@ p {
     background-size: 16px 16px;
   }
 
-  img {
-    display: block;
-    max-width: 100%;
-    max-height: 65dvh;
-  }
-
   .row {
     justify-content: flex-end;
   }
 }
 
-.section-heading .button {
-  height: 24px;
-  min-height: 24px;
-}
-
-/* Aspect-ratio icons in the Image menu */
+/* Aspect-ratio icons in the canvas preset dropdown */
 
 .shape-box {
   display: grid;
@@ -688,30 +822,9 @@ p {
 /* Compact preset dropdown */
 
 .compact-select-button {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
   height: 24px;
   padding: 0 6px;
-  font: inherit;
   font-size: 12px;
-  color: var(--gray-5);
-  cursor: default;
-  user-select: none;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius);
-
-  &[data-hovered],
-  &[data-pressed] {
-    color: var(--ink);
-    border-color: var(--gray-3);
-  }
-
-  &[data-focus-visible] {
-    outline: 2px solid var(--ink);
-    outline-offset: 1px;
-  }
 }
 
 .select-popover {
@@ -776,18 +889,8 @@ p {
   }
 
   input {
-    width: 100%;
-    min-height: 32px;
-    padding: 0 8px;
-    font: inherit;
-    color: inherit;
-    background: transparent;
-    border: 1px solid var(--gray-3);
-    border-radius: var(--radius);
-
-    &[data-focused] {
-      border-color: var(--ink);
-    }
+    height: 32px;
+    font-size: inherit;
   }
 }
 
@@ -810,7 +913,7 @@ p {
   aspect-ratio: 1;
   object-fit: cover;
   background: var(--gray-1);
-  border-radius: var(--radius);
+  border-radius: var(--popover-radius);
 }
 
 .commons-result {
@@ -863,31 +966,10 @@ p {
   }
 }
 
-/* Image menu */
-
-/* Lines up with the item labels: 2px item padding plus the 18px check column. */
-.menu-popover .react-aria-Header {
-  padding: 6px 8px 2px 20px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--gray-4);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
 .menu-label {
   display: flex;
   gap: 8px;
   align-items: center;
-}
-
-.menu-description {
-  color: var(--gray-4);
-}
-
-.react-aria-MenuItem[data-focused] .menu-description {
-  color: inherit;
-  opacity: 0.7;
 }
 
 .menu-swatch {
@@ -900,19 +982,6 @@ p {
       conic-gradient(#e8e8e8 25%, #fff 0 50%, #e8e8e8 0 75%, #fff 0) 0 0 / 8px
       8px;
   }
-}
-
-.custom-size {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap);
-  width: 320px;
-  padding: 16px;
-  outline: none;
-}
-
-.row.end {
-  justify-content: flex-end;
 }
 
 /* About window, in the style of a macOS About panel */
@@ -959,90 +1028,122 @@ p {
   margin-block-start: 8px;
 }
 
-/* Image panel: size tiles and background swatches */
+/* Canvas panel: width × height fields and background dropdown */
 
-.size-tiles,
-.swatches {
+.canvas-size {
   display: flex;
-  flex-direction: column;
   gap: 6px;
+  align-items: center;
 
-  > .react-aria-Label {
-    font-size: 12px;
+  /* Trimmed canvases have no size to edit: the whole row fades back. */
+  &:has([data-disabled]) {
+    opacity: 0.4;
+  }
+
+  .react-aria-Group {
+    position: relative;
+  }
+
+  input {
+    /* The prefix's inset and box, plus a gap before the number. */
+    padding-inline-start: calc(10px + 12px + 6px);
   }
 }
 
-.size-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-
-  .react-aria-Radio {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    align-items: center;
-    padding: 8px 4px 6px;
-    font-size: 11px;
-    color: var(--gray-5);
-    cursor: default;
-    user-select: none;
-    background: var(--gray-1);
-    border-radius: var(--popover-radius);
-
-    &[data-hovered] {
-      background: var(--gray-2);
-    }
-
-    &[data-selected] {
-      color: var(--ink);
-      background: var(--gray-3);
-    }
-
-    &[data-focus-visible] {
-      outline: 2px solid var(--ink);
-      outline-offset: 2px;
-    }
-  }
-}
-
-.custom-size-summary {
+/* "W" and "H", inside the fields before the numbers. Centered in a fixed box,
+   so the wide W and the narrow H sit the same distance from the number. */
+.number-prefix {
+  position: absolute;
+  inset-block: 0;
+  left: 10px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  width: 12px;
+  font-size: 12px;
+  color: var(--gray-5);
+  pointer-events: none;
+}
+
+.canvas-size-times {
   font-size: 12px;
   color: var(--gray-5);
 }
 
-.swatch-row {
+.panel-select,
+.field {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Small, quieter labels over the canvas fields. */
+.field-label {
+  font-size: 11px;
+  color: var(--gray-5);
+}
+
+/* A full-width dropdown, flat and rounded like the sliders and layer rows. */
+.field-select-button {
+  display: flex;
+  gap: 8px;
   justify-content: space-between;
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
 
-  .react-aria-Radio {
-    width: 24px;
-    height: 24px;
-    background: var(--swatch);
-    border-radius: 50%;
+  .react-aria-SelectValue {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
 
-    &[data-transparent] {
-      background:
-        conic-gradient(#e8e8e8 25%, #fff 0 50%, #e8e8e8 0 75%, #fff 0) 0 0 /
-        10px 10px;
+.select-option {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.checkbox {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+
+  .checkbox-box {
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    background: var(--gray-2);
+    border-radius: 4px;
+
+    svg {
+      visibility: hidden;
+      width: 12px;
+      height: 12px;
+      fill: none;
+      stroke: var(--bg);
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
+  }
 
-    &[data-hovered] {
-      box-shadow: 0 0 0 2px var(--gray-3);
-    }
+  &[data-selected] .checkbox-box {
+    background: var(--ink);
 
-    &[data-selected] {
-      box-shadow:
-        0 0 0 2px var(--bg),
-        0 0 0 4px var(--ink);
+    svg {
+      visibility: visible;
     }
+  }
 
-    &[data-focus-visible] {
-      outline: 2px solid var(--ink);
-      outline-offset: 5px;
-    }
+  &[data-focus-visible] .checkbox-box {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
   }
 }

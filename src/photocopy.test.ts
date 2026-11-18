@@ -3,8 +3,14 @@ import {
   blur,
   contentBounds,
   DEFAULT_SETTINGS,
+  grainField,
+  matchingPreset,
+  mulberry32,
   type Pixels,
+  PRESETS,
   photocopy,
+  threshold,
+  toLuminance,
 } from "./photocopy";
 
 function gradient(width: number, height: number, alpha = 255): Pixels {
@@ -109,5 +115,110 @@ describe("contentBounds", () => {
 
   it("returns null for an empty image", () => {
     expect(contentBounds(gradient(4, 4, 0))).toBeNull();
+  });
+});
+
+describe("PRESETS", () => {
+  it("have unique ids", () => {
+    const ids = PRESETS.map((preset) => preset.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("each look is distinct, so the picker can name the current one", () => {
+    const looks = PRESETS.map((preset) => JSON.stringify(preset.look));
+    expect(new Set(looks).size).toBe(looks.length);
+  });
+
+  it("start with the default look", () => {
+    expect(matchingPreset(DEFAULT_SETTINGS)?.id).toBe("default");
+  });
+});
+
+describe("matchingPreset", () => {
+  it("finds every preset from its own look, whatever the seed", () => {
+    for (const preset of PRESETS) {
+      expect(matchingPreset({ ...preset.look, seed: 99 })?.id).toBe(preset.id);
+    }
+  });
+
+  it("finds none once a slider moves off a preset", () => {
+    expect(
+      matchingPreset({ ...DEFAULT_SETTINGS, darkness: 51 }),
+    ).toBeUndefined();
+  });
+});
+
+describe("threshold", () => {
+  it("sits at mid-gray for the middle darkness and rises with it", () => {
+    expect(threshold(50)).toBe(118);
+    expect(threshold(0)).toBeLessThan(threshold(50));
+    expect(threshold(100)).toBeGreaterThan(threshold(50));
+  });
+});
+
+describe("mulberry32", () => {
+  it("repeats for a seed and stays within [0, 1)", () => {
+    const a = mulberry32(7);
+    const b = mulberry32(7);
+    for (let index = 0; index < 1000; index++) {
+      const value = a();
+      expect(value).toBe(b());
+      expect(value).toBeGreaterThanOrEqual(0);
+      expect(value).toBeLessThan(1);
+    }
+  });
+});
+
+describe("toLuminance", () => {
+  it("weights channels by perceived brightness", () => {
+    const data = new Uint8ClampedArray([
+      255, 255, 255, 255, 0, 0, 0, 255, 0, 255, 0, 255,
+    ]);
+    const luminance = toLuminance({ data, width: 3, height: 1 });
+    expect(luminance[0]).toBeCloseTo(255);
+    expect(luminance[1]).toBe(0);
+    // Green reads far brighter than blue would.
+    expect(luminance[2]).toBeCloseTo(0.587 * 255);
+  });
+
+  it("treats transparent pixels as white paper", () => {
+    const data = new Uint8ClampedArray([0, 0, 0, 0, 0, 0, 0, 128]);
+    const luminance = toLuminance({ data, width: 2, height: 1 });
+    expect(luminance[0]).toBe(255);
+    expect(luminance[1]).toBeCloseTo(255 * (1 - 128 / 255));
+  });
+});
+
+describe("grainField", () => {
+  it("repeats for a seed", () => {
+    expect(grainField(16, 16, 40, 0.6, 3)).toEqual(
+      grainField(16, 16, 40, 0.6, 3),
+    );
+  });
+
+  it("centers on zero and grows with strength", () => {
+    const spread = (strength: number) => {
+      const field = grainField(64, 64, strength, 0.6, 3);
+      let sum = 0;
+      let squares = 0;
+      for (const value of field) {
+        sum += value;
+        squares += value * value;
+      }
+      return {
+        mean: sum / field.length,
+        deviation: Math.sqrt(squares / field.length),
+      };
+    };
+    const weak = spread(10);
+    const strong = spread(40);
+    expect(Math.abs(strong.mean)).toBeLessThan(strong.deviation / 4);
+    expect(strong.deviation).toBeGreaterThan(weak.deviation * 3);
+  });
+
+  it("is all zero with no strength", () => {
+    expect(grainField(8, 8, 0, 0.6, 3).every((value) => value === 0)).toBe(
+      true,
+    );
   });
 });
