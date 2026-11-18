@@ -1,6 +1,58 @@
 import { canvasToBlob } from "./layers";
 
+/** What's happening, and how far along the whole removal is, from 0 to 1. */
 export type RemovalProgress = (label: string, fraction: number) => void;
+
+/** Where each stage starts within the whole: loading, downloading, cutting out. */
+const DOWNLOAD_START = 0.05;
+const COMPUTE_START = 0.6;
+/**
+ * The library reports four compute steps evenly, but inference takes nearly
+ * all the time, so each step's report moves the bar this far through cutting out.
+ */
+const COMPUTE_STEPS: Record<string, number> = {
+  "compute:decode": 0,
+  "compute:inference": 0.1,
+  "compute:mask": 0.85,
+  "compute:encode": 0.95,
+};
+
+/**
+ * Turns the library's per-file download and per-step compute reports into
+ * one overall fraction that never moves backward (new files join the
+ * download total as they start).
+ */
+export function overallProgress(onProgress: RemovalProgress) {
+  const downloads = new Map<string, { current: number; total: number }>();
+  let reached = 0;
+  const report = (label: string, fraction: number) => {
+    reached = Math.max(reached, Math.min(1, fraction));
+    onProgress(label, reached);
+  };
+  return {
+    loading: () => report("Loading", 0),
+    library: (key: string, current: number, total: number) => {
+      if (key.startsWith("fetch")) {
+        downloads.set(key, { current, total });
+        let done = 0;
+        let size = 0;
+        for (const file of downloads.values()) {
+          done += file.current;
+          size += file.total;
+        }
+        const fraction = size ? done / size : 0;
+        report(
+          "Downloading model",
+          DOWNLOAD_START + fraction * (COMPUTE_START - DOWNLOAD_START),
+        );
+      } else {
+        const step =
+          current >= total ? 1 : (COMPUTE_STEPS[key] ?? current / total);
+        report("Cutting out", COMPUTE_START + step * (1 - COMPUTE_START));
+      }
+    },
+  };
+}
 
 type Device = "gpu" | "cpu";
 
@@ -34,19 +86,12 @@ export async function removeBackground(
   source: HTMLCanvasElement,
   onProgress: RemovalProgress,
 ) {
+  const progress = overallProgress(onProgress);
+  progress.loading();
   const { removeBackground: run } = await import("@imgly/background-removal");
   const blob = await canvasToBlob(source);
   const cutOut = (device: Device) =>
-    run(blob, {
-      device,
-      progress: (key, current, total) => {
-        const fraction = total ? current / total : 0;
-        onProgress(
-          key.startsWith("fetch") ? "Downloading model" : "Cutting out",
-          fraction,
-        );
-      },
-    });
+    run(blob, { device, progress: progress.library });
   preferred ??= detectDevice();
   const device = await preferred;
   let result: Blob;

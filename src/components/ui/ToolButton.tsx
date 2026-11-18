@@ -40,19 +40,23 @@ export function ToolButton({
   );
 }
 
-/** An icon-only toggle, like ToolButton; also works inside a ToggleButtonGroup. */
+/**
+ * A toggle like ToolButton; also works inside a ToggleButtonGroup. With
+ * `hasText`, it shows text beside its icon instead of only the icon.
+ */
 export function ToolToggleButton({
   label,
   shortcut,
+  hasText = false,
   children,
   ...props
-}: ToggleButtonProps & ToolTipProps) {
+}: ToggleButtonProps & ToolTipProps & { hasText?: boolean }) {
   return (
     <TooltipTrigger delay={400} closeDelay={0}>
       <ToggleButton
         {...props}
         aria-label={label}
-        className="toolbar-button icon"
+        className={hasText ? "toolbar-button" : "toolbar-button icon"}
       >
         {children}
       </ToggleButton>

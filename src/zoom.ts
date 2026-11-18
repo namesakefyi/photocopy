@@ -1,6 +1,11 @@
 import type { Region } from "./types";
 
-export type ZoomAction = "zoomIn" | "zoomOut" | "zoomActual" | "zoomFit";
+export type ZoomAction =
+  | "zoomIn"
+  | "zoomOut"
+  | "zoomActual"
+  | "zoomDouble"
+  | "zoomFit";
 
 export interface Point {
   x: number;

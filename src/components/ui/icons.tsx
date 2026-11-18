@@ -97,27 +97,6 @@ export function TrashIcon() {
   );
 }
 
-/** A paintbrush, angled down to the left. */
-const BRUSH = "M12 9l3 3-6 6H6v-3zM13.5 10.5 20 4";
-
-export function BrushAddIcon() {
-  return (
-    <svg {...sharpIconProps}>
-      <path d={BRUSH} />
-      <path d="M18 15v6M15 18h6" />
-    </svg>
-  );
-}
-
-export function BrushSubtractIcon() {
-  return (
-    <svg {...sharpIconProps}>
-      <path d={BRUSH} />
-      <path d="M15 18h6" />
-    </svg>
-  );
-}
-
 export function UndoIcon() {
   return (
     <svg {...sharpIconProps}>
@@ -140,6 +119,16 @@ export function ChevronIcon({ className }: { className?: string }) {
   return (
     <svg {...sharpIconProps} width={12} height={12} className={className}>
       <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+export function EraserIcon() {
+  return (
+    <svg {...sharpIconProps}>
+      <path d="M8.5 19.5 3.5 14.5 13 5l7 7-7.5 7.5Z" />
+      <path d="m8.5 9.5 7 7" />
+      <path d="M8.5 19.5H21" />
     </svg>
   );
 }

@@ -1,27 +1,21 @@
-import {
-  Button,
-  Group,
-  Separator,
-  ToggleButton,
-  ToggleButtonGroup,
-  Toolbar,
-} from "react-aria-components";
+import { Button, Group, Separator, Toolbar } from "react-aria-components";
 import { SHORTCUTS } from "../shortcuts";
 import type { Tool } from "../types";
+import type { ValueStore } from "../valueStore";
+import type { ZoomAction } from "../zoom";
+import { BrushSizeMenu } from "./BrushSizeMenu";
 import {
   BringForwardIcon,
-  BrushAddIcon,
-  BrushSubtractIcon,
+  EraserIcon,
   FlipHorizontalIcon,
   FlipVerticalIcon,
-  MinusIcon,
-  PlusIcon,
   RedoIcon,
   SendBackIcon,
   TrashIcon,
   UndoIcon,
 } from "./ui/icons";
 import { ToolButton, ToolToggleButton } from "./ui/ToolButton";
+import { ZoomMenu } from "./ZoomMenu";
 
 /** Everything the toolbar's buttons (and shortcuts) can ask the app to do. */
 export type LayerAction =
@@ -54,15 +48,18 @@ export interface LayerActionsProps {
   onAction: (action: LayerAction) => void;
   onRefining: (isRefining: boolean) => void;
   onTool: (tool: Tool) => void;
+  onBrushSize: (size: number) => void;
+  /** Briefly outlines the brush's size over the selected photo. */
+  onShowBrushSize: () => void;
 }
 
 export interface LayerToolbarProps extends LayerActionsProps {
-  /** Shown at the end of the bar, like background removal progress. */
-  status: string | null;
   /** The mask brush's diameter in pixels, shown while the mask is. */
   brushSize: number;
   canUndo: boolean;
   canRedo: boolean;
+  zoom: ValueStore<number>;
+  onZoom: (action: ZoomAction) => void;
   onAbout: () => void;
 }
 
@@ -73,14 +70,15 @@ function scrollSideways(event: React.WheelEvent<HTMLElement>) {
 }
 
 /**
- * Above the canvas: the app name, undo and redo, then the selected layer's
+ * Above the canvas: the app name, undo, redo and zoom, then the selected layer's
  * actions. Adding a layer lives in the Layers section.
  */
 export function LayerToolbar({
   hasSelection,
-  status,
   canUndo,
   canRedo,
+  zoom,
+  onZoom,
   onAbout,
   ...actions
 }: LayerToolbarProps) {
@@ -107,15 +105,13 @@ export function LayerToolbar({
         >
           <RedoIcon />
         </ToolButton>
+        <ZoomMenu zoom={zoom} onZoom={onZoom} />
       </Toolbar>
       {hasSelection && (
         <div className="layer-toolbar-scroll" onWheel={scrollSideways}>
           <LayerActions {...actions} />
         </div>
       )}
-      <span className="layer-toolbar-status" role="status">
-        {status}
-      </span>
     </div>
   );
 }
@@ -132,6 +128,8 @@ function LayerActions({
   onAction,
   onRefining,
   onTool,
+  onBrushSize,
+  onShowBrushSize,
 }: Omit<LayerActionsProps, "hasSelection"> & { brushSize: number }) {
   return (
     <Toolbar aria-label="Layer" className="layer-toolbar-actions">
@@ -153,58 +151,32 @@ function LayerActions({
       </Group>
       <Separator orientation="vertical" />
       <Group aria-label="Mask">
-        <ToggleButton
-          className="toolbar-button"
+        <ToolToggleButton
+          label="Mask"
+          shortcut={SHORTCUTS.erase}
+          hasText
           isDisabled={!canEditMask}
           isSelected={isRefining}
           onChange={onRefining}
         >
           Mask
-        </ToggleButton>
+        </ToolToggleButton>
         {isRefining && (
           <>
-            <ToggleButtonGroup
-              aria-label="Brush"
-              className="toolbar-group"
-              selectionMode="single"
-              selectedKeys={tool === "move" ? [] : [tool]}
-              onSelectionChange={(keys) => {
-                const [selected] = [...keys];
-                onTool(selected === undefined ? "move" : (selected as Tool));
-              }}
+            {/* Off, the brush masks; on, it erases the mask, bringing the photo back. */}
+            <ToolToggleButton
+              label="Erase"
+              shortcut={SHORTCUTS.restore}
+              isSelected={tool === "restore"}
+              onChange={(isErasing) => onTool(isErasing ? "restore" : "erase")}
             >
-              <ToolToggleButton
-                id="erase"
-                label="Add to Mask"
-                shortcut={SHORTCUTS.erase}
-              >
-                <BrushAddIcon />
-              </ToolToggleButton>
-              <ToolToggleButton
-                id="restore"
-                label="Subtract from Mask"
-                shortcut={SHORTCUTS.restore}
-              >
-                <BrushSubtractIcon />
-              </ToolToggleButton>
-            </ToggleButtonGroup>
-            <ToolButton
-              label="Smaller Brush"
-              shortcut={SHORTCUTS.brushSmaller}
-              onPress={() => onAction("brushSmaller")}
-            >
-              <MinusIcon />
-            </ToolButton>
-            <output className="brush-size" aria-label="Brush size">
-              {brushSize} px
-            </output>
-            <ToolButton
-              label="Larger Brush"
-              shortcut={SHORTCUTS.brushLarger}
-              onPress={() => onAction("brushLarger")}
-            >
-              <PlusIcon />
-            </ToolButton>
+              <EraserIcon />
+            </ToolToggleButton>
+            <BrushSizeMenu
+              size={brushSize}
+              onChange={onBrushSize}
+              onShowOnCanvas={onShowBrushSize}
+            />
           </>
         )}
       </Group>

@@ -34,13 +34,30 @@ describe("shortcutFor", () => {
     expect(shortcutFor(mod("0"))).toBe("zoomFit");
   });
 
+  it("zooms to 100% with ⇧0, whatever character it types", () => {
+    expect(shortcutFor(press(")", { shiftKey: true, code: "Digit0" }))).toBe(
+      "zoomActual",
+    );
+    expect(shortcutFor(press("=", { shiftKey: true, code: "Digit0" }))).toBe(
+      "zoomActual",
+    );
+    expect(shortcutFor(press(")", { shiftKey: true }))).toBeNull();
+  });
+
+  it("zooms to 200% with ⇧2", () => {
+    expect(shortcutFor(press("@", { shiftKey: true, code: "Digit2" }))).toBe(
+      "zoomDouble",
+    );
+    expect(shortcutFor(press("2", { code: "Digit2" }))).toBeNull();
+  });
+
   it("maps the single-key shortcuts", () => {
     expect(shortcutFor(press("]"))).toBe("brushLarger");
     expect(shortcutFor(press("["))).toBe("brushSmaller");
     expect(shortcutFor(press("Delete"))).toBe("delete");
     expect(shortcutFor(press("Backspace"))).toBe("delete");
-    expect(shortcutFor(press("b"))).toBe("restore");
-    expect(shortcutFor(press("E"))).toBe("erase");
+    expect(shortcutFor(press("M"))).toBe("erase");
+    expect(shortcutFor(press("e"))).toBe("restore");
     expect(shortcutFor(press("Escape"))).toBe("escape");
   });
 

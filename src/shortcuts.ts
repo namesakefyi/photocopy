@@ -9,14 +9,17 @@ export const SHORTCUTS = {
   export: `${MOD}E`,
   forward: `${MOD}]`,
   back: `${MOD}[`,
-  erase: "E",
-  restore: "B",
+  // The "erase" tool masks the photo away (Mask); "restore" paints it back (Erase).
+  erase: "M",
+  restore: "E",
   brushLarger: "]",
   brushSmaller: "[",
   delete: "⌫",
   zoomIn: `${MOD}+`,
   zoomOut: `${MOD}−`,
-  zoomActual: `${MOD}1`,
+  // Browsers keep ⌘1–9 for switching tabs, so 100% follows Figma instead.
+  zoomActual: "⇧0",
+  zoomDouble: "⇧2",
   zoomFit: `${MOD}0`,
 } as const;
 
@@ -29,6 +32,7 @@ export type ShortcutCommand =
   | "zoomIn"
   | "zoomOut"
   | "zoomActual"
+  | "zoomDouble"
   | "zoomFit"
   | "brushLarger"
   | "brushSmaller"
@@ -42,6 +46,8 @@ export interface KeyPress {
   metaKey: boolean;
   ctrlKey: boolean;
   shiftKey: boolean;
+  /** The physical key, for shortcuts whose character varies by layout. */
+  code?: string;
 }
 
 /**
@@ -53,8 +59,14 @@ export function shortcutFor({
   metaKey,
   ctrlKey,
   shiftKey,
+  code,
 }: KeyPress): ShortcutCommand | null {
   const key = rawKey.toLowerCase();
+  // ⇧0 and ⇧2 type ")" and "@" on US keyboards, other characters elsewhere.
+  if (shiftKey && !metaKey && !ctrlKey) {
+    if (code === "Digit0") return "zoomActual";
+    if (code === "Digit2") return "zoomDouble";
+  }
   if (metaKey || ctrlKey) {
     switch (key) {
       case "=":
@@ -63,6 +75,7 @@ export function shortcutFor({
       case "-":
       case "_":
         return "zoomOut";
+      // Where the browser lets it through, ⌘1 still works.
       case "1":
         return "zoomActual";
       case "0":
@@ -89,10 +102,10 @@ export function shortcutFor({
     case "delete":
     case "backspace":
       return "delete";
-    case "b":
-      return "restore";
-    case "e":
+    case "m":
       return "erase";
+    case "e":
+      return "restore";
     case "escape":
       return "escape";
     default:

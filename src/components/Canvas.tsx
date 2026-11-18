@@ -8,17 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  Group as AriaGroup,
-  Button,
-  DropZone,
-  Keyboard,
-  Menu,
-  MenuItem,
-  MenuTrigger,
-  Popover,
-  Text,
-} from "react-aria-components";
+import { DropZone } from "react-aria-components";
 import {
   Circle,
   Group,
@@ -30,7 +20,6 @@ import {
 } from "react-konva";
 import { composeLayer, nextRevision, paintMask } from "../layers";
 import { containsRegion, layerBounds, unionRegion } from "../render";
-import { SHORTCUTS } from "../shortcuts";
 import type { Layer, LayerChanges, Region, Tool } from "../types";
 import {
   clampPoint,
@@ -48,20 +37,11 @@ import {
 // Set before any stage is created; Konva reads it for each canvas it makes.
 Konva.pixelRatio = screenPixelRatio();
 
-import { MinusIcon, PlusIcon } from "./ui/icons";
-import { ToolButton } from "./ui/ToolButton";
-
 const PADDING = 48;
 const NUDGE = 10;
 const BIG_NUDGE = 50;
 const CHECKER_SIZE = 8;
 const MASK_COLOR = "#ff2020";
-const ZOOM_MENU: { id: ZoomAction; label: string }[] = [
-  { id: "zoomIn", label: "Zoom In" },
-  { id: "zoomOut", label: "Zoom Out" },
-  { id: "zoomActual", label: "Zoom to 100%" },
-  { id: "zoomFit", label: "Zoom to Fit" },
-];
 /** The surround's color, covering anything hanging off the artboard (not saved). */
 const OFF_CANVAS = "rgb(22 22 22 / 0.8)";
 
@@ -228,7 +208,9 @@ export function Canvas({
         zoom:
           action === "zoomActual"
             ? 1
-            : zoomStep(view.scale, action === "zoomIn" ? 1 : -1),
+            : action === "zoomDouble"
+              ? 2
+              : zoomStep(view.scale, action === "zoomIn" ? 1 : -1),
         center: view.center,
       };
     });
@@ -748,43 +730,6 @@ export function Canvas({
           </KonvaLayer>
         </Stage>
       </div>
-      <AriaGroup className="zoom-controls" aria-label="Zoom">
-        <ToolButton
-          label="Zoom Out"
-          shortcut={SHORTCUTS.zoomOut}
-          onPress={() => zoom("zoomOut")}
-        >
-          <MinusIcon />
-        </ToolButton>
-        <MenuTrigger>
-          <Button className="toolbar-button zoom-level" aria-label="Zoom">
-            {Math.round(scale * 100)}%
-          </Button>
-          <Popover className="menu-popover" placement="top start" offset={6}>
-            <Menu
-              aria-label="Zoom"
-              items={ZOOM_MENU}
-              onAction={(key) => zoom(key as ZoomAction)}
-            >
-              {(item) => (
-                <MenuItem id={item.id} textValue={item.label}>
-                  <Text slot="label" className="menu-label">
-                    {item.label}
-                  </Text>
-                  <Keyboard>{SHORTCUTS[item.id]}</Keyboard>
-                </MenuItem>
-              )}
-            </Menu>
-          </Popover>
-        </MenuTrigger>
-        <ToolButton
-          label="Zoom In"
-          shortcut={SHORTCUTS.zoomIn}
-          onPress={() => zoom("zoomIn")}
-        >
-          <PlusIcon />
-        </ToolButton>
-      </AriaGroup>
     </DropZone>
   );
 }

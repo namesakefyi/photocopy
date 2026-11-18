@@ -14,6 +14,7 @@ import {
   MAX_CANVAS_SIZE,
 } from "./canvasFormat";
 import { AboutDialog } from "./components/AboutDialog";
+import { MAX_BRUSH, MIN_BRUSH } from "./components/BrushSizeMenu";
 import { Canvas, type CanvasHandle } from "./components/Canvas";
 import { CanvasPanel, CanvasPresetPicker } from "./components/CanvasPanel";
 import { CommonsSearch } from "./components/CommonsSearch";
@@ -25,6 +26,7 @@ import {
   type LayerActionsProps,
   LayerToolbar,
 } from "./components/LayerToolbar";
+import { ProgressLine } from "./components/ProgressLine";
 import { type Copy, makeCopy } from "./copy";
 import { type DocumentState, useHistory } from "./history";
 import {
@@ -56,6 +58,7 @@ import type {
   Removal,
   Tool,
 } from "./types";
+import { createValueStore } from "./valueStore";
 import { resolutionStep, screenPixelRatio } from "./zoom";
 
 const PREVIEW_DELAY = 150;
@@ -64,13 +67,11 @@ const PREVIEW_MARGIN = 0.25;
 
 /** …until the view has zoomed in so far that it renders mostly unseen pixels. */
 const PREVIEW_MAX_GROWTH = 3;
-const MIN_BRUSH = 4;
-const MAX_BRUSH = 300;
 const BRUSH_STEP = 1.25;
 const BRUSH_LABELS: Record<Tool, string> = {
   move: "",
-  restore: "Subtract from mask",
-  erase: "Add to mask",
+  restore: "Erasing mask",
+  erase: "Masking",
 };
 
 export function App() {
@@ -96,6 +97,8 @@ export function App() {
     region: Region;
   }>({ scale: 1, region: { x: 0, y: 0, width: 0, height: 0 } });
   const canvasRef = useRef<CanvasHandle>(null);
+  // The toolbar's zoom level; a store, so zooming re-renders only that.
+  const [zoom] = useState(() => createValueStore(1));
   const [removals, setRemovals] = useState<Record<string, Removal>>({});
   const [copy, setCopy] = useState<Copy | null>(null);
   const [isCopying, setIsCopying] = useState(false);
@@ -139,6 +142,7 @@ export function App() {
       state.layers.some((layer) => layer.id === id) ? id : null,
     );
     setTool("move");
+    setIsRefining(false);
   }, []);
 
   const history = useHistory(
@@ -163,7 +167,8 @@ export function App() {
   // Trimmed canvases have no edges, so the preview covers whatever the canvas
   // shows, plus a margin; otherwise it covers the artboard.
   const handleView = useCallback(
-    (view: { scale: number; region: Region }) =>
+    (view: { scale: number; region: Region }) => {
+      zoom.set(view.scale);
       setPreviewTarget((current) => {
         const scale = resolutionStep(view.scale * screenPixelRatio());
         const region = isTrimmed
@@ -177,21 +182,27 @@ export function App() {
         return scale === current.scale && sameRegion(region, current.region)
           ? current
           : { scale, region };
-      }),
-    [isTrimmed, artboardWidth, artboardHeight],
+      });
+    },
+    [zoom, isTrimmed, artboardWidth, artboardHeight],
   );
   const selectedIndex = layers.findIndex((layer) => layer.id === selectedId);
   const selected = layers[selectedIndex] ?? null;
   const removal = selected ? removals[selected.id] : undefined;
+  // Every removal in flight, as one bar: the photos' average progress.
+  const allRemovals = Object.values(removals);
+  const removalProgress =
+    allRemovals.length > 0
+      ? allRemovals.reduce((sum, { fraction }) => sum + fraction, 0) /
+        allRemovals.length
+      : null;
   // Background removal replaces the mask, so mask edits wait for it.
   const canEditMask = selected !== null && removal === undefined;
   const status = removal
-    ? `${removal.label}… ${Math.round(removal.fraction * 100)}%`
+    ? `${removal.label}…`
     : tool !== "move"
       ? `${BRUSH_LABELS[tool]} · Esc to stop`
-      : isRefining
-        ? "Choose a brush to paint the mask"
-        : null;
+      : null;
   // Reads the selected photo's pixels, so only when its mask or crop changes.
   // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the canvas and revision, not the layer object
   const canCropSelected = useMemo(
@@ -320,15 +331,27 @@ export function App() {
     );
   }
 
+  // Mask mode always has a brush, starting with Mask itself.
   function changeRefining(next: boolean) {
     setIsRefining(next);
-    if (!next) setTool("move");
+    setTool(next ? "erase" : "move");
   }
 
-  /** Picking a brush opens Refine Mask, so the red overlay shows. */
+  /** Picking a brush opens the mask, so the red overlay shows. */
   function changeTool(next: Tool) {
+    if (next === "move") {
+      changeRefining(false);
+      return;
+    }
     setTool(next);
-    if (next !== "move") setIsRefining(true);
+    setIsRefining(true);
+  }
+
+  /** Shows the brush's size on the canvas until shortly after it last changes. */
+  function showBrushSize() {
+    setIsSizingBrush(true);
+    clearTimeout(sizingTimer.current);
+    sizingTimer.current = setTimeout(() => setIsSizingBrush(false), 700);
   }
 
   function resizeBrush(direction: 1 | -1) {
@@ -338,9 +361,7 @@ export function App() {
         Math.max(MIN_BRUSH, Math.round(size * BRUSH_STEP ** direction)),
       ),
     );
-    setIsSizingBrush(true);
-    clearTimeout(sizingTimer.current);
-    sizingTimer.current = setTimeout(() => setIsSizingBrush(false), 700);
+    showBrushSize();
   }
 
   function handleAction(action: LayerAction) {
@@ -411,6 +432,7 @@ export function App() {
       case "zoomIn":
       case "zoomOut":
       case "zoomActual":
+      case "zoomDouble":
       case "zoomFit":
         canvasRef.current?.zoom(command);
         return;
@@ -419,8 +441,7 @@ export function App() {
         changeTool(command);
         return;
       case "escape":
-        if (tool !== "move") setTool("move");
-        else if (isRefining) changeRefining(false);
+        if (isRefining) changeRefining(false);
         else select(null);
         return;
       default:
@@ -522,6 +543,8 @@ export function App() {
     onAction: handleAction,
     onRefining: changeRefining,
     onTool: changeTool,
+    onBrushSize: setBrushSize,
+    onShowBrushSize: showBrushSize,
   };
 
   return (
@@ -542,29 +565,42 @@ export function App() {
       <main className="workspace">
         <LayerToolbar
           {...layerActions}
-          status={status}
           brushSize={brushSize}
           canUndo={history.canUndo}
           canRedo={history.canRedo}
+          zoom={zoom}
+          onZoom={(action) => canvasRef.current?.zoom(action)}
           onAbout={() => setIsAboutOpen(true)}
         />
-        <Canvas
-          layers={layers}
-          artboard={artboard}
-          selectedId={selectedId}
-          tool={tool}
-          brushSize={brushSize}
-          isSizingBrush={isSizingBrush && selected !== null}
-          isMaskMode={isRefining}
-          preview={preview}
-          isTrimmed={isTrimmed}
-          canvasFill={background.theme?.color ?? null}
-          onSelect={select}
-          onChange={updateLayer}
-          onFiles={addFiles}
-          onView={handleView}
-          ref={canvasRef}
-        />
+        <div className="canvas-area">
+          {removalProgress !== null && (
+            <ProgressLine
+              label="Removing background"
+              fraction={removalProgress}
+            />
+          )}
+          <Canvas
+            layers={layers}
+            artboard={artboard}
+            selectedId={selectedId}
+            tool={tool}
+            brushSize={brushSize}
+            isSizingBrush={isSizingBrush && selected !== null}
+            isMaskMode={isRefining}
+            preview={preview}
+            isTrimmed={isTrimmed}
+            canvasFill={background.theme?.color ?? null}
+            onSelect={select}
+            onChange={updateLayer}
+            onFiles={addFiles}
+            onView={handleView}
+            ref={canvasRef}
+          />
+          {/* Progress and hints, like background removal or the brush in use. */}
+          <p className="canvas-toast" role="status">
+            {status}
+          </p>
+        </div>
       </main>
       <ControlStrip
         layers={layers}
