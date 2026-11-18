@@ -291,8 +291,10 @@ p {
 }
 
 /* The brush diameter, opening its slider; wide enough not to jitter as it changes. */
-.brush-size {
-  min-width: 76px;
+.toolbar-button.brush-size {
+  gap: 4px;
+  min-width: 62px;
+  padding: 0 6px;
 }
 
 /* A popover holding a single slider, like the brush size. */
