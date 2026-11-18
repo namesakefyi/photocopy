@@ -1,5 +1,3 @@
-import { useId } from "react";
-import { Group as AriaGroup } from "react-aria-components";
 import {
   CANVAS_PRESETS,
   canvasSize,
@@ -82,7 +80,6 @@ export function CanvasPanel({
 }: CanvasPanelProps) {
   const isTrimmed = canvasFormat.preset === "trimmed";
   const size = canvasSize(canvasFormat);
-  const sizeLabelId = useId();
   const colors = [{ id: NONE, name: "None", color: null }, ...THEMES];
 
   /** Editing a preset's dimensions turns it into a custom size. */
@@ -95,10 +92,8 @@ export function CanvasPanel({
 
   return (
     <>
-      <AriaGroup className="field" aria-labelledby={sizeLabelId}>
-        <span className="field-label" id={sizeLabelId}>
-          Size
-        </span>
+      <fieldset className="field">
+        <legend className="field-label">Size</legend>
         <div className="canvas-size">
           <NumberField
             aria-label="Width (px)"
@@ -124,7 +119,7 @@ export function CanvasPanel({
             onChange={(height) => changeSize({ height })}
           />
         </div>
-      </AriaGroup>
+      </fieldset>
       <Select
         variant="field"
         label="Background"
