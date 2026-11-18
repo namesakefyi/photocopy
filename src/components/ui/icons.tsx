@@ -135,3 +135,11 @@ export function RedoIcon() {
     </svg>
   );
 }
+
+export function ChevronIcon({ className }: { className?: string }) {
+  return (
+    <svg {...sharpIconProps} width={12} height={12} className={className}>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}

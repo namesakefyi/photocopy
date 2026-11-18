@@ -85,3 +85,25 @@ export function clampPoint(point: Point, region: Region): Point {
     y: Math.min(region.y + region.height, Math.max(region.y, point.y)),
   };
 }
+
+/**
+ * Image pixels per artboard pixel for a given screen scale: rounded up to
+ * steps of √2, so small zoom changes reuse what's already rendered, and never
+ * above 1, past which zooming in shows nothing new.
+ */
+export function resolutionStep(scale: number) {
+  if (!(scale > 0)) return 1;
+  // The tolerance keeps exact steps (like 0.5) from rounding up a step.
+  const steps = Math.log(scale) / Math.log(Math.SQRT2);
+  return Math.min(1, Math.SQRT2 ** Math.ceil(steps - EPSILON));
+}
+
+/**
+ * The canvas draws at most 2 device pixels per CSS pixel: 3× phones would
+ * otherwise draw over twice as many pixels for little visible gain.
+ */
+export const MAX_PIXEL_RATIO = 2;
+
+export function screenPixelRatio() {
+  return Math.min(globalThis.devicePixelRatio || 1, MAX_PIXEL_RATIO);
+}

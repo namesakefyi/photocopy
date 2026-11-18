@@ -4,6 +4,7 @@ import {
   clampZoom,
   MAX_ZOOM,
   MIN_ZOOM,
+  resolutionStep,
   wheelZoomFactor,
   zoomAround,
   zoomStep,
@@ -80,5 +81,23 @@ describe("clampPoint", () => {
   it("pulls points outside to the nearest edge", () => {
     expect(clampPoint({ x: -10, y: 80 }, region)).toEqual({ x: 0, y: 50 });
     expect(clampPoint({ x: 500, y: -5 }, region)).toEqual({ x: 100, y: 0 });
+  });
+});
+
+describe("resolutionStep", () => {
+  it("rounds up to the next power of √2", () => {
+    expect(resolutionStep(0.5)).toBeCloseTo(0.5);
+    expect(resolutionStep(0.4)).toBeCloseTo(0.5);
+    expect(resolutionStep(0.3)).toBeCloseTo(Math.SQRT2 / 4);
+  });
+
+  it("never goes above 1", () => {
+    expect(resolutionStep(1)).toBe(1);
+    expect(resolutionStep(3)).toBe(1);
+  });
+
+  it("treats a missing or zero scale as full resolution", () => {
+    expect(resolutionStep(0)).toBe(1);
+    expect(resolutionStep(Number.NaN)).toBe(1);
   });
 });

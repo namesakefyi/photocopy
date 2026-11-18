@@ -1,4 +1,4 @@
-import type Konva from "konva";
+import Konva from "konva";
 import {
   useEffect,
   useEffectEvent,
@@ -37,12 +37,17 @@ import {
   clampZoom,
   FIT_VIEWPORT,
   type Point,
+  screenPixelRatio,
   type Viewport,
   wheelZoomFactor,
   type ZoomAction,
   zoomAround,
   zoomStep,
 } from "../zoom";
+
+// Set before any stage is created; Konva reads it for each canvas it makes.
+Konva.pixelRatio = screenPixelRatio();
+
 import { MinusIcon, PlusIcon } from "./ui/icons";
 import { ToolButton } from "./ui/ToolButton";
 
@@ -128,7 +133,7 @@ export interface CanvasProps {
   /** Shows the selected photo uncropped, with what its mask hides in red. */
   isMaskMode: boolean;
   /** The photocopied region, shown over the photos. */
-  preview: { canvas: HTMLCanvasElement; region: Region } | null;
+  preview: { image: ImageBitmap; region: Region } | null;
   /** No artboard edges: the whole view is the canvas. */
   isTrimmed: boolean;
   /** Saved background color, or null for transparent. */
@@ -256,7 +261,7 @@ export function Canvas({
    * `pan` screen pixels. Applied to the latest viewport, so quick events add up.
    */
   function moveView(pointer: Point, factor: number, pan: Point) {
-    setViewport((current) => {
+    queueView((current) => {
       const view = resolve(current);
       const next = clampZoom(view.scale * factor, view.scale);
       const fromMiddle = {
@@ -273,6 +278,26 @@ export function Canvas({
       };
     });
   }
+
+  // Wheel, pinch and pan events can arrive several times a frame; their moves
+  // are applied together, once per frame, so the canvas renders only once.
+  const queuedMoves = useRef<((view: Viewport) => Viewport)[]>([]);
+  const viewFrame = useRef(0);
+
+  function queueView(move: (view: Viewport) => Viewport) {
+    queuedMoves.current.push(move);
+    if (viewFrame.current) return;
+    viewFrame.current = requestAnimationFrame(() => {
+      viewFrame.current = 0;
+      const moves = queuedMoves.current;
+      queuedMoves.current = [];
+      setViewport((current) =>
+        moves.reduce((view, apply) => apply(view), current),
+      );
+    });
+  }
+
+  useEffect(() => () => cancelAnimationFrame(viewFrame.current), []);
 
   function pointerIn(event: { clientX: number; clientY: number }): Point {
     const bounds = containerRef.current?.getBoundingClientRect();
@@ -638,7 +663,7 @@ export function Canvas({
             })}
             {showPreview && (
               <KonvaImage
-                image={preview.canvas}
+                image={preview.image}
                 {...preview.region}
                 globalCompositeOperation={
                   canvasFill ? "multiply" : "source-over"

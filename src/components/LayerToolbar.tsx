@@ -74,7 +74,7 @@ function scrollSideways(event: React.WheelEvent<HTMLElement>) {
 
 /**
  * Above the canvas: the app name, undo and redo, then the selected layer's
- * actions, or ways to add a layer.
+ * actions. Adding a layer lives in the Layers section.
  */
 export function LayerToolbar({
   hasSelection,
@@ -108,29 +108,11 @@ export function LayerToolbar({
           <RedoIcon />
         </ToolButton>
       </Toolbar>
-      <div
-        className="layer-toolbar-scroll"
-        data-add-layer={!hasSelection || undefined}
-        onWheel={scrollSideways}
-      >
-        {!hasSelection && (
-          <Toolbar aria-label="Add layer" className="layer-toolbar-actions">
-            <Button
-              className="toolbar-button"
-              onPress={() => onAction("upload")}
-            >
-              Upload Image
-            </Button>
-            <Button
-              className="toolbar-button"
-              onPress={() => onAction("search")}
-            >
-              Search Wikimedia Commons
-            </Button>
-          </Toolbar>
-        )}
-        {hasSelection && <LayerActions {...actions} />}
-      </div>
+      {hasSelection && (
+        <div className="layer-toolbar-scroll" onWheel={scrollSideways}>
+          <LayerActions {...actions} />
+        </div>
+      )}
       <span className="layer-toolbar-status" role="status">
         {status}
       </span>

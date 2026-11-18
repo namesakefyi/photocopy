@@ -11,7 +11,7 @@ import { SHORTCUTS } from "../shortcuts";
 import type { Layer } from "../types";
 import { PresetPicker } from "./PresetPicker";
 import { Button } from "./ui/Button";
-import { PlusIcon } from "./ui/icons";
+import { ChevronIcon, PlusIcon } from "./ui/icons";
 import { Slider } from "./ui/Slider";
 
 export interface ControlStripProps {
@@ -46,41 +46,52 @@ export function ControlStrip({
   return (
     <aside className="strip" aria-label="Controls">
       <div className="strip-scroll">
-        <section>
-          <div className="section-heading">
-            <h2>Layers</h2>
-            <MenuTrigger>
-              <Button variant="quiet" aria-label="Add layer">
-                <PlusIcon />
-              </Button>
-              <Popover className="menu-popover" placement="bottom end">
-                <Menu
-                  aria-label="Add layer"
-                  onAction={(key) =>
-                    key === "upload" ? onUpload() : onSearch()
-                  }
-                >
-                  <MenuItem id="upload" textValue="Upload Image…">
-                    <Text slot="label">Upload Image…</Text>
-                  </MenuItem>
-                  <MenuItem id="search" textValue="Search Wikimedia Commons…">
-                    <Text slot="label">Search Wikimedia Commons…</Text>
-                  </MenuItem>
-                </Menu>
-              </Popover>
-            </MenuTrigger>
-          </div>
-          {layerList}
-        </section>
+        <Section
+          title="Layers"
+          action={
+            layers.length > 0 && (
+              <MenuTrigger>
+                <Button variant="quiet" aria-label="Add layer">
+                  <PlusIcon />
+                </Button>
+                <Popover className="menu-popover" placement="bottom end">
+                  <Menu
+                    aria-label="Add layer"
+                    onAction={(key) =>
+                      key === "upload" ? onUpload() : onSearch()
+                    }
+                  >
+                    <MenuItem id="upload" textValue="Upload Image…">
+                      <Text slot="label">Upload Image…</Text>
+                    </MenuItem>
+                    <MenuItem id="search" textValue="Search Wikimedia Commons…">
+                      <Text slot="label">Search Wikimedia Commons…</Text>
+                    </MenuItem>
+                  </Menu>
+                </Popover>
+              </MenuTrigger>
+            )
+          }
+        >
+          {layers.length > 0 ? (
+            layerList
+          ) : (
+            <div className="layers-empty">
+              <Button onPress={onUpload}>Upload Image…</Button>
+              <Button onPress={onSearch}>Search Wikimedia Commons…</Button>
+            </div>
+          )}
+        </Section>
 
-        <section>
-          <div className="section-heading">
-            <h2>Appearance</h2>
+        <Section
+          title="Appearance"
+          action={
             <PresetPicker
               settings={settings}
               onChange={(look) => onSettings(look)}
             />
-          </div>
+          }
+        >
           <Slider
             label="Ink"
             minValue={0}
@@ -102,15 +113,11 @@ export function ControlStrip({
             value={settings.contrast}
             onChange={(contrast) => onSettings({ contrast })}
           />
-        </section>
+        </Section>
 
-        <section>
-          <div className="section-heading">
-            <h2>Canvas</h2>
-            {canvasPresetPicker}
-          </div>
+        <Section title="Canvas" action={canvasPresetPicker}>
           {canvasPanel}
-        </section>
+        </Section>
       </div>
 
       <div className="strip-footer">
@@ -132,5 +139,30 @@ export function ControlStrip({
         </Button>
       </div>
     </aside>
+  );
+}
+
+/**
+ * A collapsible sidebar section. Its trailing control sits beside the summary
+ * rather than in it, so the toggle never contains another button.
+ */
+function Section({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <details className="section" open>
+      <summary className="section-heading">
+        <h2 className="section-title">{title}</h2>
+        <ChevronIcon className="section-chevron" />
+      </summary>
+      {action && <div className="section-action">{action}</div>}
+      <div className="section-body">{children}</div>
+    </details>
   );
 }

@@ -37,14 +37,9 @@ import {
 } from "./layers";
 import { restoreSession, saveSource, useAutosave } from "./persistence";
 import { DEFAULT_SETTINGS, type PhotocopySettings } from "./photocopy";
-import { photocopyImageData } from "./photocopyClient";
+import { renderPreview } from "./photocopyClient";
 import { removeBackground } from "./removeBackground";
-import {
-  layerBounds,
-  nextPreviewRegion,
-  renderRegion,
-  sameRegion,
-} from "./render";
+import { layerBounds, nextPreviewRegion, sameRegion } from "./render";
 import { shortcutFor } from "./shortcuts";
 import {
   type Background,
@@ -61,22 +56,12 @@ import type {
   Removal,
   Tool,
 } from "./types";
+import { resolutionStep, screenPixelRatio } from "./zoom";
 
 const PREVIEW_DELAY = 150;
 /** A trimmed preview covers this much more on each side, so small pans reuse it. */
 const PREVIEW_MARGIN = 0.25;
 
-/**
- * Preview pixels per artboard pixel for a given zoom: rounded up to steps of
- * √2, so small zoom changes reuse the last preview (Konva scales it), and
- * never above 1, past which zooming in shows nothing new.
- */
-function previewResolution(screenScale: number) {
-  return Math.min(
-    1,
-    Math.SQRT2 ** Math.ceil(Math.log(screenScale) / Math.log(Math.SQRT2)),
-  );
-}
 /** …until the view has zoomed in so far that it renders mostly unseen pixels. */
 const PREVIEW_MAX_GROWTH = 3;
 const MIN_BRUSH = 4;
@@ -98,9 +83,11 @@ export function App() {
   const [canvasFormat, setCanvasFormat] =
     useState<CanvasFormat>(DEFAULT_CANVAS);
   const [preview, setPreview] = useState<{
-    canvas: HTMLCanvasElement;
+    image: ImageBitmap;
     region: Region;
   } | null>(null);
+  // Frees each preview's bitmap once a newer one (or none) replaces it.
+  useEffect(() => () => preview?.image.close(), [preview]);
   // What the preview should cover, and at what resolution. Updated from the
   // canvas's view only when one of them changes, so panning and zooming
   // don't re-render the whole app.
@@ -178,7 +165,7 @@ export function App() {
   const handleView = useCallback(
     (view: { scale: number; region: Region }) =>
       setPreviewTarget((current) => {
-        const scale = previewResolution(view.scale * window.devicePixelRatio);
+        const scale = resolutionStep(view.scale * screenPixelRatio());
         const region = isTrimmed
           ? nextPreviewRegion(
               current.region,
@@ -500,12 +487,12 @@ export function App() {
     const pixelScale = previewScale;
     const timer = setTimeout(async () => {
       try {
-        const { canvas, ctx } = renderRegion(layers, region, pixelScale);
-        const flat = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const result = await photocopyImageData(flat, settings, pixelScale);
-        if (request !== previewRequest.current) return;
-        ctx.putImageData(result, 0, 0);
-        setPreview({ canvas, region });
+        const image = await renderPreview(layers, region, pixelScale, settings);
+        if (request !== previewRequest.current) {
+          image.close();
+          return;
+        }
+        setPreview({ image, region });
       } catch (cause) {
         // The canvas keeps showing the photos themselves; the next change retries.
         console.warn("Preview failed", cause);
