@@ -1,0 +1,1048 @@
+:root {
+  /* Fixed dark interface; brand colors only ever appear on the canvas. */
+  --ink: #e1e1e1;
+  --bg: #1f1f1f;
+  /* Ink at partial strength, for borders, hovers and secondary text. */
+  --gray-1: rgb(225 225 225 / 0.05);
+  --gray-2: rgb(225 225 225 / 0.1);
+  --gray-3: rgb(225 225 225 / 0.25);
+  --gray-4: rgb(225 225 225 / 0.5);
+  --gray-5: rgb(225 225 225 / 0.72);
+  --bed: #161616;
+  --strip-width: 260px;
+  --radius: 3px;
+  /* Popovers inset their items, so their corners nest around the items'. */
+  --popover-inset: 4px;
+  --popover-radius: calc(var(--radius) + var(--popover-inset));
+  /* Borderless popovers sit a shade above the interface to stay distinct. */
+  --popover-bg: #262626;
+  --gap: 12px;
+  --rule: 1px solid var(--ink);
+  --font:
+    ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--ink);
+
+  color-scheme: dark;
+  background: var(--bg);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-5);
+}
+
+h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-5);
+}
+
+p {
+  margin: 0;
+}
+
+:focus-visible,
+[data-focus-visible] {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.app {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  height: 100dvh;
+
+  /* The sidebar only exists once there's a layer to list. */
+  &[data-has-layers] {
+    grid-template-columns: minmax(0, 1fr) var(--strip-width);
+  }
+
+  @media (width < 760px) {
+    &[data-has-layers] {
+      grid-template-rows: auto 60dvh auto;
+      grid-template-columns: 1fr;
+      height: auto;
+    }
+  }
+}
+
+/* Menu bar */
+
+.menubar {
+  display: flex;
+  grid-column: 1 / -1;
+  gap: 8px;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 8px;
+  font-size: 13px;
+  user-select: none;
+  background: var(--bg);
+  border-block-end: 1px solid var(--gray-2);
+}
+
+.menubar-button.app-menu {
+  font-weight: 700;
+}
+
+.menubar-menus {
+  display: flex;
+}
+
+.menubar-button {
+  padding: 6px 10px;
+  font: inherit;
+  color: inherit;
+  cursor: default;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+
+  &[data-hovered],
+  &[data-pressed],
+  &[aria-expanded="true"] {
+    background: var(--gray-2);
+  }
+
+  &[data-focus-visible] {
+    outline: 2px solid var(--ink);
+    outline-offset: -2px;
+  }
+}
+
+.menubar-status {
+  margin-inline-start: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+  color: var(--gray-5);
+  white-space: nowrap;
+}
+
+.menu-popover {
+  min-width: 220px;
+  padding: var(--popover-inset);
+  background: var(--popover-bg);
+  border-radius: var(--popover-radius);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+
+  .react-aria-Menu {
+    outline: none;
+  }
+
+  .react-aria-MenuItem {
+    display: grid;
+    grid-template-columns: 18px 1fr auto;
+    align-items: center;
+    padding: 5px 8px 5px 2px;
+    font-size: 13px;
+    cursor: default;
+    outline: none;
+    border-radius: var(--radius);
+
+    [slot="label"] {
+      grid-column: 2;
+    }
+
+    kbd {
+      grid-column: 3;
+      padding-inline-start: 24px;
+      font-family: inherit;
+      color: var(--gray-4);
+    }
+
+    &[data-focused] {
+      color: var(--bg);
+      background: var(--ink);
+
+      kbd {
+        color: inherit;
+      }
+    }
+
+    &[data-disabled] {
+      color: var(--gray-3);
+    }
+  }
+
+  .react-aria-Separator {
+    height: 1px;
+    margin: 4px 0;
+    background: var(--gray-2);
+    border: none;
+  }
+}
+
+.menu-check {
+  grid-column: 1;
+  text-align: center;
+}
+
+/* Bed */
+
+.bed {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bed);
+
+  &[data-drop-target] {
+    outline: 2px dashed var(--ink);
+    outline-offset: -8px;
+  }
+}
+
+.context-guard {
+  display: contents;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+
+  &[data-brushing] {
+    cursor: none;
+  }
+
+  &:focus-visible {
+    outline-offset: -4px;
+  }
+}
+
+.empty {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-4);
+  /* Lets drops and clicks reach the bed, except on the buttons. */
+  pointer-events: none;
+}
+
+/* Control strip */
+
+.strip {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg);
+}
+
+/* Contains React Aria's visually hidden elements, which are absolutely positioned. */
+.strip-scroll {
+  position: relative;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.strip section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding: 16px;
+  border-block-end: 1px solid var(--gray-2);
+
+  &:last-child {
+    border-block-end: none;
+  }
+}
+
+/* Every heading row is the same height, and its trailing control the same size. */
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 24px;
+}
+
+.strip-footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding: 16px;
+  border-block-start: 1px solid var(--gray-2);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hint {
+  color: var(--gray-4);
+}
+
+.error {
+  padding: 8px;
+  color: var(--ink);
+  background: var(--gray-1);
+  border: var(--rule);
+  border-radius: var(--radius);
+}
+
+/* Buttons */
+
+.button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  font: inherit;
+  color: var(--ink);
+  text-decoration: none;
+  cursor: default;
+  background: var(--bg);
+  border: var(--rule);
+  border-radius: var(--radius);
+
+  &[data-hovered] {
+    background: var(--gray-1);
+  }
+
+  &[data-pressed] {
+    background: var(--gray-2);
+  }
+
+  &[data-disabled] {
+    color: var(--gray-4);
+    border-color: var(--gray-3);
+  }
+
+  &.primary {
+    color: var(--bg);
+    background: var(--ink);
+
+    &[data-hovered],
+    &:hover {
+      background: var(--gray-5);
+    }
+
+    &[data-disabled] {
+      color: var(--gray-4);
+      background: var(--gray-2);
+      border-color: var(--gray-3);
+    }
+  }
+
+  &.quiet {
+    min-height: 24px;
+    padding: 0 6px;
+    color: var(--gray-5);
+    background: transparent;
+    border-color: transparent;
+
+    &[data-hovered] {
+      color: var(--ink);
+      background: var(--gray-1);
+    }
+  }
+}
+
+.copy-button {
+  min-height: 72px;
+  font-size: 18px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+/* Buttons on the empty bed, styled like the dropdowns */
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  pointer-events: auto;
+
+  .button {
+    border-color: var(--gray-3);
+
+    &[data-hovered] {
+      border-color: var(--ink);
+    }
+  }
+}
+
+/* Slider */
+
+.slider {
+  .react-aria-SliderTrack {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 28px;
+    padding: 0 10px;
+    overflow: hidden;
+    cursor: ew-resize;
+    user-select: none;
+    background: var(--gray-1);
+    border-radius: var(--popover-radius);
+
+    /* Stays active for the whole drag, even if the pointer leaves the box. */
+    &[data-hovered],
+    &:has([data-dragging]) {
+      background: var(--gray-2);
+    }
+
+    /* Focus shows on the whole box, since the thumb is just a marker. */
+    &:has([data-focus-visible]) {
+      outline: 2px solid var(--ink);
+      outline-offset: 2px;
+    }
+  }
+
+  /* The fill's bright edge marks the value, behind the text. */
+  .fill {
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    background: var(--gray-2);
+    box-shadow: inset -2px 0 0 var(--gray-4);
+  }
+
+  .react-aria-SliderTrack[data-hovered] .fill,
+  .react-aria-SliderTrack:has([data-dragging]) .fill {
+    background: var(--gray-3);
+  }
+
+  .react-aria-SliderTrack:has([data-dragging]) .fill {
+    box-shadow: inset -2px 0 0 var(--ink);
+  }
+
+  .react-aria-Label,
+  output {
+    position: relative;
+    pointer-events: none;
+  }
+
+  output {
+    font-variant-numeric: tabular-nums;
+    color: var(--gray-5);
+  }
+
+  /* Invisible, but still the focus target for keyboard and screen readers. */
+  .react-aria-SliderThumb {
+    top: 50%;
+    width: 2px;
+    height: 100%;
+    outline: none;
+  }
+}
+
+/* The Appearance sliders sit close together as one group. */
+.slider + .slider {
+  margin-block-start: -6px;
+}
+
+/* Same size as the Preset label above them. */
+.strip .slider {
+  font-size: 12px;
+}
+
+/* Switch */
+
+.switch {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+
+  .indicator {
+    position: relative;
+    width: 28px;
+    height: 16px;
+    background: var(--bg);
+    border: var(--rule);
+    border-radius: var(--radius);
+
+    &::before {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 10px;
+      height: 10px;
+      content: "";
+      background: var(--ink);
+      transition: translate 120ms;
+    }
+  }
+
+  &[data-selected] .indicator {
+    background: var(--ink);
+
+    &::before {
+      background: var(--bg);
+      translate: 12px 0;
+    }
+  }
+
+  &[data-focus-visible] {
+    outline: none;
+
+    .indicator {
+      outline: 2px solid var(--ink);
+      outline-offset: 2px;
+    }
+  }
+}
+
+/* Number field */
+
+.number-field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+
+  input {
+    width: 100%;
+    min-height: 32px;
+    padding: 0 8px;
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    border: var(--rule);
+    border-radius: var(--radius);
+  }
+}
+
+/* Layer list */
+
+/* Each layer is its own rounded flat row, like the sliders. */
+.layer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .react-aria-GridListItem {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    min-height: 32px;
+    padding: 0 4px;
+    cursor: default;
+    outline: none;
+    background: var(--gray-1);
+    border-radius: var(--popover-radius);
+
+    &[data-hovered] {
+      background: var(--gray-2);
+    }
+
+    &[data-selected] {
+      background: var(--gray-3);
+    }
+
+    &[data-dragging] {
+      opacity: 0.4;
+    }
+
+    &[data-focus-visible] {
+      outline: 2px solid var(--ink);
+      outline-offset: 2px;
+    }
+  }
+
+  .react-aria-DropIndicator[data-drop-target] {
+    height: 2px;
+    background: var(--ink);
+    border-radius: 1px;
+  }
+}
+
+.layer-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &[data-hidden] {
+    text-decoration: line-through;
+    opacity: 0.6;
+  }
+}
+
+.drag-handle {
+  letter-spacing: -0.2em;
+}
+
+/* Copy result */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.5);
+}
+
+.modal {
+  max-width: min(960px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  background: var(--bg);
+  border: var(--rule);
+  border-radius: var(--radius);
+}
+
+.copy-result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding: 16px;
+  outline: none;
+
+  h2 {
+    font-size: 11px;
+  }
+
+  .result {
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    /* Light, like the canvas, so black ink stays visible. */
+    background-color: #fff;
+    background-image: conic-gradient(
+      #e8e8e8 25%,
+      transparent 0 50%,
+      #e8e8e8 0 75%,
+      transparent 0
+    );
+    background-size: 16px 16px;
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+    max-height: 65dvh;
+  }
+
+  .row {
+    justify-content: flex-end;
+  }
+}
+
+.section-heading .button {
+  height: 24px;
+  min-height: 24px;
+}
+
+/* Aspect-ratio icons in the Image menu */
+
+.shape-box {
+  display: grid;
+  flex: none;
+  place-items: center;
+}
+
+.shape {
+  border: 1px solid currentColor;
+
+  &[data-open] {
+    border-style: dashed;
+  }
+}
+
+.chevron {
+  color: var(--gray-5);
+}
+
+/* Compact preset dropdown */
+
+.compact-select-button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  height: 24px;
+  padding: 0 6px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--gray-5);
+  cursor: default;
+  user-select: none;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+
+  &[data-hovered],
+  &[data-pressed] {
+    color: var(--ink);
+    border-color: var(--gray-3);
+  }
+
+  &[data-focus-visible] {
+    outline: 2px solid var(--ink);
+    outline-offset: 1px;
+  }
+}
+
+.select-popover {
+  min-width: max(var(--trigger-width), 140px);
+  padding: var(--popover-inset);
+  background: var(--popover-bg);
+  border-radius: var(--popover-radius);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+
+  .react-aria-ListBox {
+    outline: none;
+  }
+
+  .react-aria-ListBoxItem {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 5px 8px;
+    font-size: 13px;
+    cursor: default;
+    user-select: none;
+    outline: none;
+    border-radius: var(--radius);
+
+    &[data-focused],
+    &[data-hovered] {
+      background: var(--gray-2);
+    }
+
+    &[data-selected]::after {
+      margin-inline-start: auto;
+      content: "✓";
+    }
+
+    &[data-focus-visible] {
+      outline: 2px solid var(--ink);
+      outline-offset: -2px;
+    }
+  }
+}
+
+/* Wikimedia Commons search */
+
+.commons-modal {
+  width: min(760px, 100%);
+}
+
+.commons-search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding: 16px;
+  outline: none;
+}
+
+.commons-form {
+  display: flex;
+  gap: 8px;
+
+  .react-aria-SearchField {
+    flex: 1;
+  }
+
+  input {
+    width: 100%;
+    min-height: 32px;
+    padding: 0 8px;
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: 1px solid var(--gray-3);
+    border-radius: var(--radius);
+
+    &[data-focused] {
+      border-color: var(--ink);
+    }
+  }
+}
+
+.commons-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  min-height: 0;
+  max-height: 55dvh;
+  overflow-y: auto;
+
+  &[data-empty] {
+    display: block;
+  }
+}
+
+.commons-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--gray-1);
+  border-radius: var(--radius);
+}
+
+.commons-result {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: default;
+  outline: none;
+
+  &[data-hovered] .commons-thumb {
+    opacity: 0.8;
+  }
+
+  &[data-focus-visible] {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  &[data-disabled] {
+    opacity: 0.5;
+  }
+}
+
+.commons-license {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  color: var(--gray-5);
+  white-space: nowrap;
+}
+
+/* Credits */
+
+.credits {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  ul {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-inline-start: 18px;
+    margin: 0;
+    font-size: 12px;
+  }
+
+  a {
+    color: inherit;
+  }
+}
+
+/* Image menu */
+
+/* Lines up with the item labels: 2px item padding plus the 18px check column. */
+.menu-popover .react-aria-Header {
+  padding: 6px 8px 2px 20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-4);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.menu-label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.menu-description {
+  color: var(--gray-4);
+}
+
+.react-aria-MenuItem[data-focused] .menu-description {
+  color: inherit;
+  opacity: 0.7;
+}
+
+.menu-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+
+  &[data-transparent] {
+    background:
+      conic-gradient(#e8e8e8 25%, #fff 0 50%, #e8e8e8 0 75%, #fff 0) 0 0 / 8px
+      8px;
+  }
+}
+
+.custom-size {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  width: 320px;
+  padding: 16px;
+  outline: none;
+}
+
+.row.end {
+  justify-content: flex-end;
+}
+
+/* About window, in the style of a macOS About panel */
+
+.about-window {
+  width: 280px;
+  background: var(--popover-bg);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.6);
+}
+
+.about {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  padding: 24px;
+  font-size: 12px;
+  text-align: center;
+  outline: none;
+
+  h2 {
+    font-size: 15px;
+    color: var(--ink);
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  p {
+    max-width: 30ch;
+    color: var(--gray-5);
+  }
+
+  a {
+    color: var(--ink);
+  }
+}
+
+.about-version {
+  margin-block-end: 8px;
+}
+
+.about-credit {
+  margin-block-start: 8px;
+}
+
+/* Image panel: size tiles and background swatches */
+
+.size-tiles,
+.swatches {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  > .react-aria-Label {
+    font-size: 12px;
+  }
+}
+
+.size-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+
+  .react-aria-Radio {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    padding: 8px 4px 6px;
+    font-size: 11px;
+    color: var(--gray-5);
+    cursor: default;
+    user-select: none;
+    background: var(--gray-1);
+    border-radius: var(--popover-radius);
+
+    &[data-hovered] {
+      background: var(--gray-2);
+    }
+
+    &[data-selected] {
+      color: var(--ink);
+      background: var(--gray-3);
+    }
+
+    &[data-focus-visible] {
+      outline: 2px solid var(--ink);
+      outline-offset: 2px;
+    }
+  }
+}
+
+.custom-size-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--gray-5);
+}
+
+.swatch-row {
+  display: flex;
+  justify-content: space-between;
+
+  .react-aria-Radio {
+    width: 24px;
+    height: 24px;
+    background: var(--swatch);
+    border-radius: 50%;
+
+    &[data-transparent] {
+      background:
+        conic-gradient(#e8e8e8 25%, #fff 0 50%, #e8e8e8 0 75%, #fff 0) 0 0 /
+        10px 10px;
+    }
+
+    &[data-hovered] {
+      box-shadow: 0 0 0 2px var(--gray-3);
+    }
+
+    &[data-selected] {
+      box-shadow:
+        0 0 0 2px var(--bg),
+        0 0 0 4px var(--ink);
+    }
+
+    &[data-focus-visible] {
+      outline: 2px solid var(--ink);
+      outline-offset: 5px;
+    }
+  }
+}
