@@ -4,20 +4,26 @@ import {
   Form,
   GridList,
   GridListItem,
-  Heading,
   Input,
+  type Key,
   Modal,
   ModalOverlay,
   SearchField,
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
 } from "react-aria-components";
 import {
-  downloadOpenverse,
-  type OpenverseResult,
+  type ImageResult,
+  type ImageSource,
   searchErrorMessage,
-  searchOpenverse,
-} from "../openverse";
+} from "../imageSearch";
+import { IMAGE_SOURCES } from "../sources";
 import type { Credit } from "../types";
 import { Button } from "./ui/Button";
+import { XIcon } from "./ui/icons";
+import { ToolButton } from "./ui/ToolButton";
 
 export interface ImageSearchProps {
   isOpen: boolean;
@@ -25,61 +31,113 @@ export interface ImageSearchProps {
   onAdd: (file: File, credit: Credit) => Promise<void>;
 }
 
+interface TabState {
+  /** The search behind the results, so "Load more" continues it. */
+  search: string;
+  results: ImageResult[];
+  nextPage: number | null;
+  isSearching: boolean;
+  error: string | null;
+}
+
+const emptyTab: TabState = {
+  search: "",
+  results: [],
+  nextPage: null,
+  isSearching: false,
+  error: null,
+};
+
 export function ImageSearch({ isOpen, onOpenChange, onAdd }: ImageSearchProps) {
   const [search, setSearch] = useState("");
-  const [results, setResults] = useState<OpenverseResult[]>([]);
-  const [nextPage, setNextPage] = useState<number | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
+  // The last search submitted, which a tab runs when it's opened.
+  const [submitted, setSubmitted] = useState("");
+  const [sourceId, setSourceId] = useState(IMAGE_SOURCES[0].id);
+  const [tabs, setTabs] = useState<Record<string, TabState>>({});
   const [adding, setAdding] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  // The search behind the results shown, so "Load more" continues it even if
-  // the search box has been edited since.
-  const [shownSearch, setShownSearch] = useState<string | null>(null);
-  // Only the newest request's response is used; slower, older ones are dropped.
-  const latestRequest = useRef(0);
+  const [addError, setAddError] = useState<string | null>(null);
+  // Per source, a new request cancels the one before it.
+  const requests = useRef<Record<string, AbortController>>({});
 
-  async function runSearch(search: string, page: number) {
-    const trimmed = search.trim();
-    if (!trimmed) return;
-    const request = ++latestRequest.current;
-    setIsSearching(true);
-    setError(null);
+  function updateTab(id: string, changes: Partial<TabState>) {
+    setTabs((current) => ({
+      ...current,
+      [id]: { ...(current[id] ?? emptyTab), ...changes },
+    }));
+  }
+
+  async function runSearch(source: ImageSource, search: string, page: number) {
+    requests.current[source.id]?.abort();
+    const request = new AbortController();
+    requests.current[source.id] = request;
+    const isLatest = () => !request.signal.aborted;
+    updateTab(source.id, {
+      isSearching: true,
+      error: null,
+      ...(page === 1 && { search, results: [], nextPage: null }),
+    });
     try {
-      const found = await searchOpenverse(trimmed, { page });
-      if (request !== latestRequest.current) return;
-      setResults((current) => {
-        if (page === 1) return found.results;
+      const found = await source.search(search, page, request.signal);
+      if (!isLatest()) return;
+      setTabs((current) => {
+        const tab = current[source.id] ?? emptyTab;
         // Pages can overlap when results reorder between requests.
-        const seen = new Set(current.map((result) => result.id));
-        return [
+        const seen = new Set(tab.results.map((result) => result.id));
+        const results =
+          page === 1
+            ? found.results
+            : [
+                ...tab.results,
+                ...found.results.filter((result) => !seen.has(result.id)),
+              ];
+        return {
           ...current,
-          ...found.results.filter((result) => !seen.has(result.id)),
-        ];
+          [source.id]: {
+            ...tab,
+            search,
+            results,
+            nextPage: found.nextPage,
+            isSearching: false,
+          },
+        };
       });
-      setNextPage(found.nextPage);
-      setShownSearch(trimmed);
-      setHasSearched(true);
     } catch (error) {
-      if (request !== latestRequest.current) return;
-      setError(searchErrorMessage(error));
-    } finally {
-      if (request === latestRequest.current) setIsSearching(false);
+      if (!isLatest()) return;
+      updateTab(source.id, {
+        isSearching: false,
+        error: searchErrorMessage(error, source.name),
+      });
     }
   }
 
-  async function add(result: OpenverseResult) {
+  function selectSource(key: Key) {
+    const source = IMAGE_SOURCES.find((option) => option.id === key);
+    if (!source) return;
+    setSourceId(source.id);
+    setAddError(null);
+    const tab = tabs[source.id];
+    if (submitted && tab?.search !== submitted && !tab?.isSearching) {
+      runSearch(source, submitted, 1);
+    }
+  }
+
+  async function add(result: ImageResult) {
     setAdding(result.id);
-    setError(null);
+    setAddError(null);
     try {
-      await onAdd(await downloadOpenverse(result), result.credit);
+      await onAdd(await result.download(), result.credit);
       onOpenChange(false);
     } catch {
-      setError("Couldn’t download that image. Try another.");
+      setAddError("Couldn’t download that image. Try another.");
     } finally {
       setAdding(null);
     }
   }
+
+  const source =
+    IMAGE_SOURCES.find((option) => option.id === sourceId) ?? IMAGE_SOURCES[0];
+  const tab = tabs[source.id] ?? emptyTab;
+  const error = addError ?? tab.error;
 
   return (
     <ModalOverlay
@@ -89,79 +147,123 @@ export function ImageSearch({ isOpen, onOpenChange, onAdd }: ImageSearchProps) {
       onOpenChange={onOpenChange}
     >
       <Modal className="modal image-search-modal">
-        <Dialog className="image-search">
-          <div className="section-heading">
-            <Heading slot="title">Search Openverse</Heading>
-            <Button variant="quiet" slot="close">
-              Close
-            </Button>
-          </div>
-          <Form
-            className="image-search-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              runSearch(search, 1);
-            }}
-          >
-            <SearchField
-              aria-label="Search openly licensed photos"
-              value={search}
-              onChange={setSearch}
-              autoFocus
+        <Dialog className="image-search" aria-label="Search images">
+          <div className="image-search-header">
+            <Form
+              className="image-search-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const trimmed = search.trim();
+                if (!trimmed) return;
+                setSubmitted(trimmed);
+                setAddError(null);
+                runSearch(source, trimmed, 1);
+              }}
             >
-              <Input placeholder="Search openly licensed photos" />
-            </SearchField>
-            <Button type="submit" isDisabled={isSearching || !search.trim()}>
-              {isSearching ? "Searching…" : "Search"}
-            </Button>
-          </Form>
-          {error && (
-            <p role="alert" className="error">
-              {error}
-            </p>
-          )}
-          <GridList
-            aria-label="Results"
-            className="image-search-results"
-            layout="grid"
-            items={results}
-            disabledKeys={adding ? results.map((result) => result.id) : []}
-            onAction={(key) => {
-              const result = results.find((option) => option.id === key);
-              if (result) add(result);
-            }}
-            renderEmptyState={() =>
-              hasSearched && !isSearching ? (
-                <p className="hint">No photos found.</p>
-              ) : null
-            }
-          >
-            {(result) => (
-              <GridListItem
-                className="image-search-result"
-                id={result.id}
-                textValue={`${result.credit.title}, ${result.credit.license}`}
+              <SearchField
+                aria-label="Search openly licensed images"
+                value={search}
+                onChange={setSearch}
+                autoFocus
               >
-                <img
-                  className="image-search-thumb"
-                  src={result.thumbnail}
-                  alt=""
-                  loading="lazy"
-                />
-                <span className="image-search-license">
-                  {adding === result.id ? "Adding…" : result.credit.license}
-                </span>
-              </GridListItem>
-            )}
-          </GridList>
-          {nextPage !== null && (
-            <Button
-              onPress={() => shownSearch && runSearch(shownSearch, nextPage)}
-              isDisabled={isSearching}
+                <Input placeholder="Search openly licensed images" />
+              </SearchField>
+              <Button
+                type="submit"
+                isDisabled={tab.isSearching || !search.trim()}
+              >
+                {tab.isSearching ? "Searching…" : "Search"}
+              </Button>
+            </Form>
+            <ToolButton label="Close" slot="close">
+              <XIcon />
+            </ToolButton>
+          </div>
+          <Tabs
+            className="image-search-tabs"
+            selectedKey={source.id}
+            onSelectionChange={selectSource}
+          >
+            <TabList
+              aria-label="Collections"
+              className="image-search-tab-list"
+              items={IMAGE_SOURCES}
             >
-              {isSearching ? "Loading…" : "Load more"}
-            </Button>
-          )}
+              {(option) => (
+                <Tab className="image-search-tab" id={option.id}>
+                  {option.label}
+                </Tab>
+              )}
+            </TabList>
+            {IMAGE_SOURCES.map((option) => (
+              <TabPanel
+                key={option.id}
+                id={option.id}
+                className="image-search-panel"
+              >
+                {error && (
+                  <p role="alert" className="error">
+                    {error}
+                  </p>
+                )}
+                <GridList
+                  aria-label={`Results from ${source.name}`}
+                  className="image-search-results"
+                  layout="grid"
+                  items={tab.results}
+                  disabledKeys={
+                    adding ? tab.results.map((result) => result.id) : []
+                  }
+                  onAction={(key) => {
+                    const result = tab.results.find(
+                      (option) => option.id === key,
+                    );
+                    if (result) add(result);
+                  }}
+                  renderEmptyState={() => (
+                    <p className="hint">
+                      {tab.isSearching
+                        ? "Searching…"
+                        : tab.search
+                          ? `No images found for “${tab.search}” in ${source.name}.`
+                          : `Search public domain and openly licensed images from ${source.name}.`}
+                    </p>
+                  )}
+                >
+                  {(result) => (
+                    <GridListItem
+                      className="image-search-result"
+                      id={result.id}
+                      textValue={`${result.credit.title}, ${result.credit.license}`}
+                    >
+                      <img
+                        className="image-search-thumb"
+                        src={result.thumbnail}
+                        alt=""
+                        loading="lazy"
+                      />
+                      <span className="image-search-license">
+                        {adding === result.id
+                          ? "Adding…"
+                          : result.credit.license}
+                      </span>
+                    </GridListItem>
+                  )}
+                </GridList>
+                {tab.nextPage !== null && (
+                  <Button
+                    onPress={() =>
+                      tab.nextPage &&
+                      runSearch(source, tab.search, tab.nextPage)
+                    }
+                    isDisabled={tab.isSearching}
+                  >
+                    {tab.isSearching ? "Loading…" : "Load more"}
+                  </Button>
+                )}
+              </TabPanel>
+            ))}
+          </Tabs>
         </Dialog>
       </Modal>
     </ModalOverlay>

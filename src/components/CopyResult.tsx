@@ -8,7 +8,7 @@ import {
   savedExportOptions,
   saveExportOptions,
 } from "../copy";
-import { creditSource, formatCredit } from "../openverse";
+import { creditSource, formatCredit } from "../credits";
 import type { Credit } from "../types";
 import { Button } from "./ui/Button";
 import { Checkbox } from "./ui/Checkbox";

@@ -274,9 +274,20 @@ export function saveIndex(order: string[], activeId: string) {
   return exclusive(() => writeIndex(order, activeId));
 }
 
+/** Starts at the canvas size of the most recently edited artboard. */
 export function createArtboard(backgroundId: string) {
   return exclusive(async () => {
-    const artboard = newArtboard({ backgroundId });
+    const latest = (await allArtboards()).reduce<SavedArtboard | undefined>(
+      (latest, artboard) =>
+        !latest || artboard.updatedAt > latest.updatedAt ? artboard : latest,
+      undefined,
+    );
+    const artboard = newArtboard({
+      backgroundId,
+      canvasFormat: latest
+        ? restoreCanvasFormat(latest.canvasFormat)
+        : DEFAULT_CANVAS,
+    });
     await putArtboard(artboard);
     return summarize(artboard);
   });

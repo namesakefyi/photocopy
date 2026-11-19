@@ -199,6 +199,30 @@ describe("managing artboards", () => {
     expect((await readArtboard(created.id))?.layers).toEqual([]);
   });
 
+  it("starts at the canvas size of the most recently edited artboard", async () => {
+    const square: CanvasFormat = { ...DEFAULT_CANVAS, preset: "square" };
+    const custom: CanvasFormat = {
+      preset: "custom",
+      customWidth: 800,
+      customHeight: 600,
+    };
+    await putArtboard(
+      artboard({ id: "a", updatedAt: 2, canvasFormat: custom }),
+    );
+    await putArtboard(
+      artboard({ id: "b", updatedAt: 1, canvasFormat: square }),
+    );
+    const created = await createArtboard(DEFAULT_THEME.id);
+    expect((await readArtboard(created.id))?.canvasFormat).toEqual(custom);
+  });
+
+  it("starts at the default size when there are no artboards", async () => {
+    const created = await createArtboard(DEFAULT_THEME.id);
+    expect((await readArtboard(created.id))?.canvasFormat).toEqual(
+      DEFAULT_CANVAS,
+    );
+  });
+
   it("deletes an artboard with its files", async () => {
     await putArtboard(artboard({ id: "a", layers: [savedLayer("one")] }));
     await putArtboard(artboard({ id: "b", layers: [savedLayer("two")] }));

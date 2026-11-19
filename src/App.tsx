@@ -151,6 +151,8 @@ export function App() {
 
   async function handleNew() {
     try {
+      // Saves a size change just made, so the new artboard picks it up.
+      await editorRef.current?.flush();
       const artboard = await createArtboard(savedBackground().id);
       setArtboards((current) => [...(current ?? []), artboard]);
       persistStorage();
