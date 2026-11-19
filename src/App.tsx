@@ -17,9 +17,9 @@ import { AboutDialog } from "./components/AboutDialog";
 import { MAX_BRUSH, MIN_BRUSH } from "./components/BrushSizeMenu";
 import { Canvas, type CanvasHandle } from "./components/Canvas";
 import { CanvasPanel, CanvasPresetPicker } from "./components/CanvasPanel";
-import { CommonsSearch } from "./components/CommonsSearch";
 import { ControlStrip } from "./components/ControlStrip";
 import { CopyResult } from "./components/CopyResult";
+import { ImageSearch } from "./components/ImageSearch";
 import { LayerList } from "./components/LayerList";
 import {
   type LayerAction,
@@ -27,7 +27,7 @@ import {
   LayerToolbar,
 } from "./components/LayerToolbar";
 import { ProgressLine } from "./components/ProgressLine";
-import { type Copy, makeCopy } from "./copy";
+import { makePhotocopy, type Photocopy } from "./copy";
 import { type DocumentState, useHistory } from "./history";
 import {
   composeLayer,
@@ -41,14 +41,9 @@ import { restoreSession, saveSource, useAutosave } from "./persistence";
 import { DEFAULT_SETTINGS, type PhotocopySettings } from "./photocopy";
 import { renderPreview } from "./photocopyClient";
 import { removeBackground } from "./removeBackground";
-import { layerBounds, nextPreviewRegion, sameRegion } from "./render";
+import { sameRegion } from "./render";
 import { shortcutFor } from "./shortcuts";
-import {
-  type Background,
-  exportFill,
-  saveBackground,
-  savedBackground,
-} from "./themes";
+import { saveBackground, savedBackground, type Theme } from "./themes";
 import type {
   CanvasFormat,
   Credit,
@@ -62,11 +57,6 @@ import { createValueStore } from "./valueStore";
 import { resolutionStep, screenPixelRatio } from "./zoom";
 
 const PREVIEW_DELAY = 150;
-/** A trimmed preview covers this much more on each side, so small pans reuse it. */
-const PREVIEW_MARGIN = 0.25;
-
-/** …until the view has zoomed in so far that it renders mostly unseen pixels. */
-const PREVIEW_MAX_GROWTH = 3;
 const BRUSH_STEP = 1.25;
 const BRUSH_LABELS: Record<Tool, string> = {
   move: "",
@@ -100,10 +90,10 @@ export function App() {
   // The toolbar's zoom level; a store, so zooming re-renders only that.
   const [zoom] = useState(() => createValueStore(1));
   const [removals, setRemovals] = useState<Record<string, Removal>>({});
-  const [copy, setCopy] = useState<Copy | null>(null);
+  const [photocopy, setPhotocopy] = useState<Photocopy | null>(null);
   const [isCopying, setIsCopying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [background, setBackground] = useState<Background>(savedBackground);
+  const [background, setBackground] = useState<Theme>(savedBackground);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSizingBrush, setIsSizingBrush] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -161,30 +151,25 @@ export function App() {
         .map((layer) => [layer.credit?.sourceUrl, layer.credit as Credit]),
     ).values(),
   ];
-  const isTrimmed = canvasFormat.preset === "trimmed";
   const { region: previewRegion, scale: previewScale } = previewTarget;
 
-  // Trimmed canvases have no edges, so the preview covers whatever the canvas
-  // shows, plus a margin; otherwise it covers the artboard.
   const handleView = useCallback(
     (view: { scale: number; region: Region }) => {
       zoom.set(view.scale);
       setPreviewTarget((current) => {
         const scale = resolutionStep(view.scale * screenPixelRatio());
-        const region = isTrimmed
-          ? nextPreviewRegion(
-              current.region,
-              view.region,
-              PREVIEW_MARGIN,
-              PREVIEW_MAX_GROWTH,
-            )
-          : { x: 0, y: 0, width: artboardWidth, height: artboardHeight };
+        const region = {
+          x: 0,
+          y: 0,
+          width: artboardWidth,
+          height: artboardHeight,
+        };
         return scale === current.scale && sameRegion(region, current.region)
           ? current
           : { scale, region };
       });
     },
-    [zoom, isTrimmed, artboardWidth, artboardHeight],
+    [zoom, artboardWidth, artboardHeight],
   );
   const selectedIndex = layers.findIndex((layer) => layer.id === selectedId);
   const selected = layers[selectedIndex] ?? null;
@@ -466,24 +451,17 @@ export function App() {
     setIsCopying(true);
     setError(null);
     try {
-      const region = isTrimmed
-        ? layerBounds(layers)
-        : { x: 0, y: 0, ...artboard };
-      const result =
-        region &&
-        (await makeCopy(layers, region, settings, {
-          trim: isTrimmed,
-          background: exportFill(background),
-          maxSize: MAX_CANVAS_SIZE,
-        }));
+      const result = await makePhotocopy(
+        layers,
+        { x: 0, y: 0, ...artboard },
+        settings,
+        MAX_CANVAS_SIZE,
+      );
       if (!result) {
         setError("Nothing to export: the canvas is empty.");
         return;
       }
-      setCopy((previous) => {
-        if (previous) URL.revokeObjectURL(previous.url);
-        return result;
-      });
+      setPhotocopy(result);
     } catch (cause) {
       console.error(cause);
       setError("Export failed.");
@@ -588,8 +566,7 @@ export function App() {
             isSizingBrush={isSizingBrush && selected !== null}
             isMaskMode={isRefining}
             preview={preview}
-            isTrimmed={isTrimmed}
-            canvasFill={background.theme?.color ?? null}
+            canvasFill={background.color}
             onSelect={select}
             onChange={updateLayer}
             onFiles={addFiles}
@@ -640,18 +617,16 @@ export function App() {
         }
       />
       <AboutDialog isOpen={isAboutOpen} onOpenChange={setIsAboutOpen} />
-      <CommonsSearch
+      <ImageSearch
         isOpen={isSearchOpen}
         onOpenChange={setIsSearchOpen}
         onAdd={(file, credit) => addFiles([file], credit)}
       />
       <CopyResult
-        copy={copy}
+        photocopy={photocopy}
+        background={background.color}
         credits={credits}
-        onClose={() => {
-          if (copy) URL.revokeObjectURL(copy.url);
-          setCopy(null);
-        }}
+        onClose={() => setPhotocopy(null)}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { composeLayer } from "./layers";
 import type { PhotocopySettings } from "./photocopy";
-import type { Background } from "./themes";
+import type { Theme } from "./themes";
 import type { CanvasFormat, Layer } from "./types";
 
 /** Changes this close together (like one slider drag) are one undo step. */
@@ -12,7 +12,7 @@ export interface DocumentState {
   layers: Layer[];
   settings: PhotocopySettings;
   canvasFormat: CanvasFormat;
-  background: Background;
+  background: Theme;
 }
 
 const maskKey = (layer: Layer) => `${layer.id}:${layer.revision}`;

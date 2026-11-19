@@ -5,6 +5,8 @@ export interface Credit {
   license: string;
   licenseUrl?: string;
   sourceUrl: string;
+  /** Where the photo comes from, like "flickr.com". */
+  source?: string;
   attributionRequired: boolean;
 }
 
@@ -31,7 +33,7 @@ export interface Layer {
   flipX: boolean;
   flipY: boolean;
   visible: boolean;
-  /** Set for photos added from Wikimedia Commons. */
+  /** Set for photos added from an image search. */
   credit?: Credit;
   /** Bumped whenever the mask changes, so dependents re-render. */
   revision: number;
@@ -54,13 +56,7 @@ export type LayerChanges = Partial<
 
 export type Tool = "move" | "erase" | "restore";
 
-export type CanvasPreset =
-  | "trimmed"
-  | "square"
-  | "social"
-  | "video"
-  | "story"
-  | "custom";
+export type CanvasPreset = "square" | "social" | "video" | "story" | "custom";
 
 export interface CanvasFormat {
   preset: CanvasPreset;

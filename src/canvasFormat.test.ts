@@ -116,12 +116,15 @@ describe("canvasSize presets", () => {
   });
 
   it("ignores the custom size unless the preset is custom", () => {
-    const trimmed = canvasSize({
-      preset: "trimmed",
-      customWidth: 123,
-      customHeight: 456,
-    });
-    expect(trimmed).not.toEqual({ width: 123, height: 456 });
+    expect(
+      canvasSize({ preset: "square", customWidth: 123, customHeight: 456 }),
+    ).toEqual({ width: 1080, height: 1080 });
+  });
+
+  it("uses the custom size for a custom canvas", () => {
+    expect(
+      canvasSize({ preset: "custom", customWidth: 123, customHeight: 456 }),
+    ).toEqual({ width: 123, height: 456 });
   });
 });
 

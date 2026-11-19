@@ -1,7 +1,7 @@
 import type { CanvasFormat, CanvasPreset, Layer } from "./types";
 
 export interface CanvasPresetInfo {
-  id: Exclude<CanvasPreset, "custom" | "trimmed">;
+  id: Exclude<CanvasPreset, "custom">;
   /** Short name shown in the canvas preset menus. */
   name: string;
   ratio: string;
@@ -20,18 +20,18 @@ export const MIN_CANVAS_SIZE = 100;
 /** The usual pixel sizes for each place an image is posted. */
 export const CANVAS_PRESETS: CanvasPresetInfo[] = [
   {
-    id: "square",
-    name: "Square",
-    ratio: "1:1",
-    width: 1080,
-    height: 1080,
-  },
-  {
     id: "social",
     name: "Social",
     ratio: "1.91:1",
     width: 1200,
     height: 630,
+  },
+  {
+    id: "square",
+    name: "Square",
+    ratio: "1:1",
+    width: 1080,
+    height: 1080,
   },
   {
     id: "video",
@@ -49,20 +49,13 @@ export const CANVAS_PRESETS: CanvasPresetInfo[] = [
   },
 ];
 
-/**
- * A trimmed canvas has no edges; this is only the area the canvas view frames and
- * new photos are placed in.
- */
-const TRIMMED_WORKSPACE = { width: 1500, height: 1500 };
-
 export const DEFAULT_CANVAS: CanvasFormat = {
-  preset: "trimmed",
+  preset: "social",
   customWidth: 1500,
   customHeight: 1000,
 };
 
 export function canvasSize(format: CanvasFormat) {
-  if (format.preset === "trimmed") return TRIMMED_WORKSPACE;
   if (format.preset === "custom") {
     return { width: format.customWidth, height: format.customHeight };
   }

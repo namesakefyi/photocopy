@@ -4,14 +4,11 @@ import {
   MAX_CANVAS_SIZE,
   MIN_CANVAS_SIZE,
 } from "../canvasFormat";
-import { type Background, THEMES } from "../themes";
+import { THEMES, type Theme } from "../themes";
 import type { CanvasFormat, CanvasPreset } from "../types";
 import { CanvasShape } from "./CanvasShape";
-import { Checkbox } from "./ui/Checkbox";
 import { NumberField } from "./ui/NumberField";
 import { Select } from "./ui/Select";
-
-const NONE = "none";
 
 export interface CanvasPresetPickerProps {
   canvasFormat: CanvasFormat;
@@ -24,11 +21,6 @@ export function CanvasPresetPicker({
   onCanvas,
 }: CanvasPresetPickerProps) {
   const options = [
-    {
-      id: "trimmed" as const,
-      label: "Trimmed",
-      shape: <CanvasShape width={4} height={3} isOpen size={14} />,
-    },
     ...CANVAS_PRESETS.map((preset) => ({
       id: preset.id,
       label: `${preset.name} (${preset.ratio})`,
@@ -67,8 +59,8 @@ export function CanvasPresetPicker({
 export interface CanvasPanelProps {
   canvasFormat: CanvasFormat;
   onCanvas: (changes: Partial<CanvasFormat>) => void;
-  background: Background;
-  onBackground: (background: Background) => void;
+  background: Theme;
+  onBackground: (background: Theme) => void;
 }
 
 /** Canvas dimensions and background; the preset picker sits in the heading. */
@@ -78,9 +70,7 @@ export function CanvasPanel({
   background,
   onBackground,
 }: CanvasPanelProps) {
-  const isTrimmed = canvasFormat.preset === "trimmed";
   const size = canvasSize(canvasFormat);
-  const colors = [{ id: NONE, name: "None", color: null }, ...THEMES];
 
   /** Editing a preset's dimensions turns it into a custom size. */
   function changeSize(changes: { width?: number; height?: number }) {
@@ -102,7 +92,6 @@ export function CanvasPanel({
             maxValue={MAX_CANVAS_SIZE}
             formatOptions={{ useGrouping: false }}
             value={size.width}
-            isDisabled={isTrimmed}
             onChange={(width) => changeSize({ width })}
           />
           <span className="canvas-size-times" aria-hidden="true">
@@ -115,7 +104,6 @@ export function CanvasPanel({
             maxValue={MAX_CANVAS_SIZE}
             formatOptions={{ useGrouping: false }}
             value={size.height}
-            isDisabled={isTrimmed}
             onChange={(height) => changeSize({ height })}
           />
         </div>
@@ -123,34 +111,21 @@ export function CanvasPanel({
       <Select
         variant="field"
         label="Background"
-        items={colors}
-        selectedKey={background.theme?.id ?? NONE}
-        onSelectionChange={(id) =>
-          onBackground({
-            ...background,
-            theme: THEMES.find((option) => option.id === id) ?? null,
-          })
-        }
+        items={THEMES}
+        selectedKey={background.id}
+        onSelectionChange={(id) => {
+          const theme = THEMES.find((option) => option.id === id);
+          if (theme) onBackground(theme);
+        }}
         textOf={(option) => option.name}
         iconOf={(option) => (
           <span
             className="menu-swatch"
-            data-transparent={option.color === null || undefined}
-            style={option.color ? { background: option.color } : undefined}
+            style={{ background: option.color }}
             aria-hidden="true"
           />
         )}
       />
-      {background.theme && (
-        <Checkbox
-          isSelected={background.includeInExport}
-          onChange={(includeInExport) =>
-            onBackground({ ...background, includeInExport })
-          }
-        >
-          Include in export
-        </Checkbox>
-      )}
     </>
   );
 }

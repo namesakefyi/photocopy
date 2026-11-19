@@ -595,7 +595,7 @@ p {
   color: var(--ink);
   white-space: nowrap;
   text-decoration: none;
-  cursor: default;
+  cursor: pointer;
   user-select: none;
   background: var(--gray-1);
   border: none;
@@ -616,6 +616,7 @@ p {
 
   &[data-disabled] {
     color: var(--gray-3);
+    cursor: default;
     background: var(--gray-1);
   }
 }
@@ -663,6 +664,11 @@ p {
       background: var(--gray-2);
     }
   }
+}
+
+/* Small, like the compact dropdowns that also sit in headings. */
+.section-heading .button.quiet {
+  font-size: 12px;
 }
 
 /* Toolbar buttons: quiet, 28px, with opaque grays for the icons. */
@@ -798,6 +804,10 @@ p {
   gap: 8px;
   align-items: center;
 
+  &[data-disabled] {
+    opacity: 0.4;
+  }
+
   .indicator {
     position: relative;
     width: 28px;
@@ -843,7 +853,7 @@ p {
 /* Text inputs: flat and rounded like the sliders, layer rows and dropdowns. */
 
 .number-field input,
-.commons-form input {
+.image-search-form input {
   width: 100%;
   min-width: 0;
   height: 28px;
@@ -976,22 +986,75 @@ p {
 }
 
 .copy-result {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap);
-  padding: 16px;
+  /* The image sits in a fixed square, so cropping never resizes the dialog. */
+  --result-size: min(560px, 60dvh);
+  --details-width: 292px;
+
+  display: grid;
+  grid-template-columns: calc(var(--result-size) + 32px) var(--details-width);
+  width: calc(var(--result-size) + 32px + var(--details-width));
+  max-width: 100%;
   outline: none;
+
+  @media (width < 760px) {
+    grid-template-columns: minmax(0, 1fr);
+    width: calc(var(--result-size) + 32px);
+  }
+
+  /* A darker panel, edge to edge, sets the preview apart from the controls. */
+  .copy-preview {
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: var(--canvas-bg);
+  }
 
   .result {
     display: grid;
+    grid-template: 100% / 100%;
     place-items: center;
+    width: 100%;
+    aspect-ratio: 1;
+    transition: opacity 0.15s;
+
+    /* The last image stays up, faded, while the new options encode. */
+    &[data-stale] {
+      opacity: 0.5;
+    }
+  }
+
+  .copy-details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    min-width: 0;
+    padding: 16px;
+  }
+
+  .copy-heading {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    justify-content: space-between;
+
+    .hint {
+      margin: 0;
+      font-size: 12px;
+    }
+  }
+
+  .copy-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
   }
 
   /* The checkerboard sits behind the image only, so its edges are the export's. */
   img {
     display: block;
     max-width: 100%;
-    max-height: 65dvh;
+    max-height: 100%;
     /* Light, like the canvas, so black ink stays visible. */
     background-color: #fff;
     background-image: conic-gradient(
@@ -1003,8 +1066,10 @@ p {
     background-size: 16px 16px;
   }
 
+  /* The buttons sit at the bottom of the details, level with the image. */
   .row {
     justify-content: flex-end;
+    margin-block-start: auto;
   }
 }
 
@@ -1018,10 +1083,6 @@ p {
 
 .shape {
   border: 1px solid currentColor;
-
-  &[data-open] {
-    border-style: dashed;
-  }
 }
 
 .chevron {
@@ -1075,13 +1136,13 @@ p {
   }
 }
 
-/* Wikimedia Commons search */
+/* Openverse image search */
 
-.commons-modal {
+.image-search-modal {
   width: min(760px, 100%);
 }
 
-.commons-search {
+.image-search {
   display: flex;
   flex-direction: column;
   gap: var(--gap);
@@ -1089,7 +1150,7 @@ p {
   outline: none;
 }
 
-.commons-form {
+.image-search-form {
   display: flex;
   gap: 8px;
 
@@ -1103,7 +1164,7 @@ p {
   }
 }
 
-.commons-results {
+.image-search-results {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 8px;
@@ -1116,7 +1177,7 @@ p {
   }
 }
 
-.commons-thumb {
+.image-search-thumb {
   display: block;
   width: 100%;
   aspect-ratio: 1;
@@ -1125,14 +1186,14 @@ p {
   border-radius: var(--popover-radius);
 }
 
-.commons-result {
+.image-search-result {
   display: flex;
   flex-direction: column;
   gap: 4px;
   cursor: default;
   outline: none;
 
-  &[data-hovered] .commons-thumb {
+  &[data-hovered] .image-search-thumb {
     opacity: 0.8;
   }
 
@@ -1146,7 +1207,7 @@ p {
   }
 }
 
-.commons-license {
+.image-search-license {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 12px;
@@ -1164,10 +1225,12 @@ p {
   ul {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding-inline-start: 18px;
+    gap: 8px;
+    padding: 0;
     margin: 0;
     font-size: 12px;
+    color: var(--gray-5);
+    list-style: none;
   }
 
   a {
@@ -1185,12 +1248,6 @@ p {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-
-  &[data-transparent] {
-    background:
-      conic-gradient(#e8e8e8 25%, #fff 0 50%, #e8e8e8 0 75%, #fff 0) 0 0 / 8px
-      8px;
-  }
 }
 
 /* About window, in the style of a macOS About panel */
@@ -1243,11 +1300,6 @@ p {
   display: flex;
   gap: 6px;
   align-items: center;
-
-  /* Trimmed canvases have no size to edit: the whole row fades back. */
-  &:has([data-disabled]) {
-    opacity: 0.4;
-  }
 
   .react-aria-Group {
     position: relative;

@@ -19,7 +19,6 @@ import {
   Transformer,
 } from "react-konva";
 import { composeLayer, nextRevision, paintMask } from "../layers";
-import { containsRegion, layerBounds, unionRegion } from "../render";
 import type { Layer, LayerChanges, Region, Tool } from "../types";
 import {
   clampPoint,
@@ -40,27 +39,11 @@ Konva.pixelRatio = screenPixelRatio();
 const PADDING = 48;
 const NUDGE = 10;
 const BIG_NUDGE = 50;
-const CHECKER_SIZE = 8;
 const MASK_COLOR = "#ff2020";
 /** The surround's color, covering anything hanging off the artboard (not saved). */
 const OFF_CANVAS = "rgb(22 22 22 / 0.8)";
 
 /** The light grid that stands in for transparency, like in image editors. */
-function createChecker() {
-  const canvas = document.createElement("canvas");
-  canvas.width = CHECKER_SIZE * 2;
-  canvas.height = CHECKER_SIZE * 2;
-  const ctx = canvas.getContext("2d");
-  if (ctx) {
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#e8e8e8";
-    ctx.fillRect(0, 0, CHECKER_SIZE, CHECKER_SIZE);
-    ctx.fillRect(CHECKER_SIZE, CHECKER_SIZE, CHECKER_SIZE, CHECKER_SIZE);
-  }
-  return canvas;
-}
-
 /** White under black, so the brush outline shows on any photo. */
 function BrushOutline({
   x,
@@ -114,10 +97,8 @@ export interface CanvasProps {
   isMaskMode: boolean;
   /** The photocopied region, shown over the photos. */
   preview: { image: ImageBitmap; region: Region } | null;
-  /** No artboard edges: the whole view is the canvas. */
-  isTrimmed: boolean;
-  /** Saved background color, or null for transparent. */
-  canvasFill: string | null;
+  /** The background color. */
+  canvasFill: string;
   onSelect: (id: string | null) => void;
   onChange: (id: string, changes: LayerChanges) => void;
   onFiles: (files: File[]) => void;
@@ -140,7 +121,6 @@ export function Canvas({
   isSizingBrush,
   isMaskMode,
   preview,
-  isTrimmed,
   canvasFill,
   onSelect,
   onChange,
@@ -158,7 +138,6 @@ export function Canvas({
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const stroke = useRef<{ x: number; y: number } | null>(null);
   const frame = useRef(0);
-  const checker = useMemo(createChecker, []);
   const [isInteracting, setIsInteracting] = useState(false);
   // The preview from before a drag still shows the old position, so it stays
   // hidden until a fresh one arrives.
@@ -226,17 +205,12 @@ export function Canvas({
     y: size.height / 2 - center.y * scale,
   };
 
-  // Panning keeps the view's middle over the artboard, or for a trimmed
-  // canvas, over the photos wherever they are.
-  // Only recomputed when the photos change, not on every pan or brush move.
+  // Panning keeps the view's middle over the artboard.
   // biome-ignore lint/correctness/useExhaustiveDependencies: the artboard's size is the dependency, not its object identity
-  const panBounds = useMemo(() => {
-    const artboardRegion = { x: 0, y: 0, ...artboard };
-    const photoBounds = isTrimmed ? layerBounds(layers) : null;
-    return photoBounds
-      ? unionRegion(artboardRegion, photoBounds)
-      : artboardRegion;
-  }, [isTrimmed, layers, artboard.width, artboard.height]);
+  const panBounds = useMemo(
+    () => ({ x: 0, y: 0, ...artboard }),
+    [artboard.width, artboard.height],
+  );
 
   /**
    * Zooms by `factor` around `pointer` (relative to the canvas), then pans by
@@ -395,10 +369,7 @@ export function Canvas({
     !brushing &&
     !isMaskMode &&
     !isInteracting &&
-    preview !== stalePreview &&
-    // A trimmed view's preview covers a margin around it; panning past that
-    // shows the photos themselves until the next preview arrives.
-    (!isTrimmed || containsRegion(preview.region, visible));
+    preview !== stalePreview;
 
   // Quick-mask style: red wherever the selected photo's mask hides it.
   const maskOverlay = useMemo(() => document.createElement("canvas"), []);
@@ -572,16 +543,7 @@ export function Canvas({
           }}
         >
           <KonvaLayer x={offset.x} y={offset.y} scaleX={scale} scaleY={scale}>
-            <Rect
-              name="artboard"
-              {...(isTrimmed ? visible : artboard)}
-              {...(canvasFill
-                ? { fill: canvasFill }
-                : {
-                    fillPatternImage: checker as unknown as HTMLImageElement,
-                    fillPatternScale: { x: 1 / scale, y: 1 / scale },
-                  })}
-            />
+            <Rect name="artboard" {...artboard} fill={canvasFill} />
             {layers.map((layer) => {
               const showMask = isMaskMode && layer.id === selectedId;
               return (
@@ -647,56 +609,50 @@ export function Canvas({
               <KonvaImage
                 image={preview.image}
                 {...preview.region}
-                globalCompositeOperation={
-                  canvasFill ? "multiply" : "source-over"
-                }
+                globalCompositeOperation="multiply"
                 listening={false}
               />
             )}
-            {!isTrimmed && (
-              <>
-                <Rect
-                  x={-far}
-                  y={-far}
-                  width={far * 2 + artboard.width}
-                  height={far}
-                  fill={OFF_CANVAS}
-                  listening={false}
-                />
-                <Rect
-                  x={-far}
-                  y={artboard.height}
-                  width={far * 2 + artboard.width}
-                  height={far}
-                  fill={OFF_CANVAS}
-                  listening={false}
-                />
-                <Rect
-                  x={-far}
-                  y={0}
-                  width={far}
-                  height={artboard.height}
-                  fill={OFF_CANVAS}
-                  listening={false}
-                />
-                <Rect
-                  x={artboard.width}
-                  y={0}
-                  width={far}
-                  height={artboard.height}
-                  fill={OFF_CANVAS}
-                  listening={false}
-                />
-                <Rect
-                  width={artboard.width}
-                  height={artboard.height}
-                  stroke="#555"
-                  strokeWidth={1}
-                  strokeScaleEnabled={false}
-                  listening={false}
-                />
-              </>
-            )}
+            <Rect
+              x={-far}
+              y={-far}
+              width={far * 2 + artboard.width}
+              height={far}
+              fill={OFF_CANVAS}
+              listening={false}
+            />
+            <Rect
+              x={-far}
+              y={artboard.height}
+              width={far * 2 + artboard.width}
+              height={far}
+              fill={OFF_CANVAS}
+              listening={false}
+            />
+            <Rect
+              x={-far}
+              y={0}
+              width={far}
+              height={artboard.height}
+              fill={OFF_CANVAS}
+              listening={false}
+            />
+            <Rect
+              x={artboard.width}
+              y={0}
+              width={far}
+              height={artboard.height}
+              fill={OFF_CANVAS}
+              listening={false}
+            />
+            <Rect
+              width={artboard.width}
+              height={artboard.height}
+              stroke="#555"
+              strokeWidth={1}
+              strokeScaleEnabled={false}
+              listening={false}
+            />
           </KonvaLayer>
           <KonvaLayer>
             <Transformer

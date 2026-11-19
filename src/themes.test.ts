@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  exportFill,
-  NO_BACKGROUND,
+  DEFAULT_THEME,
   saveBackground,
   savedBackground,
   THEMES,
@@ -21,36 +20,22 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("exportFill", () => {
-  it("fills with the color only when included", () => {
-    expect(exportFill({ theme: purple, includeInExport: true })).toBe(
-      purple.color,
-    );
-    expect(exportFill({ theme: purple, includeInExport: false })).toBeNull();
-  });
-
-  it("leaves a transparent background transparent", () => {
-    expect(exportFill({ theme: null, includeInExport: true })).toBeNull();
-  });
-});
-
 describe("saved background", () => {
   it("round-trips through storage", () => {
     vi.stubGlobal("localStorage", memoryStorage());
-    saveBackground({ theme: purple, includeInExport: false });
-    expect(savedBackground()).toEqual({
-      theme: purple,
-      includeInExport: false,
-    });
+    saveBackground(purple);
+    expect(savedBackground()).toBe(purple);
   });
 
-  it("round-trips a transparent background", () => {
-    vi.stubGlobal("localStorage", memoryStorage());
-    saveBackground({ theme: null, includeInExport: true });
-    expect(savedBackground()).toEqual({ theme: null, includeInExport: true });
+  it("uses the default for nothing saved or an old transparent background", () => {
+    const storage = memoryStorage();
+    vi.stubGlobal("localStorage", storage);
+    expect(savedBackground()).toBe(DEFAULT_THEME);
+    storage.setItem("photocopy-background", "transparent");
+    expect(savedBackground()).toBe(DEFAULT_THEME);
   });
 
-  it("falls back to none when storage is unavailable", () => {
+  it("falls back to the default when storage is unavailable", () => {
     vi.stubGlobal("localStorage", {
       getItem: () => {
         throw new Error("blocked");
@@ -59,10 +44,8 @@ describe("saved background", () => {
         throw new Error("blocked");
       },
     });
-    expect(() =>
-      saveBackground({ theme: purple, includeInExport: true }),
-    ).not.toThrow();
-    expect(savedBackground()).toEqual(NO_BACKGROUND);
+    expect(() => saveBackground(purple)).not.toThrow();
+    expect(savedBackground()).toBe(DEFAULT_THEME);
   });
 });
 

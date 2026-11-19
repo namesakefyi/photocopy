@@ -61,11 +61,11 @@ export function ControlStrip({
                       key === "upload" ? onUpload() : onSearch()
                     }
                   >
-                    <MenuItem id="upload" textValue="Upload Image…">
-                      <Text slot="label">Upload Image…</Text>
+                    <MenuItem id="upload" textValue="Upload image…">
+                      <Text slot="label">Upload image…</Text>
                     </MenuItem>
-                    <MenuItem id="search" textValue="Search Wikimedia Commons…">
-                      <Text slot="label">Search Wikimedia Commons…</Text>
+                    <MenuItem id="search" textValue="Search for images…">
+                      <Text slot="label">Search for images…</Text>
                     </MenuItem>
                   </Menu>
                 </Popover>
@@ -77,8 +77,8 @@ export function ControlStrip({
             layerList
           ) : (
             <div className="layers-empty">
-              <Button onPress={onUpload}>Upload Image…</Button>
-              <Button onPress={onSearch}>Search Wikimedia Commons…</Button>
+              <Button onPress={onUpload}>Upload image…</Button>
+              <Button onPress={onSearch}>Search for images…</Button>
             </div>
           )}
         </Section>

@@ -1,13 +1,11 @@
-/** A small outline in the canvas's aspect ratio, dashed when it has no edges. */
+/** A small outline in the canvas's aspect ratio. */
 export function CanvasShape({
   width,
   height,
-  isOpen = false,
   size = 16,
 }: {
   width: number;
   height: number;
-  isOpen?: boolean;
   size?: number;
 }) {
   const fit = size / Math.max(width, height);
@@ -19,7 +17,6 @@ export function CanvasShape({
     >
       <span
         className="shape"
-        data-open={isOpen || undefined}
         style={{ width: width * fit, height: height * fit }}
       />
     </span>

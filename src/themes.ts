@@ -15,41 +15,24 @@ export const THEMES: Theme[] = [
   { id: "white", name: "Photocopy White", color: "#e1e1e1" },
 ];
 
-/** The canvas background: a color, or none for transparent. */
-export interface Background {
-  theme: Theme | null;
-  /** Fills the export with the color; otherwise it only shows on the canvas. */
-  includeInExport: boolean;
-}
-
-export const NO_BACKGROUND: Background = { theme: null, includeInExport: true };
+export const DEFAULT_THEME = THEMES[THEMES.length - 1];
 
 const STORAGE_KEY = "photocopy-background";
-const EXPORT_KEY = "photocopy-background-export";
 
-export function savedBackground(): Background {
+export function savedBackground(): Theme {
   try {
     const id = localStorage.getItem(STORAGE_KEY);
-    return {
-      theme: THEMES.find((theme) => theme.id === id) ?? null,
-      includeInExport: localStorage.getItem(EXPORT_KEY) !== "false",
-    };
+    return THEMES.find((theme) => theme.id === id) ?? DEFAULT_THEME;
   } catch {
-    return NO_BACKGROUND;
+    return DEFAULT_THEME;
   }
 }
 
 /** Remembers the background. It only colors the canvas, never the interface. */
-export function saveBackground({ theme, includeInExport }: Background) {
+export function saveBackground(theme: Theme) {
   try {
-    localStorage.setItem(STORAGE_KEY, theme?.id ?? "transparent");
-    localStorage.setItem(EXPORT_KEY, String(includeInExport));
+    localStorage.setItem(STORAGE_KEY, theme.id);
   } catch {
     // Storage can be unavailable (private windows); the background still applies.
   }
-}
-
-/** The color to fill an export with, or null to leave it transparent. */
-export function exportFill({ theme, includeInExport }: Background) {
-  return includeInExport ? (theme?.color ?? null) : null;
 }

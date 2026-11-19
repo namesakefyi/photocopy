@@ -5,13 +5,13 @@ import { DEFAULT_CANVAS } from "./canvasFormat";
 import { type DocumentState, useHistory } from "./history";
 import { DEFAULT_SETTINGS } from "./photocopy";
 import { renderHook } from "./test/renderHook";
-import { NO_BACKGROUND } from "./themes";
+import { DEFAULT_THEME } from "./themes";
 
 const start: DocumentState = {
   layers: [],
   settings: DEFAULT_SETTINGS,
   canvasFormat: DEFAULT_CANVAS,
-  background: NO_BACKGROUND,
+  background: DEFAULT_THEME,
 };
 
 const withDarkness = (darkness: number): DocumentState => ({

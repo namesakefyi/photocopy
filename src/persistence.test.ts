@@ -59,6 +59,19 @@ describe("restoreSession", () => {
     });
   });
 
+  it("turns an old trimmed canvas into the custom size it framed", async () => {
+    const canvasFormat = {
+      ...DEFAULT_CANVAS,
+      preset: "trimmed",
+    } as unknown as CanvasFormat;
+    await storage.put(storage.STATE_STORE, "current", saved({ canvasFormat }));
+    expect((await restoreSession())?.canvasFormat).toEqual({
+      preset: "custom",
+      customWidth: 1500,
+      customHeight: 1500,
+    });
+  });
+
   it("drops photos whose files are missing or won't load, keeping the session", async () => {
     await storage.put(
       storage.STATE_STORE,

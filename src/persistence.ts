@@ -101,6 +101,13 @@ async function removeUnusedFiles(liveIds: Set<string>) {
   }
 }
 
+/** Sessions saved with the old edgeless canvas keep the area it framed. */
+function restoreCanvasFormat(format: CanvasFormat): CanvasFormat {
+  return (format.preset as string) === "trimmed"
+    ? { ...format, preset: "custom", customWidth: 1500, customHeight: 1500 }
+    : format;
+}
+
 export async function restoreSession() {
   try {
     const saved = await storage.get<SavedState>(storage.STATE_STORE, STATE_KEY);
@@ -124,7 +131,7 @@ export async function restoreSession() {
     return {
       layers: restored,
       settings: state.settings,
-      canvasFormat: state.canvasFormat,
+      canvasFormat: restoreCanvasFormat(state.canvasFormat),
     };
   } catch (cause) {
     console.warn("Couldn’t restore the last session", cause);
