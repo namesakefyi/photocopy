@@ -19,6 +19,11 @@ export const DEFAULT_THEME = THEMES[THEMES.length - 1];
 
 const STORAGE_KEY = "photocopy-background";
 
+/** The theme with this id, or the last one picked if there's none. */
+export function themeById(id: string | null | undefined): Theme {
+  return THEMES.find((theme) => theme.id === id) ?? savedBackground();
+}
+
 export function savedBackground(): Theme {
   try {
     const id = localStorage.getItem(STORAGE_KEY);

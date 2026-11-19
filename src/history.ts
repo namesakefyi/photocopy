@@ -8,7 +8,7 @@ import type { CanvasFormat, Layer } from "./types";
 const MERGE_WINDOW = 500;
 const MAX_STEPS = 50;
 
-export interface DocumentState {
+export interface ArtboardState {
   layers: Layer[];
   settings: PhotocopySettings;
   canvasFormat: CanvasFormat;
@@ -44,16 +44,16 @@ function restoreAlpha(layer: Layer, alpha: Uint8ClampedArray) {
 }
 
 /**
- * Records the document after each change and steps back and forth through
+ * Records the artboard after each change and steps back and forth through
  * those records. Recording starts once `isReady` (after the saved session
  * has loaded), so the restored session is the first step.
  */
 export function useHistory(
-  current: DocumentState,
+  current: ArtboardState,
   isReady: boolean,
-  apply: (state: DocumentState) => void,
+  apply: (state: ArtboardState) => void,
 ) {
-  const steps = useRef<DocumentState[]>([]);
+  const steps = useRef<ArtboardState[]>([]);
   const index = useRef(-1);
   const masks = useRef(new Map<string, Uint8ClampedArray>());
   const lastChange = useRef(0);

@@ -128,6 +128,16 @@ export function setMask(layer: Layer, image: CanvasImageSource | null) {
   ctx.restore();
 }
 
+/** A cutout scaled to the layer, as a mask image to store. */
+export function maskBlob(
+  layer: Pick<Layer, "width" | "height">,
+  image: CanvasImageSource,
+) {
+  const canvas = createCanvas(layer.width, layer.height);
+  context(canvas).drawImage(image, 0, 0, layer.width, layer.height);
+  return canvasToBlob(canvas);
+}
+
 export function canvasToBlob(canvas: HTMLCanvasElement, type = "image/png") {
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(

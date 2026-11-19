@@ -2,19 +2,19 @@
 import { act, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CANVAS } from "./canvasFormat";
-import { type DocumentState, useHistory } from "./history";
+import { type ArtboardState, useHistory } from "./history";
 import { DEFAULT_SETTINGS } from "./photocopy";
 import { renderHook } from "./test/renderHook";
 import { DEFAULT_THEME } from "./themes";
 
-const start: DocumentState = {
+const start: ArtboardState = {
   layers: [],
   settings: DEFAULT_SETTINGS,
   canvasFormat: DEFAULT_CANVAS,
   background: DEFAULT_THEME,
 };
 
-const withDarkness = (darkness: number): DocumentState => ({
+const withDarkness = (darkness: number): ArtboardState => ({
   ...start,
   settings: { ...DEFAULT_SETTINGS, darkness },
 });
@@ -31,20 +31,20 @@ afterEach(() => {
 
 function renderHistory(isReady = true) {
   return renderHook(() => {
-    const [document, setDocument] = useState(start);
-    const history = useHistory(document, isReady, setDocument);
-    return { document, setDocument, history };
+    const [artboard, setArtboard] = useState(start);
+    const history = useHistory(artboard, isReady, setArtboard);
+    return { artboard, setArtboard, history };
   });
 }
 
 /** Makes a change well after the last one, so it's its own undo step. */
 function change(
   result: ReturnType<typeof renderHistory>["result"],
-  state: DocumentState,
+  state: ArtboardState,
   after = 1000,
 ) {
   now += after;
-  act(() => result.current.setDocument(state));
+  act(() => result.current.setArtboard(state));
 }
 
 describe("useHistory", () => {
@@ -61,14 +61,14 @@ describe("useHistory", () => {
     expect(result.current.history.canUndo).toBe(true);
 
     act(() => result.current.history.undo());
-    expect(result.current.document.settings.darkness).toBe(10);
+    expect(result.current.artboard.settings.darkness).toBe(10);
     act(() => result.current.history.undo());
-    expect(result.current.document).toEqual(start);
+    expect(result.current.artboard).toEqual(start);
     expect(result.current.history.canUndo).toBe(false);
 
     act(() => result.current.history.redo());
     act(() => result.current.history.redo());
-    expect(result.current.document.settings.darkness).toBe(20);
+    expect(result.current.artboard.settings.darkness).toBe(20);
     expect(result.current.history.canRedo).toBe(false);
   });
 
@@ -78,14 +78,14 @@ describe("useHistory", () => {
     change(result, withDarkness(11), 100);
     change(result, withDarkness(12), 100);
     act(() => result.current.history.undo());
-    expect(result.current.document).toEqual(start);
+    expect(result.current.artboard).toEqual(start);
   });
 
   it("never merges a change into the starting point", () => {
     const { result } = renderHistory();
     change(result, withDarkness(10), 10);
     act(() => result.current.history.undo());
-    expect(result.current.document).toEqual(start);
+    expect(result.current.artboard).toEqual(start);
   });
 
   it("drops the redo steps after a new change", () => {
@@ -96,7 +96,7 @@ describe("useHistory", () => {
     change(result, withDarkness(30));
     expect(result.current.history.canRedo).toBe(false);
     act(() => result.current.history.undo());
-    expect(result.current.document.settings.darkness).toBe(10);
+    expect(result.current.artboard.settings.darkness).toBe(10);
   });
 
   it("doesn't record undoing as a change of its own", () => {
@@ -105,7 +105,7 @@ describe("useHistory", () => {
     act(() => result.current.history.undo());
     expect(result.current.history.canRedo).toBe(true);
     act(() => result.current.history.redo());
-    expect(result.current.document.settings.darkness).toBe(10);
+    expect(result.current.artboard.settings.darkness).toBe(10);
   });
 
   it("keeps the last 50 steps", () => {
@@ -119,7 +119,7 @@ describe("useHistory", () => {
       undos++;
     }
     expect(undos).toBe(49);
-    expect(result.current.document.settings.darkness).toBe(11);
+    expect(result.current.artboard.settings.darkness).toBe(11);
   });
 
   it("records nothing until the saved session has loaded", () => {

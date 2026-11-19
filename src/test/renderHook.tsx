@@ -17,6 +17,18 @@ function Harness<Result>({ useHook, onRender }: HarnessProps<Result>) {
   return null;
 }
 
+/** Renders a component, for tests that look at the DOM it makes. */
+export function render(ui: React.ReactNode) {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  act(() => root.render(ui));
+  return {
+    container,
+    rerender: (next: React.ReactNode) => act(() => root.render(next)),
+    unmount: () => act(() => root.unmount()),
+  };
+}
+
 /**
  * Renders a hook in a throwaway component (needs a DOM environment, like
  * happy-dom) and keeps `result.current` up to date with what it returns.

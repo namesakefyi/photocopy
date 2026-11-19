@@ -132,3 +132,21 @@ export function EraserIcon() {
     </svg>
   );
 }
+
+export function SidebarIcon() {
+  return (
+    <svg {...sharpIconProps}>
+      <path d="M3 5h18v14H3zM9 5v14" />
+    </svg>
+  );
+}
+
+export function MoreIcon() {
+  return (
+    <svg {...iconProps}>
+      <circle cx="5" cy="12" r="1" />
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="19" cy="12" r="1" />
+    </svg>
+  );
+}

@@ -72,4 +72,14 @@ describe("shortcutFor", () => {
     expect(shortcutFor(mod("c"))).toBeNull();
     expect(shortcutFor(mod("r"))).toBeNull();
   });
+
+  it("switches artboards with Alt and the up and down arrows", () => {
+    expect(shortcutFor(press("ArrowUp", { altKey: true }))).toBe(
+      "previousArtboard",
+    );
+    expect(shortcutFor(press("ArrowDown", { altKey: true }))).toBe(
+      "nextArtboard",
+    );
+    expect(shortcutFor(press("ArrowDown"))).toBeNull();
+  });
 });

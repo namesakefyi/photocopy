@@ -58,6 +58,7 @@ export interface LayerToolbarProps extends LayerActionsProps {
   brushSize: number;
   canUndo: boolean;
   canRedo: boolean;
+  start?: React.ReactNode;
   zoom: ValueStore<number>;
   onZoom: (action: ZoomAction) => void;
   onAbout: () => void;
@@ -77,6 +78,7 @@ export function LayerToolbar({
   hasSelection,
   canUndo,
   canRedo,
+  start,
   zoom,
   onZoom,
   onAbout,
@@ -85,6 +87,7 @@ export function LayerToolbar({
   const { onAction } = actions;
   return (
     <div className="layer-toolbar">
+      {start}
       <Button className="toolbar-button brand" onPress={onAbout}>
         Photocopy
       </Button>
@@ -146,7 +149,7 @@ function LayerActions({
           isDisabled={!canCrop}
           onPress={() => onAction("crop")}
         >
-          Crop to Fit
+          Shrink to Fit
         </Button>
       </Group>
       <Separator orientation="vertical" />

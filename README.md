@@ -10,7 +10,7 @@ A browser tool for making photocopy-style collage illustrations.
 4. Modify **Appearance** settings like **Ink** and **Grain** to taste.
 5. Press **Export** (or ⌘E / Ctrl+E), then **Download PNG**.
 
-Work is saved in the browser as you go. Nothing is uploaded anywhere.
+Work is saved in the browser as you go, and you can keep several artboards: use **Show artboards** (the sidebar button at the top left, or ⌥↑ / ⌥↓) to switch between them or start a new one. Nothing is uploaded anywhere.
 
 ## Scripts
 

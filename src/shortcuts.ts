@@ -21,6 +21,8 @@ export const SHORTCUTS = {
   zoomActual: "⇧0",
   zoomDouble: "⇧2",
   zoomFit: `${MOD}0`,
+  previousArtboard: IS_MAC ? "⌥↑" : "Alt+↑",
+  nextArtboard: IS_MAC ? "⌥↓" : "Alt+↓",
 } as const;
 
 export type ShortcutCommand =
@@ -39,13 +41,16 @@ export type ShortcutCommand =
   | "delete"
   | "restore"
   | "erase"
-  | "escape";
+  | "escape"
+  | "previousArtboard"
+  | "nextArtboard";
 
 export interface KeyPress {
   key: string;
   metaKey: boolean;
   ctrlKey: boolean;
   shiftKey: boolean;
+  altKey?: boolean;
   /** The physical key, for shortcuts whose character varies by layout. */
   code?: string;
 }
@@ -59,9 +64,14 @@ export function shortcutFor({
   metaKey,
   ctrlKey,
   shiftKey,
+  altKey = false,
   code,
 }: KeyPress): ShortcutCommand | null {
   const key = rawKey.toLowerCase();
+  if (altKey && !metaKey && !ctrlKey && !shiftKey) {
+    if (key === "arrowup") return "previousArtboard";
+    if (key === "arrowdown") return "nextArtboard";
+  }
   // ⇧0 and ⇧2 type ")" and "@" on US keyboards, other characters elsewhere.
   if (shiftKey && !metaKey && !ctrlKey) {
     if (code === "Digit0") return "zoomActual";

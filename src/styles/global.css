@@ -16,6 +16,7 @@
   /* Progress, the one color in the interface besides ink and grays. */
   --progress: #3b82f6;
   --strip-width: 260px;
+  --file-viewer-width: 132px;
   /* The toolbar above the canvas. */
   --bar-height: 44px;
   --radius: 3px;
@@ -402,7 +403,8 @@ p {
 
 /* The zoom level in the toolbar, wide enough that it doesn't jitter as it changes. */
 /* Only as wide as its items, unlike the menus with longer labels. */
-.menu-popover.zoom-popover {
+.menu-popover.zoom-popover,
+.menu-popover.file-popover {
   min-width: 0;
 }
 
@@ -902,30 +904,17 @@ p {
 /* Layer list */
 
 /* Each layer is its own rounded flat row, like the sliders. */
-.layer-list {
+/* Lists whose items can be dragged into a new order. */
+:is(.layer-list, .file-list) {
   display: flex;
   flex-direction: column;
-  gap: var(--row-gap);
+  outline: none;
 
   .react-aria-GridListItem {
     display: flex;
-    gap: 4px;
-    align-items: center;
-    height: 28px;
-    padding: 0 2px;
-    font-size: 12px;
     cursor: default;
     outline: none;
-    background: var(--gray-1);
     border-radius: var(--popover-radius);
-
-    &[data-hovered] {
-      background: var(--gray-2);
-    }
-
-    &[data-selected] {
-      background: var(--gray-3);
-    }
 
     &[data-dragging] {
       opacity: 0.4;
@@ -941,6 +930,27 @@ p {
     height: 2px;
     background: var(--ink);
     border-radius: 1px;
+  }
+}
+
+.layer-list {
+  gap: var(--row-gap);
+
+  .react-aria-GridListItem {
+    gap: 4px;
+    align-items: center;
+    height: 28px;
+    padding: 0 2px;
+    font-size: 12px;
+    background: var(--gray-1);
+
+    &[data-hovered] {
+      background: var(--gray-2);
+    }
+
+    &[data-selected] {
+      background: var(--gray-3);
+    }
   }
 }
 
@@ -1420,5 +1430,296 @@ fieldset.field {
   &[data-focus-visible] .checkbox-box {
     outline: 2px solid var(--ink);
     outline-offset: 2px;
+  }
+}
+
+/* File viewer */
+
+.file-viewer-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg);
+  border-inline-end: 1px solid var(--gray-2);
+}
+
+.file-viewer {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.file-scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  /* Thumbnails are 10px apart (2px gap plus 4px padding each side); the
+     card after them sits as far from the last one. */
+  gap: 6px;
+  min-height: 0;
+  padding: 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--gray-3) transparent;
+  scrollbar-width: thin;
+}
+
+/* Small buttons over a thumbnail's corners, hidden until needed. */
+.button.file-overlay {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--ink);
+  background: rgb(0 0 0 / 0.55);
+  opacity: 0;
+
+  &[data-hovered] {
+    background: rgb(0 0 0 / 0.75);
+  }
+
+  &[data-focus-visible] {
+    opacity: 1;
+  }
+}
+
+/* For reordering by keyboard; shown only when focused. */
+.button.file-drag {
+  inset-block-end: 8px;
+  inset-inline-start: 8px;
+  pointer-events: none;
+}
+
+.button.file-new {
+  flex-shrink: 0;
+  width: calc(100% - 8px);
+  aspect-ratio: 4 / 3;
+  margin: 0 4px;
+  color: var(--gray-5);
+  border-radius: var(--radius);
+
+  &[data-hovered] {
+    color: var(--ink);
+  }
+}
+
+.file-thumb {
+  display: block;
+  width: 100%;
+  max-height: var(--file-thumb-max, 140px);
+  object-fit: contain;
+  border-radius: var(--radius);
+
+  &.placeholder {
+    aspect-ratio: 1;
+  }
+}
+
+.file-list {
+  gap: 2px;
+
+  .react-aria-GridListItem {
+    position: relative;
+    flex-direction: column;
+    padding: 4px;
+
+    &[data-hovered] {
+      background: var(--gray-1);
+    }
+
+    &:is([data-hovered], [data-selected], [data-focus-visible]) .file-more {
+      opacity: 1;
+    }
+
+    &[data-selected] {
+      background: var(--gray-2);
+
+      .file-thumb {
+        outline: 2px solid var(--ink);
+      }
+    }
+  }
+}
+
+.button.file-more {
+  inset-block-start: 8px;
+  inset-inline-end: 8px;
+
+  &[data-pressed],
+  &[aria-expanded="true"] {
+    opacity: 1;
+  }
+
+  @media (hover: none) {
+    opacity: 1;
+  }
+}
+
+.spinner {
+  position: absolute;
+  inset-block-start: 12px;
+  inset-inline-start: 12px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--gray-3);
+  border-block-start-color: var(--progress);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgb(0 0 0 / 0.55);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* On narrow screens, the file viewer slides in from the left. */
+.drawer-overlay {
+  &[data-entering] {
+    animation: fade 0.18s ease-out;
+  }
+
+  &[data-exiting] {
+    animation: fade 0.15s ease-in reverse;
+  }
+}
+
+.drawer {
+  --file-thumb-max: 200px;
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  display: flex;
+  width: min(220px, 80vw);
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
+  background: var(--bg);
+  box-shadow: 0 0 48px rgb(0 0 0 / 0.6);
+
+  &[data-entering] {
+    animation: slide-in 0.18s ease-out;
+  }
+
+  &[data-exiting] {
+    animation: slide-in 0.15s ease-in reverse;
+  }
+}
+
+.drawer-dialog {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  outline: none;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2.4s;
+  }
+
+  .drawer-overlay[data-entering],
+  .drawer-overlay[data-exiting],
+  .drawer[data-entering],
+  .drawer[data-exiting] {
+    animation: none;
+  }
+}
+
+.confirm-window {
+  width: min(340px, 100%);
+}
+
+.confirm {
+  padding: 20px;
+  font-size: 13px;
+  outline: none;
+
+  h2 {
+    margin-block-end: 12px;
+    font-size: 15px;
+    color: var(--ink);
+  }
+
+  p {
+    color: var(--gray-5);
+  }
+}
+
+.confirm-preview {
+  display: grid;
+  grid-template: 100% / 100%;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  padding: 12px;
+  margin-block-end: 12px;
+  background: var(--canvas-bg);
+  border-radius: var(--radius);
+
+  > :is(img, span) {
+    height: 100%;
+    max-height: none;
+  }
+
+  > img {
+    width: 100%;
+  }
+
+  > span {
+    width: auto;
+  }
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-block-start: 16px;
+}
+
+/* The file viewer sits under the toolbar, left of the canvas. The
+   workspace's toolbar and canvas join the app's grid around it. */
+.app[data-file-viewer] {
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: var(--file-viewer-width) minmax(0, 1fr) var(
+      --strip-width
+    );
+
+  .workspace {
+    display: contents;
+  }
+
+  .layer-toolbar {
+    grid-row: 1;
+    grid-column: 1 / 3;
+  }
+
+  .file-viewer-panel {
+    grid-row: 2;
+    grid-column: 1;
+  }
+
+  .canvas-area {
+    grid-row: 2;
+    grid-column: 2;
+  }
+
+  .strip {
+    grid-row: 1 / 3;
+    grid-column: 3;
   }
 }

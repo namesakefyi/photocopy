@@ -126,7 +126,7 @@ export function CopyResult({
                     isDisabled={!photocopy.cropBounds}
                     onChange={(cropToFit) => changeOptions({ cropToFit })}
                   >
-                    Crop to fit
+                    Shrink to fit
                   </Checkbox>
                   <Checkbox
                     isSelected={options.transparent}
@@ -189,9 +189,7 @@ export function CopyResult({
                   </div>
                 )}
                 <div className="row">
-                  <Button onPress={onClose}>
-                    Cancel
-                  </Button>
+                  <Button onPress={onClose}>Cancel</Button>
                   {copy && !isEncoding ? (
                     <a
                       className="button primary"

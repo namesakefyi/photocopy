@@ -1,4 +1,5 @@
 import { GridList, GridListItem, useDragAndDrop } from "react-aria-components";
+import { reorder } from "../reorder";
 import type { Layer } from "../types";
 import { Button } from "./ui/Button";
 import { EyeClosedIcon, EyeIcon } from "./ui/icons";
@@ -24,12 +25,13 @@ export function LayerList({
   const { dragAndDropHooks } = useDragAndDrop({
     getItems: (keys) => [...keys].map((key) => ({ "text/plain": String(key) })),
     onReorder: ({ keys, target }) => {
-      const moving = topFirst.filter((layer) => keys.has(layer.id));
-      const rest = topFirst.filter((layer) => !keys.has(layer.id));
-      let index = rest.findIndex((layer) => layer.id === target.key);
-      if (target.dropPosition === "after") index++;
-      rest.splice(index, 0, ...moving);
-      onReorder(rest.reverse());
+      const byId = new Map(layers.map((layer) => [layer.id, layer]));
+      const order = reorder(
+        topFirst.map((layer) => layer.id),
+        keys,
+        target,
+      );
+      onReorder(order.reverse().map((id) => byId.get(id) as Layer));
     },
   });
 

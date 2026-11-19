@@ -21,7 +21,7 @@ export interface Layer {
   mask: HTMLCanvasElement;
   /** Set once Remove background has cut this photo out. */
   backgroundRemoved: boolean;
-  /** Where the source sits within the photo as loaded, after crop to fit. */
+  /** Where the source sits within the photo as loaded, after shrink to fit. */
   crop: Region | null;
   /** Source with the mask applied; what the canvas and copies draw. */
   composed: HTMLCanvasElement;
