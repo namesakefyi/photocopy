@@ -20,6 +20,7 @@ export async function renderThumbnail(
   if (preview) {
     const { image, region } = preview;
     ctx.imageSmoothingQuality = "high";
+    ctx.globalCompositeOperation = "multiply";
     ctx.drawImage(
       image,
       region.x * fit,
