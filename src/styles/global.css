@@ -699,6 +699,7 @@ p {
     background: var(--gray-2);
   }
 
+  /* biome-ignore lint/style/noDescendingSpecificity: never competes with .button.quiet[data-disabled] */
   &[data-disabled] {
     color: var(--gray-3-solid);
   }
