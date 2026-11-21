@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@4.0.1/schema.json",
+  "baseBranch": "main",
+  "changelog": [
+    "@changesets/changelog-github",
+    { "repo": "namesakefyi/photocopy" }
+  ],
+  "commit": false,
+  "format": false,
+  "privatePackages": { "tag": true, "version": true }
+}

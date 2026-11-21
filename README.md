@@ -18,6 +18,7 @@ Work is saved in the browser as you go, and you can keep several artboards: use 
 - `pnpm build`: type-check and build a static site into `dist/`
 - `pnpm test`: run the pipeline tests
 - `pnpm check`: lint and format with Biome
+- `pnpm changeset`: describe your change for the changelog
 
 ## License
 

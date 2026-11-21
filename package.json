@@ -1,9 +1,16 @@
 {
   "name": "photocopy",
+  "description": "Create photocopy-style illustrations in the browser.",
   "private": true,
   "type": "module",
   "version": "0.0.1",
+  "author": "Ky Decker",
+  "homepage": "https://photocopy.namesake.fyi",
   "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/namesakefyi/photocopy"
+  },
   "engines": {
     "node": ">=24.15.0"
   },
@@ -24,7 +31,8 @@
     "test:once": "vitest run",
     "check": "biome check",
     "check:fix": "biome check --write",
-    "types": "tsc --noEmit"
+    "types": "tsc --noEmit",
+    "release": "changeset publish"
   },
   "dependencies": {
     "@imgly/background-removal": "^1.7.0",
@@ -37,15 +45,27 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.8",
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.3",
     "@cloudflare/vite-plugin": "^1.69.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
     "fake-indexeddb": "^6.2.8",
     "happy-dom": "^21.0.4",
+    "nano-staged": "^1.0.2",
+    "simple-git-hooks": "^2.14.0",
     "typescript": "^6.0.3",
     "vite": "^8.3.8",
     "vitest": "^5.1.0",
     "wrangler": "^4.163.0"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "./node_modules/.bin/nano-staged"
+  },
+  "nano-staged": {
+    "*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,json,jsonc,css,astro}": [
+      "biome check --write"
+    ]
   }
 }
