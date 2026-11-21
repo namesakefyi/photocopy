@@ -1,9 +1,8 @@
 import Konva from "konva";
 import {
+  memo,
   useEffect,
-  useEffectEvent,
   useImperativeHandle,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -18,32 +17,22 @@ import {
   Stage,
   Transformer,
 } from "react-konva";
-import { composeLayer, nextRevision, paintMask } from "../layers";
-import type { Layer, LayerChanges, Region, Tool } from "../types";
-import {
-  clampPoint,
-  clampZoom,
-  FIT_VIEWPORT,
-  type Point,
-  screenPixelRatio,
-  type Viewport,
-  wheelZoomFactor,
-  type ZoomAction,
-  zoomAround,
-  zoomStep,
-} from "../zoom";
+import { composeLayer, nextRevision, paintMask } from "../core/layers";
+import { screenPixelRatio } from "../core/render";
+import type { Layer, LayerChanges, Region, Tool } from "../core/types";
+import type { ZoomAction } from "../core/zoom";
+import { useEditor } from "../hooks/useEditor";
+import { useViewport } from "../hooks/useViewport";
 
 // Set before any stage is created; Konva reads it for each canvas it makes.
 Konva.pixelRatio = screenPixelRatio();
 
-const PADDING = 48;
 const NUDGE = 10;
 const BIG_NUDGE = 50;
 const MASK_COLOR = "#ff2020";
 /** The surround's color, covering anything hanging off the artboard (not saved). */
 const OFF_CANVAS = "rgb(22 22 22 / 0.8)";
 
-/** The light grid that stands in for transparency, like in image editors. */
 /** White under black, so the brush outline shows on any photo. */
 function BrushOutline({
   x,
@@ -95,16 +84,8 @@ export interface CanvasProps {
   isSizingBrush: boolean;
   /** Shows the selected photo uncropped, with what its mask hides in red. */
   isMaskMode: boolean;
-  /** The photocopied region, shown over the photos. */
   preview: { image: ImageBitmap; region: Region } | null;
-  /** The background color. */
   canvasFill: string;
-  onSelect: (id: string | null) => void;
-  onChange: (id: string, changes: LayerChanges) => void;
-  onFiles: (files: File[]) => void;
-  /** Reports the zoom and the part of the artboard the canvas shows. */
-  onView: (view: { scale: number; region: Region }) => void;
-  /** For zooming from outside, like keyboard shortcuts. */
   ref?: React.Ref<CanvasHandle>;
 }
 
@@ -112,7 +93,7 @@ export interface CanvasHandle {
   zoom: (action: ZoomAction) => void;
 }
 
-export function Canvas({
+export const Canvas = memo(function Canvas({
   layers,
   artboard,
   selectedId,
@@ -122,240 +103,34 @@ export function Canvas({
   isMaskMode,
   preview,
   canvasFill,
-  onSelect,
-  onChange,
-  onFiles,
-  onView,
   ref,
 }: CanvasProps) {
-  // The canvas owns its zoom and pan, so panning re-renders only the canvas.
-  const [viewport, setViewport] = useState<Viewport>(FIT_VIEWPORT);
+  const { dispatch, addFiles, reportZoom } = useEditor();
+  const select = (id: string | null) => dispatch({ type: "select", id });
+  const updateLayer = (id: string, changes: LayerChanges) =>
+    dispatch({ type: "updateLayer", id, changes });
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const nodes = useRef(new Map<string, Konva.Group>());
-  const [size, setSize] = useState({ width: 0, height: 0 });
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const stroke = useRef<{ x: number; y: number } | null>(null);
   const frame = useRef(0);
   const [isInteracting, setIsInteracting] = useState(false);
-  // The preview from before a drag still shows the old position, so it stays
-  // hidden until a fresh one arrives.
+  // Hidden after a drag until a preview of the new position arrives.
   const [stalePreview, setStalePreview] =
     useState<CanvasProps["preview"]>(null);
-
-  useLayoutEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const observer = new ResizeObserver(([entry]) => {
-      setSize({
-        width: entry.contentRect.width,
-        height: entry.contentRect.height,
-      });
-    });
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, []);
-
-  const fitScale = Math.max(
-    0.01,
-    Math.min(
-      (size.width - PADDING * 2) / artboard.width,
-      (size.height - PADDING * 2) / artboard.height,
-    ),
-  );
-  const artboardCenter = { x: artboard.width / 2, y: artboard.height / 2 };
-
-  function resolve(view: Viewport) {
-    return {
-      scale: view.zoom ?? fitScale,
-      center: view.zoom !== null && view.center ? view.center : artboardCenter,
-    };
-  }
-
-  const { scale, center } = resolve(viewport);
-
-  /** Steps or sets the zoom, from the latest viewport, around the view's middle. */
-  function zoom(action: ZoomAction) {
-    if (action === "zoomFit") {
-      setViewport(FIT_VIEWPORT);
-      return;
+  // The canvas owns its zoom and pan, so panning re-renders only the canvas.
+  const view = useViewport(containerRef, artboard, () => {
+    for (const node of nodes.current.values()) {
+      if (node.isDragging()) node.stopDrag();
     }
-    setViewport((current) => {
-      const view = resolve(current);
-      return {
-        zoom:
-          action === "zoomActual"
-            ? 1
-            : action === "zoomDouble"
-              ? 2
-              : zoomStep(view.scale, action === "zoomIn" ? 1 : -1),
-        center: view.center,
-      };
-    });
-  }
-
-  useImperativeHandle(ref, () => ({ zoom }));
-
-  // A new canvas size starts over, fitted.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the size is the trigger
-  useEffect(() => setViewport(FIT_VIEWPORT), [artboard.width, artboard.height]);
-  const offset = {
-    x: size.width / 2 - center.x * scale,
-    y: size.height / 2 - center.y * scale,
-  };
-
-  // Panning keeps the view's middle over the artboard.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the artboard's size is the dependency, not its object identity
-  const panBounds = useMemo(
-    () => ({ x: 0, y: 0, ...artboard }),
-    [artboard.width, artboard.height],
-  );
-
-  /**
-   * Zooms by `factor` around `pointer` (relative to the canvas), then pans by
-   * `pan` screen pixels. Applied to the latest viewport, so quick events add up.
-   */
-  function moveView(pointer: Point, factor: number, pan: Point) {
-    queueView((current) => {
-      const view = resolve(current);
-      const next = clampZoom(view.scale * factor, view.scale);
-      const fromMiddle = {
-        x: pointer.x - size.width / 2,
-        y: pointer.y - size.height / 2,
-      };
-      const zoomed = zoomAround(view.center, fromMiddle, view.scale, next);
-      return {
-        zoom: next,
-        center: clampPoint(
-          { x: zoomed.x + pan.x / next, y: zoomed.y + pan.y / next },
-          panBounds,
-        ),
-      };
-    });
-  }
-
-  // Wheel, pinch and pan events can arrive several times a frame; their moves
-  // are applied together, once per frame, so the canvas renders only once.
-  const queuedMoves = useRef<((view: Viewport) => Viewport)[]>([]);
-  const viewFrame = useRef(0);
-
-  function queueView(move: (view: Viewport) => Viewport) {
-    queuedMoves.current.push(move);
-    if (viewFrame.current) return;
-    viewFrame.current = requestAnimationFrame(() => {
-      viewFrame.current = 0;
-      const moves = queuedMoves.current;
-      queuedMoves.current = [];
-      setViewport((current) =>
-        moves.reduce((view, apply) => apply(view), current),
-      );
-    });
-  }
-
-  useEffect(() => () => cancelAnimationFrame(viewFrame.current), []);
-
-  function pointerIn(event: { clientX: number; clientY: number }): Point {
-    const bounds = containerRef.current?.getBoundingClientRect();
-    return {
-      x: event.clientX - (bounds?.left ?? 0),
-      y: event.clientY - (bounds?.top ?? 0),
-    };
-  }
-
-  // Scrolling pans; pinching or ctrl-scrolling zooms around the pointer.
-  const handleWheel = useEffectEvent((event: WheelEvent) => {
-    event.preventDefault();
-    const lineHeight = event.deltaMode === 1 ? 16 : 1;
-    if (event.ctrlKey || event.metaKey) {
-      moveView(pointerIn(event), wheelZoomFactor(event.deltaY * lineHeight), {
-        x: 0,
-        y: 0,
-      });
-    } else {
-      moveView({ x: 0, y: 0 }, 1, {
-        x: event.deltaX * lineHeight,
-        y: event.deltaY * lineHeight,
-      });
-    }
+    transformerRef.current?.stopTransform();
   });
+  const { size, scale, offset } = view;
+  useImperativeHandle(ref, () => ({ zoom: view.zoom }));
 
-  // Dragging the background (not a photo) pans, with a mouse or one finger.
-  const panStart = useRef<Point | null>(null);
-  // Two fingers pinch to zoom and drag to pan, wherever they land.
-  const touches = useRef(new Map<number, Point>());
-  const pinch = useRef<{ distance: number; middle: Point } | null>(null);
-
-  function measurePinch() {
-    const [a, b] = [...touches.current.values()];
-    return {
-      distance: Math.hypot(a.x - b.x, a.y - b.y) || 1,
-      middle: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
-    };
-  }
-
-  const handleTouchDown = useEffectEvent((event: PointerEvent) => {
-    if (event.pointerType !== "touch") return;
-    touches.current.set(event.pointerId, pointerIn(event));
-    if (touches.current.size === 2) {
-      // The second finger turns any drag of a photo or the view into a pinch.
-      for (const node of nodes.current.values()) {
-        if (node.isDragging()) node.stopDrag();
-      }
-      transformerRef.current?.stopTransform();
-      panStart.current = null;
-      pinch.current = measurePinch();
-    }
-  });
-
-  const handleTouchMove = useEffectEvent((event: PointerEvent) => {
-    if (!touches.current.has(event.pointerId)) return;
-    touches.current.set(event.pointerId, pointerIn(event));
-    const previous = pinch.current;
-    if (!previous || touches.current.size !== 2) return;
-    const current = measurePinch();
-    moveView(previous.middle, current.distance / previous.distance, {
-      x: previous.middle.x - current.middle.x,
-      y: previous.middle.y - current.middle.y,
-    });
-    pinch.current = current;
-  });
-
-  const handleTouchUp = useEffectEvent((event: PointerEvent) => {
-    touches.current.delete(event.pointerId);
-    if (touches.current.size < 2) pinch.current = null;
-  });
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const options = { capture: true };
-    container.addEventListener("wheel", handleWheel, { passive: false });
-    container.addEventListener("pointerdown", handleTouchDown, options);
-    container.addEventListener("pointermove", handleTouchMove, options);
-    container.addEventListener("pointerup", handleTouchUp, options);
-    container.addEventListener("pointercancel", handleTouchUp, options);
-    return () => {
-      container.removeEventListener("wheel", handleWheel);
-      container.removeEventListener("pointerdown", handleTouchDown, options);
-      container.removeEventListener("pointermove", handleTouchMove, options);
-      container.removeEventListener("pointerup", handleTouchUp, options);
-      container.removeEventListener("pointercancel", handleTouchUp, options);
-    };
-  }, []);
-
-  const visible: Region = {
-    x: -offset.x / scale,
-    y: -offset.y / scale,
-    width: size.width / scale,
-    height: size.height / scale,
-  };
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the numbers are the dependencies, not the object
-  useEffect(
-    () => onView({ scale, region: visible }),
-    [scale, visible.x, visible.y, visible.width, visible.height, onView],
-  );
+  useEffect(() => reportZoom(scale), [scale, reportZoom]);
 
   // Mask edits redraw the same canvas object, which Konva can't see.
   useEffect(() => {
@@ -458,8 +233,8 @@ export function Canvas({
       event.target === event.target.getStage() ||
       event.target.name() === "artboard"
     ) {
-      onSelect(null);
-      if (touches.current.size < 2) panStart.current = pointerIn(event.evt);
+      select(null);
+      view.startPan(event.evt);
     }
   }
 
@@ -467,19 +242,14 @@ export function Canvas({
     const pointer = stageRef.current?.getPointerPosition();
     setCursor(brushing && pointer ? pointer : null);
     if (brushing && selected && stroke.current) paintTo(selected);
-    const start = panStart.current;
-    if (start && !pinch.current) {
-      const now = pointerIn(event.evt);
-      moveView({ x: 0, y: 0 }, 1, { x: start.x - now.x, y: start.y - now.y });
-      panStart.current = now;
-    }
+    view.panTo(event.evt);
   }
 
   function handlePointerUp() {
-    panStart.current = null;
+    view.endPan();
     if (stroke.current && selected) {
       stroke.current = null;
-      onChange(selected.id, { revision: nextRevision() });
+      updateLayer(selected.id, { revision: nextRevision() });
     }
   }
 
@@ -494,7 +264,7 @@ export function Canvas({
     };
     if (event.key in moves) {
       const [dx, dy] = moves[event.key];
-      onChange(selected.id, { x: selected.x + dx, y: selected.y + dy });
+      updateLayer(selected.id, { x: selected.x + dx, y: selected.y + dy });
     } else {
       return;
     }
@@ -517,7 +287,7 @@ export function Canvas({
             .filter((item) => item.type.startsWith("image/"))
             .map((item) => item.getFile()),
         );
-        onFiles(files);
+        addFiles(files);
       }}
     >
       <div
@@ -566,11 +336,11 @@ export function Canvas({
                   onDragStart={startInteracting}
                   onTransformStart={startInteracting}
                   onPointerDown={() => {
-                    if (!brushing) onSelect(layer.id);
+                    if (!brushing) select(layer.id);
                   }}
                   onDragEnd={(event) => {
                     stopInteracting();
-                    onChange(layer.id, {
+                    updateLayer(layer.id, {
                       x: event.target.x(),
                       y: event.target.y(),
                     });
@@ -578,7 +348,7 @@ export function Canvas({
                   onTransformEnd={(event) => {
                     stopInteracting();
                     const node = event.target;
-                    onChange(layer.id, {
+                    updateLayer(layer.id, {
                       x: node.x(),
                       y: node.y(),
                       rotation: node.rotation(),
@@ -688,4 +458,4 @@ export function Canvas({
       </div>
     </DropZone>
   );
-}
+});

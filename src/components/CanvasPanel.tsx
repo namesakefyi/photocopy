@@ -1,25 +1,25 @@
+import { memo } from "react";
 import {
   CANVAS_PRESETS,
   canvasSize,
   MAX_CANVAS_SIZE,
   MIN_CANVAS_SIZE,
-} from "../canvasFormat";
-import { THEMES, type Theme } from "../themes";
-import type { CanvasFormat, CanvasPreset } from "../types";
+} from "../core/canvasFormat";
+import { THEMES, type Theme } from "../core/themes";
+import type { CanvasFormat, CanvasPreset } from "../core/types";
+import { useEditor } from "../hooks/useEditor";
 import { CanvasShape } from "./CanvasShape";
 import { NumberField } from "./ui/NumberField";
 import { Select } from "./ui/Select";
 
 export interface CanvasPresetPickerProps {
   canvasFormat: CanvasFormat;
-  onCanvas: (changes: Partial<CanvasFormat>) => void;
 }
 
-/** A compact dropdown that sits in the Canvas heading, like the Appearance one. */
-export function CanvasPresetPicker({
+export const CanvasPresetPicker = memo(function CanvasPresetPicker({
   canvasFormat,
-  onCanvas,
 }: CanvasPresetPickerProps) {
+  const { dispatch } = useEditor();
   const options = [
     ...CANVAS_PRESETS.map((preset) => ({
       id: preset.id,
@@ -48,28 +48,27 @@ export function CanvasPresetPicker({
       items={options}
       selectedKey={canvasFormat.preset}
       onSelectionChange={(preset) =>
-        onCanvas({ preset: preset as CanvasPreset })
+        dispatch({
+          type: "changeCanvas",
+          changes: { preset: preset as CanvasPreset },
+        })
       }
       textOf={(option) => option.label}
       iconOf={(option) => option.shape}
     />
   );
-}
+});
 
 export interface CanvasPanelProps {
   canvasFormat: CanvasFormat;
-  onCanvas: (changes: Partial<CanvasFormat>) => void;
   background: Theme;
-  onBackground: (background: Theme) => void;
 }
 
-/** Canvas dimensions and background; the preset picker sits in the heading. */
-export function CanvasPanel({
+export const CanvasPanel = memo(function CanvasPanel({
   canvasFormat,
-  onCanvas,
   background,
-  onBackground,
 }: CanvasPanelProps) {
+  const { dispatch } = useEditor();
   const size = canvasSize(canvasFormat);
 
   /** Editing a preset's dimensions turns it into a custom size. */
@@ -77,7 +76,10 @@ export function CanvasPanel({
     const width = changes.width ?? size.width;
     const height = changes.height ?? size.height;
     if (Number.isNaN(width) || Number.isNaN(height)) return;
-    onCanvas({ preset: "custom", customWidth: width, customHeight: height });
+    dispatch({
+      type: "changeCanvas",
+      changes: { preset: "custom", customWidth: width, customHeight: height },
+    });
   }
 
   return (
@@ -115,7 +117,7 @@ export function CanvasPanel({
         selectedKey={background.id}
         onSelectionChange={(id) => {
           const theme = THEMES.find((option) => option.id === id);
-          if (theme) onBackground(theme);
+          if (theme) dispatch({ type: "setBackground", background: theme });
         }}
         textOf={(option) => option.name}
         iconOf={(option) => (
@@ -128,4 +130,4 @@ export function CanvasPanel({
       />
     </>
   );
-}
+});

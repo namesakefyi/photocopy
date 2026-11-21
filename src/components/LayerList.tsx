@@ -1,25 +1,22 @@
+import { memo } from "react";
 import { GridList, GridListItem, useDragAndDrop } from "react-aria-components";
-import { reorder } from "../reorder";
-import type { Layer } from "../types";
+import { reorder } from "../core/reorder";
+import type { Layer } from "../core/types";
+import { useEditor } from "../hooks/useEditor";
 import { Button } from "./ui/Button";
 import { EyeClosedIcon, EyeIcon } from "./ui/icons";
 
 export interface LayerListProps {
   layers: Layer[];
   selectedId: string | null;
-  onSelect: (id: string | null) => void;
-  onReorder: (layers: Layer[]) => void;
-  onToggleVisible: (layer: Layer) => void;
 }
 
 /** Lists layers top-first, like a stack of paper seen from above. */
-export function LayerList({
+export const LayerList = memo(function LayerList({
   layers,
   selectedId,
-  onSelect,
-  onReorder,
-  onToggleVisible,
 }: LayerListProps) {
+  const { dispatch } = useEditor();
   const topFirst = [...layers].reverse();
 
   const { dragAndDropHooks } = useDragAndDrop({
@@ -31,7 +28,10 @@ export function LayerList({
         keys,
         target,
       );
-      onReorder(order.reverse().map((id) => byId.get(id) as Layer));
+      dispatch({
+        type: "reorderLayers",
+        layers: order.reverse().map((id) => byId.get(id) as Layer),
+      });
     },
   });
 
@@ -46,7 +46,10 @@ export function LayerList({
       selectedKeys={selectedId ? [selectedId] : []}
       onSelectionChange={(keys) => {
         const [key] = keys;
-        onSelect(key === undefined ? null : String(key));
+        dispatch({
+          type: "select",
+          id: key === undefined ? null : String(key),
+        });
       }}
       dragAndDropHooks={dragAndDropHooks}
     >
@@ -71,7 +74,13 @@ export function LayerList({
             aria-label={
               layer.visible ? `Hide ${layer.name}` : `Show ${layer.name}`
             }
-            onPress={() => onToggleVisible(layer)}
+            onPress={() =>
+              dispatch({
+                type: "updateLayer",
+                id: layer.id,
+                changes: { visible: !layer.visible },
+              })
+            }
           >
             {layer.visible ? <EyeIcon /> : <EyeClosedIcon />}
           </Button>
@@ -79,4 +88,4 @@ export function LayerList({
       )}
     </GridList>
   );
-}
+});

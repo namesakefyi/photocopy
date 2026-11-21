@@ -11,10 +11,6 @@ export interface SliderProps extends AriaSliderProps<number> {
   label: string;
 }
 
-/**
- * A slider drawn as one box: the name and value sit inside it, the fill
- * shows the amount, and dragging anywhere in the box sets it.
- */
 export function Slider({ label, ...props }: SliderProps) {
   return (
     <AriaSlider {...props} className="slider">

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Dialog, Heading, Modal, ModalOverlay } from "react-aria-components";
 import {
   type Copy,
@@ -7,9 +7,9 @@ import {
   type Photocopy,
   savedExportOptions,
   saveExportOptions,
-} from "../copy";
-import { creditSource, formatCredit } from "../credits";
-import type { Credit } from "../types";
+} from "../core/copy";
+import { formatCredit } from "../core/credits";
+import type { Credit } from "../core/types";
 import { Button } from "./ui/Button";
 import { Checkbox } from "./ui/Checkbox";
 
@@ -21,7 +21,7 @@ export interface CopyResultProps {
   onClose: () => void;
 }
 
-export function CopyResult({
+export const CopyResult = memo(function CopyResult({
   photocopy,
   background,
   credits,
@@ -178,7 +178,7 @@ export function CopyResult({
                             target="_blank"
                             rel="noreferrer"
                           >
-                            {creditSource(credit.source)}
+                            {credit.source}
                           </a>
                           {!credit.attributionRequired && (
                             <span className="hint"> (credit optional)</span>
@@ -211,4 +211,4 @@ export function CopyResult({
       </Modal>
     </ModalOverlay>
   );
-}
+});

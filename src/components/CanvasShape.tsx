@@ -1,4 +1,3 @@
-/** A small outline in the canvas's aspect ratio. */
 export function CanvasShape({
   width,
   height,

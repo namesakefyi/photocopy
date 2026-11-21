@@ -29,10 +29,7 @@ export function render(ui: React.ReactNode) {
   };
 }
 
-/**
- * Renders a hook in a throwaway component (needs a DOM environment, like
- * happy-dom) and keeps `result.current` up to date with what it returns.
- */
+/** Renders a hook (needs a DOM environment) and keeps `result.current` updated. */
 export function renderHook<Result>(useHook: () => Result) {
   const result = { current: undefined as Result };
   const root = createRoot(document.createElement("div"));
