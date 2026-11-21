@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, Dialog, DialogTrigger, Popover } from "react-aria-components";
 import { createPortal } from "react-dom";
+import { MAX_BRUSH, MIN_BRUSH } from "../core/editor";
 import { Slider } from "./ui/Slider";
-
-export const MIN_BRUSH = 4;
-export const MAX_BRUSH = 300;
 
 export interface BrushSizeMenuProps {
   /** The brush's diameter in screen pixels. */

@@ -1,18 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
 import { DEFAULT_CANVAS } from "./canvasFormat";
 import { canvasToBlob, cropLayerCanvases, loadPhoto, setMask } from "./layers";
 import { DEFAULT_SETTINGS, type PhotocopySettings } from "./photocopy";
 import * as storage from "./storage";
 import { savedBackground, themeById } from "./themes";
-import {
-  type ArtboardState,
-  type CanvasFormat,
-  type Layer,
-  sameArtboardState,
-} from "./types";
+import type { ArtboardState, CanvasFormat, Layer } from "./types";
 
 const INDEX_KEY = "index";
-const SAVE_DELAY = 400;
 
 /** Pixels are stored as blobs; sizes and revisions are rebuilt on load. */
 export type SavedLayer = Omit<
@@ -354,101 +347,37 @@ function toSaved(layer: Layer): SavedLayer {
   return saved;
 }
 
-interface AutosaveOptions {
-  /** Once true, the state is what was restored, so it's already saved. */
-  isRestored: boolean;
-  /** False while another tab has the artboard open. */
-  canSave: boolean;
-  onError?: (cause: unknown) => void;
-  /** How long changes settle before saving; tests shorten it. */
-  delay?: number;
-}
-
 /**
- * Saves shortly after changes, re-encoding only changed masks. Saves run in
- * order, skipping superseded ones; `flush` saves immediately before closing.
+ * Saves `state` in order with other storage changes, re-encoding only the masks
+ * whose revision differs from `revisions`, which it updates as they're written.
  */
-export function useAutosave(
+export function saveArtboardState(
   artboardId: string,
-  state: ArtboardState,
-  { isRestored, canSave, onError, delay = SAVE_DELAY }: AutosaveOptions,
+  { layers, settings, canvasFormat, background }: ArtboardState,
+  revisions: Map<string, number>,
 ) {
-  const savedRevisions = useRef<Map<string, number> | null>(null);
-  const restoredState = useRef<ArtboardState | null>(null);
-  const pending = useRef<(() => Promise<void>) | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const lastSave = useRef<Promise<void>>(Promise.resolve());
-  const latestError = useRef(onError);
-  latestError.current = onError;
-  const { layers, settings, canvasFormat, background } = state;
-
-  // What was just restored is already saved; only later changes need saving.
-  if (isRestored && !savedRevisions.current) {
-    savedRevisions.current = new Map(
-      layers.map((layer) => [layer.id, layer.revision]),
+  return exclusive(async () => {
+    const changed = layers.filter(
+      (layer) => revisions.get(layer.id) !== layer.revision,
     );
-    restoredState.current = state;
-  }
-
-  const runPending = useCallback(() => {
-    clearTimeout(timer.current);
-    const save = pending.current;
-    pending.current = null;
-    if (save) lastSave.current = exclusive(save);
-    return lastSave.current;
-  }, []);
-
-  useEffect(() => {
-    const revisions = savedRevisions.current;
-    const restored = restoredState.current;
-    if (!revisions || !canSave) return;
-    if (restored && sameArtboardState(restored, state)) return;
-    restoredState.current = null;
-    pending.current = async () => {
-      try {
-        const changed = layers.filter(
-          (layer) => revisions.get(layer.id) !== layer.revision,
-        );
-        const masks = await Promise.all(
-          changed.map((layer) => canvasToBlob(layer.mask)),
-        );
-        await Promise.all(
-          changed.map((layer, index) =>
-            storage.put(
-              storage.BLOB_STORE,
-              blobKey(layer.id, "mask"),
-              masks[index],
-            ),
-          ),
-        );
-        for (const layer of changed) revisions.set(layer.id, layer.revision);
-        await updateArtboard(artboardId, () => ({
-          layers: layers.map(toSaved),
-          settings,
-          canvasFormat,
-          backgroundId: background.id,
-        }));
-      } catch (cause) {
-        console.warn("Couldn’t save the artboard locally", cause);
-        latestError.current?.(cause);
-      }
-    };
-    clearTimeout(timer.current);
-    timer.current = setTimeout(runPending, delay);
-  }, [
-    artboardId,
-    layers,
-    settings,
-    canvasFormat,
-    background,
-    canSave,
-    delay,
-    runPending,
-    state,
-  ]);
-
-  // Saves anything still waiting when the artboard closes.
-  useEffect(() => () => void runPending(), [runPending]);
-
-  return useMemo(() => ({ flush: runPending }), [runPending]);
+    const masks = await Promise.all(
+      changed.map((layer) => canvasToBlob(layer.mask)),
+    );
+    await Promise.all(
+      changed.map((layer, index) =>
+        storage.put(
+          storage.BLOB_STORE,
+          blobKey(layer.id, "mask"),
+          masks[index],
+        ),
+      ),
+    );
+    for (const layer of changed) revisions.set(layer.id, layer.revision);
+    await updateArtboard(artboardId, () => ({
+      layers: layers.map(toSaved),
+      settings,
+      canvasFormat,
+      backgroundId: background.id,
+    }));
+  });
 }

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { memo, useRef, useState } from "react";
 import {
   Dialog,
   Form,
@@ -20,7 +20,7 @@ import {
   searchErrorMessage,
 } from "../core/imageSearch";
 import { IMAGE_SOURCES } from "../core/sources";
-import type { Credit } from "../core/types";
+import { useEditor } from "../hooks/useEditor";
 import { Button } from "./ui/Button";
 import { XIcon } from "./ui/icons";
 import { ToolButton } from "./ui/ToolButton";
@@ -28,7 +28,6 @@ import { ToolButton } from "./ui/ToolButton";
 export interface ImageSearchProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onAdd: (file: File, credit: Credit) => Promise<void>;
 }
 
 interface TabState {
@@ -48,7 +47,11 @@ const emptyTab: TabState = {
   error: null,
 };
 
-export function ImageSearch({ isOpen, onOpenChange, onAdd }: ImageSearchProps) {
+export const ImageSearch = memo(function ImageSearch({
+  isOpen,
+  onOpenChange,
+}: ImageSearchProps) {
+  const { addFiles } = useEditor();
   const [search, setSearch] = useState("");
   // The last search submitted, which a tab runs when it's opened.
   const [submitted, setSubmitted] = useState("");
@@ -125,7 +128,7 @@ export function ImageSearch({ isOpen, onOpenChange, onAdd }: ImageSearchProps) {
     setAdding(result.id);
     setAddError(null);
     try {
-      await onAdd(await result.download(), result.credit);
+      await addFiles([await result.download()], result.credit);
       onOpenChange(false);
     } catch {
       setAddError("Couldn’t download that image. Try another.");
@@ -268,4 +271,4 @@ export function ImageSearch({ isOpen, onOpenChange, onAdd }: ImageSearchProps) {
       </Modal>
     </ModalOverlay>
   );
-}
+});

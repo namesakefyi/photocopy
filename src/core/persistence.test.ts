@@ -1,9 +1,12 @@
 // @vitest-environment happy-dom
 import "fake-indexeddb/auto";
-import { act, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { renderHook } from "../test/renderHook";
-import { clearStorage } from "../test/storage";
+import {
+  artboard,
+  clearStorage,
+  putArtboard,
+  readArtboard,
+} from "../test/storage";
 import { DEFAULT_CANVAS } from "./canvasFormat";
 import {
   applyStoredCutout,
@@ -12,9 +15,7 @@ import {
   duplicateArtboard,
   loadLibrary,
   restoreArtboard,
-  type SavedArtboard,
   type SavedLayer,
-  useAutosave,
 } from "./persistence";
 import { DEFAULT_SETTINGS } from "./photocopy";
 import * as storage from "./storage";
@@ -35,23 +36,6 @@ const savedLayer = (id: string): SavedLayer => ({
   crop: null,
 });
 
-function artboard(changes: Partial<SavedArtboard> = {}): SavedArtboard {
-  return {
-    version: 2,
-    id: "artboard-1",
-    updatedAt: 1,
-    layers: [],
-    settings: DEFAULT_SETTINGS,
-    canvasFormat: DEFAULT_CANVAS,
-    backgroundId: DEFAULT_THEME.id,
-    ...changes,
-  };
-}
-
-const putArtboard = (saved: SavedArtboard) =>
-  storage.put(storage.STATE_STORE, `doc:${saved.id}`, saved);
-const readArtboard = (id: string) =>
-  storage.get<SavedArtboard>(storage.STATE_STORE, `doc:${id}`);
 const putBlob = (key: string, text = key) =>
   storage.put(storage.BLOB_STORE, key, new Blob([text]));
 const blobKeys = async () => (await storage.keys(storage.BLOB_STORE)).sort();
@@ -247,118 +231,5 @@ describe("managing artboards", () => {
     await applyStoredCutout("gone", "one", new Blob(["cutout"]));
     expect(await blobKeys()).toEqual([]);
     expect(await readArtboard("gone")).toBeUndefined();
-  });
-});
-
-/** Short, so saves still wait for changes to settle, without slowing tests. */
-const TEST_DELAY = 5;
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-describe("useAutosave", () => {
-  beforeEach(() => putArtboard(artboard()));
-
-  function renderAutosave(
-    { isRestored = true, canSave = true } = {},
-    delay = TEST_DELAY,
-  ) {
-    return renderHook(() => {
-      const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-      const [canvasFormat, setCanvasFormat] = useState(DEFAULT_CANVAS);
-      const [lock, setCanSave] = useState(canSave);
-      const autosave = useAutosave(
-        "artboard-1",
-        { layers: [], settings, canvasFormat, background: DEFAULT_THEME },
-        { isRestored, canSave: lock, delay },
-      );
-      return { setSettings, setCanvasFormat, setCanSave, autosave };
-    });
-  }
-
-  it("saves the latest state shortly after changes", async () => {
-    const { result, unmount } = renderAutosave();
-    act(() => {
-      result.current.setSettings({ ...DEFAULT_SETTINGS, darkness: 10 });
-    });
-    act(() => {
-      result.current.setSettings({ ...DEFAULT_SETTINGS, darkness: 20 });
-      result.current.setCanvasFormat({ ...DEFAULT_CANVAS, preset: "story" });
-    });
-    await vi.waitFor(async () => {
-      const state = await readArtboard("artboard-1");
-      expect(state?.settings.darkness).toBe(20);
-      expect(state?.canvasFormat.preset).toBe("story");
-    });
-    unmount();
-  });
-
-  it("writes newer changes last, even when they come while saving", async () => {
-    const { result, unmount } = renderAutosave();
-    for (const darkness of [11, 12, 13, 14]) {
-      act(() => {
-        result.current.setSettings({ ...DEFAULT_SETTINGS, darkness });
-      });
-      // Past the delay, so each save starts while the last may still be writing.
-      await wait(TEST_DELAY + 1);
-    }
-    await vi.waitFor(async () => {
-      expect((await readArtboard("artboard-1"))?.settings.darkness).toBe(14);
-    });
-    unmount();
-  });
-
-  it("doesn't save what was just loaded", async () => {
-    const { unmount } = renderAutosave();
-    await wait(TEST_DELAY * 10);
-    expect((await readArtboard("artboard-1"))?.updatedAt).toBe(1);
-    unmount();
-  });
-
-  it("saves nothing until restored", async () => {
-    const { result, unmount } = renderAutosave({ isRestored: false });
-    act(() => {
-      result.current.setSettings({ ...DEFAULT_SETTINGS, darkness: 10 });
-    });
-    await wait(TEST_DELAY * 10);
-    expect((await readArtboard("artboard-1"))?.settings.darkness).toBe(
-      DEFAULT_SETTINGS.darkness,
-    );
-    unmount();
-  });
-
-  it("saves changes made while another tab had it, once it's let go", async () => {
-    const { result, unmount } = renderAutosave({ canSave: false });
-    act(() => {
-      result.current.setSettings({ ...DEFAULT_SETTINGS, darkness: 21 });
-    });
-    await wait(TEST_DELAY * 10);
-    expect((await readArtboard("artboard-1"))?.settings.darkness).toBe(
-      DEFAULT_SETTINGS.darkness,
-    );
-    act(() => result.current.setCanSave(true));
-    await vi.waitFor(async () => {
-      expect((await readArtboard("artboard-1"))?.settings.darkness).toBe(21);
-    });
-    unmount();
-  });
-
-  it("saves a change right away when flushed", async () => {
-    const { result, unmount } = renderAutosave({}, 60_000);
-    act(() => {
-      result.current.setSettings({ ...DEFAULT_SETTINGS, darkness: 33 });
-    });
-    await act(() => result.current.autosave.flush());
-    expect((await readArtboard("artboard-1"))?.settings.darkness).toBe(33);
-    unmount();
-  });
-
-  it("never brings back a deleted artboard", async () => {
-    const { result, unmount } = renderAutosave();
-    await deleteArtboard("artboard-1");
-    act(() => {
-      result.current.setSettings({ ...DEFAULT_SETTINGS, darkness: 10 });
-    });
-    await act(() => result.current.autosave.flush());
-    expect(await readArtboard("artboard-1")).toBeUndefined();
-    unmount();
   });
 });

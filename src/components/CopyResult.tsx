@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Dialog, Heading, Modal, ModalOverlay } from "react-aria-components";
 import {
   type Copy,
@@ -21,7 +21,7 @@ export interface CopyResultProps {
   onClose: () => void;
 }
 
-export function CopyResult({
+export const CopyResult = memo(function CopyResult({
   photocopy,
   background,
   credits,
@@ -211,4 +211,4 @@ export function CopyResult({
       </Modal>
     </ModalOverlay>
   );
-}
+});

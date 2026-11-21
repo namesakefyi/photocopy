@@ -23,7 +23,6 @@ function ToolTip({ label, shortcut }: ToolTipProps) {
   );
 }
 
-/** An icon-only button that shows its name and shortcut on hover. */
 export function ToolButton({
   label,
   shortcut,
@@ -40,7 +39,6 @@ export function ToolButton({
   );
 }
 
-/** A toggle ToolButton, also for ToggleButtonGroups; `hasText` shows its label too. */
 export function ToolToggleButton({
   label,
   shortcut,

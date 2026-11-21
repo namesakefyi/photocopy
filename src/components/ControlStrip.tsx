@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   Keyboard,
   Menu,
@@ -8,7 +9,11 @@ import {
 } from "react-aria-components";
 import type { PhotocopySettings } from "../core/photocopy";
 import { SHORTCUTS } from "../core/shortcuts";
-import type { Layer } from "../core/types";
+import type { Theme } from "../core/themes";
+import type { CanvasFormat, Layer } from "../core/types";
+import { useEditor } from "../hooks/useEditor";
+import { CanvasPanel, CanvasPresetPicker } from "./CanvasPanel";
+import { LayerList } from "./LayerList";
 import { PresetPicker } from "./PresetPicker";
 import { Button } from "./ui/Button";
 import { ChevronIcon, PlusIcon } from "./ui/icons";
@@ -16,33 +21,28 @@ import { Slider } from "./ui/Slider";
 
 export interface ControlStripProps {
   layers: Layer[];
+  selectedId: string | null;
   settings: PhotocopySettings;
+  canvasFormat: CanvasFormat;
+  background: Theme;
   isCopying: boolean;
   error: string | null;
-  layerList: React.ReactNode;
-  /** Size and background, shown below Appearance. */
-  canvasPanel: React.ReactNode;
-  /** Preset dropdown shown in the Canvas heading. */
-  canvasPresetPicker: React.ReactNode;
-  onSettings: (changes: Partial<PhotocopySettings>) => void;
-  onCopy: () => void;
-  onUpload: () => void;
-  onSearch: () => void;
+  onExport: () => void;
 }
 
-export function ControlStrip({
+export const ControlStrip = memo(function ControlStrip({
   layers,
+  selectedId,
   settings,
+  canvasFormat,
+  background,
   isCopying,
   error,
-  layerList,
-  canvasPanel,
-  canvasPresetPicker,
-  onSettings,
-  onCopy,
-  onUpload,
-  onSearch,
+  onExport,
 }: ControlStripProps) {
+  const { dispatch, openUpload, openSearch } = useEditor();
+  const onSettings = (changes: Partial<PhotocopySettings>) =>
+    dispatch({ type: "changeSettings", changes });
   return (
     <aside className="strip" aria-label="Controls">
       <div className="strip-scroll">
@@ -58,7 +58,7 @@ export function ControlStrip({
                   <Menu
                     aria-label="Add layer"
                     onAction={(key) =>
-                      key === "upload" ? onUpload() : onSearch()
+                      key === "upload" ? openUpload() : openSearch()
                     }
                   >
                     <MenuItem id="upload" textValue="Upload image…">
@@ -74,11 +74,11 @@ export function ControlStrip({
           }
         >
           {layers.length > 0 ? (
-            layerList
+            <LayerList layers={layers} selectedId={selectedId} />
           ) : (
             <div className="layers-empty">
-              <Button onPress={onUpload}>Upload image…</Button>
-              <Button onPress={onSearch}>Search for images…</Button>
+              <Button onPress={openUpload}>Upload image…</Button>
+              <Button onPress={openSearch}>Search for images…</Button>
             </div>
           )}
         </Section>
@@ -115,8 +115,11 @@ export function ControlStrip({
           />
         </Section>
 
-        <Section title="Canvas" action={canvasPresetPicker}>
-          {canvasPanel}
+        <Section
+          title="Canvas"
+          action={<CanvasPresetPicker canvasFormat={canvasFormat} />}
+        >
+          <CanvasPanel canvasFormat={canvasFormat} background={background} />
         </Section>
       </div>
 
@@ -129,7 +132,7 @@ export function ControlStrip({
         <Button
           variant="primary"
           className="copy-button"
-          onPress={onCopy}
+          onPress={onExport}
           isDisabled={isCopying || !layers.some((layer) => layer.visible)}
         >
           {isCopying ? "Exporting…" : "Export"}
@@ -140,7 +143,7 @@ export function ControlStrip({
       </div>
     </aside>
   );
-}
+});
 
 /** The trailing control sits beside the toggle, never nested inside it. */
 function Section({

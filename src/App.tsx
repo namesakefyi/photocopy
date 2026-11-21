@@ -25,20 +25,10 @@ import { readSetting, writeSetting } from "./core/settings";
 import { SHORTCUTS } from "./core/shortcuts";
 import { savedBackground } from "./core/themes";
 import type { Layer, Removal } from "./core/types";
+import { useMediaQuery } from "./hooks/useMediaQuery";
 
 const FILE_VIEWER_KEY = "photocopy-file-viewer";
 const NARROW = "(width < 760px)";
-
-function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(() => matchMedia(query).matches);
-  useEffect(() => {
-    const list = matchMedia(query);
-    const update = () => setMatches(list.matches);
-    list.addEventListener("change", update);
-    return () => list.removeEventListener("change", update);
-  }, [query]);
-  return matches;
-}
 
 /** Asks the browser not to evict saved work under storage pressure. */
 function persistStorage() {

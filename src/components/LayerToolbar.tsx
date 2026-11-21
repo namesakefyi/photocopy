@@ -1,8 +1,9 @@
+import { memo } from "react";
 import { Button, Group, Separator, Toolbar } from "react-aria-components";
 import { SHORTCUTS } from "../core/shortcuts";
 import type { Tool } from "../core/types";
 import type { ValueStore } from "../core/valueStore";
-import type { ZoomAction } from "../core/zoom";
+import { useEditor } from "../hooks/useEditor";
 import { BrushSizeMenu } from "./BrushSizeMenu";
 import {
   BringForwardIcon,
@@ -17,26 +18,9 @@ import {
 import { ToolButton, ToolToggleButton } from "./ui/ToolButton";
 import { ZoomMenu } from "./ZoomMenu";
 
-/** Everything the toolbar's buttons (and shortcuts) can ask the app to do. */
-export type LayerAction =
-  | "undo"
-  | "redo"
-  | "upload"
-  | "search"
-  | "export"
-  | "delete"
-  | "removeBackground"
-  | "crop"
-  | "flipX"
-  | "flipY"
-  | "forward"
-  | "back"
-  | "brushLarger"
-  | "brushSmaller";
-
 /** The selected layer's state, as the toolbar's buttons need it. */
-export interface LayerActionsProps {
-  hasSelection: boolean;
+interface LayerActionsProps {
+  selectedId: string;
   /** False while the background is being removed, which replaces the mask. */
   canEditMask: boolean;
   canRemoveBackground: boolean;
@@ -45,23 +29,17 @@ export interface LayerActionsProps {
   canSendBack: boolean;
   isRefining: boolean;
   tool: Tool;
-  onAction: (action: LayerAction) => void;
-  onRefining: (isRefining: boolean) => void;
-  onTool: (tool: Tool) => void;
-  onBrushSize: (size: number) => void;
-  /** Briefly outlines the brush's size over the selected photo. */
-  onShowBrushSize: () => void;
-}
-
-export interface LayerToolbarProps extends LayerActionsProps {
   /** The mask brush's diameter in pixels, shown while the mask is. */
   brushSize: number;
+}
+
+export interface LayerToolbarProps
+  extends Omit<LayerActionsProps, "selectedId"> {
+  selectedId: string | null;
   canUndo: boolean;
   canRedo: boolean;
   start?: React.ReactNode;
   zoom: ValueStore<number>;
-  onZoom: (action: ZoomAction) => void;
-  onAbout: () => void;
 }
 
 /** Lets a mouse wheel scroll the toolbar sideways when it overflows. */
@@ -70,21 +48,19 @@ function scrollSideways(event: React.WheelEvent<HTMLElement>) {
   event.currentTarget.scrollLeft += event.deltaY;
 }
 
-export function LayerToolbar({
-  hasSelection,
+export const LayerToolbar = memo(function LayerToolbar({
+  selectedId,
   canUndo,
   canRedo,
   start,
   zoom,
-  onZoom,
-  onAbout,
   ...actions
 }: LayerToolbarProps) {
-  const { onAction } = actions;
+  const editor = useEditor();
   return (
     <div className="layer-toolbar">
       {start}
-      <Button className="toolbar-button brand" onPress={onAbout}>
+      <Button className="toolbar-button brand" onPress={editor.openAbout}>
         Photocopy
       </Button>
       <Toolbar aria-label="History" className="layer-toolbar-actions">
@@ -92,7 +68,7 @@ export function LayerToolbar({
           label="Undo"
           shortcut={SHORTCUTS.undo}
           isDisabled={!canUndo}
-          onPress={() => onAction("undo")}
+          onPress={editor.undo}
         >
           <UndoIcon />
         </ToolButton>
@@ -100,22 +76,23 @@ export function LayerToolbar({
           label="Redo"
           shortcut={SHORTCUTS.redo}
           isDisabled={!canRedo}
-          onPress={() => onAction("redo")}
+          onPress={editor.redo}
         >
           <RedoIcon />
         </ToolButton>
-        <ZoomMenu zoom={zoom} onZoom={onZoom} />
+        <ZoomMenu zoom={zoom} onZoom={editor.zoom} />
       </Toolbar>
-      {hasSelection && (
+      {selectedId !== null && (
         <div className="layer-toolbar-scroll" onWheel={scrollSideways}>
-          <LayerActions {...actions} />
+          <LayerActions selectedId={selectedId} {...actions} />
         </div>
       )}
     </div>
   );
-}
+});
 
 function LayerActions({
+  selectedId,
   canEditMask,
   canRemoveBackground,
   canCrop,
@@ -124,26 +101,22 @@ function LayerActions({
   isRefining,
   tool,
   brushSize,
-  onAction,
-  onRefining,
-  onTool,
-  onBrushSize,
-  onShowBrushSize,
-}: Omit<LayerActionsProps, "hasSelection"> & { brushSize: number }) {
+}: LayerActionsProps) {
+  const { dispatch, ...editor } = useEditor();
   return (
     <Toolbar aria-label="Layer" className="layer-toolbar-actions">
       <Group aria-label="Cut out">
         <Button
           className="toolbar-button"
           isDisabled={!canRemoveBackground}
-          onPress={() => onAction("removeBackground")}
+          onPress={() => editor.removeBackground(selectedId)}
         >
           Remove Background
         </Button>
         <Button
           className="toolbar-button"
           isDisabled={!canCrop}
-          onPress={() => onAction("crop")}
+          onPress={() => editor.cropToVisible(selectedId)}
         >
           Shrink to Fit
         </Button>
@@ -156,7 +129,9 @@ function LayerActions({
           hasText
           isDisabled={!canEditMask}
           isSelected={isRefining}
-          onChange={onRefining}
+          onChange={(isRefining) =>
+            dispatch({ type: "setRefining", isRefining })
+          }
         >
           Mask
         </ToolToggleButton>
@@ -167,24 +142,35 @@ function LayerActions({
               label="Erase"
               shortcut={SHORTCUTS.restore}
               isSelected={tool === "restore"}
-              onChange={(isErasing) => onTool(isErasing ? "restore" : "erase")}
+              onChange={(isErasing) =>
+                dispatch({
+                  type: "setTool",
+                  tool: isErasing ? "restore" : "erase",
+                })
+              }
             >
               <EraserIcon />
             </ToolToggleButton>
             <BrushSizeMenu
               size={brushSize}
-              onChange={onBrushSize}
-              onShowOnCanvas={onShowBrushSize}
+              onChange={(size) => dispatch({ type: "setBrushSize", size })}
+              onShowOnCanvas={editor.showBrushSize}
             />
           </>
         )}
       </Group>
       <Separator orientation="vertical" />
       <Group aria-label="Flip">
-        <ToolButton label="Flip Horizontal" onPress={() => onAction("flipX")}>
+        <ToolButton
+          label="Flip Horizontal"
+          onPress={() => dispatch({ type: "flipSelected", axis: "flipX" })}
+        >
           <FlipHorizontalIcon />
         </ToolButton>
-        <ToolButton label="Flip Vertical" onPress={() => onAction("flipY")}>
+        <ToolButton
+          label="Flip Vertical"
+          onPress={() => dispatch({ type: "flipSelected", axis: "flipY" })}
+        >
           <FlipVerticalIcon />
         </ToolButton>
       </Group>
@@ -194,7 +180,7 @@ function LayerActions({
           label="Send Back"
           shortcut={SHORTCUTS.back}
           isDisabled={!canSendBack}
-          onPress={() => onAction("back")}
+          onPress={() => dispatch({ type: "moveSelected", direction: -1 })}
         >
           <SendBackIcon />
         </ToolButton>
@@ -202,7 +188,7 @@ function LayerActions({
           label="Bring Forward"
           shortcut={SHORTCUTS.forward}
           isDisabled={!canBringForward}
-          onPress={() => onAction("forward")}
+          onPress={() => dispatch({ type: "moveSelected", direction: 1 })}
         >
           <BringForwardIcon />
         </ToolButton>
@@ -211,7 +197,7 @@ function LayerActions({
       <ToolButton
         label="Delete Layer"
         shortcut={SHORTCUTS.delete}
-        onPress={() => onAction("delete")}
+        onPress={() => dispatch({ type: "deleteSelected" })}
       >
         <TrashIcon />
       </ToolButton>

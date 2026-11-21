@@ -1,5 +1,6 @@
 import Konva from "konva";
 import {
+  memo,
   useEffect,
   useEffectEvent,
   useImperativeHandle,
@@ -32,6 +33,7 @@ import {
   zoomAround,
   zoomStep,
 } from "../core/zoom";
+import { useEditor } from "../hooks/useEditor";
 
 // Set before any stage is created; Konva reads it for each canvas it makes.
 Konva.pixelRatio = screenPixelRatio();
@@ -97,10 +99,6 @@ export interface CanvasProps {
   /** The photocopied region, shown over the photos. */
   preview: { image: ImageBitmap; region: Region } | null;
   canvasFill: string;
-  onSelect: (id: string | null) => void;
-  onChange: (id: string, changes: LayerChanges) => void;
-  onFiles: (files: File[]) => void;
-  onZoom: (scale: number) => void;
   /** For zooming from outside, like keyboard shortcuts. */
   ref?: React.Ref<CanvasHandle>;
 }
@@ -109,7 +107,7 @@ export interface CanvasHandle {
   zoom: (action: ZoomAction) => void;
 }
 
-export function Canvas({
+export const Canvas = memo(function Canvas({
   layers,
   artboard,
   selectedId,
@@ -119,12 +117,12 @@ export function Canvas({
   isMaskMode,
   preview,
   canvasFill,
-  onSelect,
-  onChange,
-  onFiles,
-  onZoom,
   ref,
 }: CanvasProps) {
+  const { dispatch, addFiles, reportZoom } = useEditor();
+  const select = (id: string | null) => dispatch({ type: "select", id });
+  const updateLayer = (id: string, changes: LayerChanges) =>
+    dispatch({ type: "updateLayer", id, changes });
   // The canvas owns its zoom and pan, so panning re-renders only the canvas.
   const [viewport, setViewport] = useState<Viewport>(FIT_VIEWPORT);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -336,7 +334,7 @@ export function Canvas({
     };
   }, []);
 
-  useEffect(() => onZoom(scale), [scale, onZoom]);
+  useEffect(() => reportZoom(scale), [scale, reportZoom]);
 
   // Mask edits redraw the same canvas object, which Konva can't see.
   useEffect(() => {
@@ -439,7 +437,7 @@ export function Canvas({
       event.target === event.target.getStage() ||
       event.target.name() === "artboard"
     ) {
-      onSelect(null);
+      select(null);
       if (touches.current.size < 2) panStart.current = pointerIn(event.evt);
     }
   }
@@ -460,7 +458,7 @@ export function Canvas({
     panStart.current = null;
     if (stroke.current && selected) {
       stroke.current = null;
-      onChange(selected.id, { revision: nextRevision() });
+      updateLayer(selected.id, { revision: nextRevision() });
     }
   }
 
@@ -475,7 +473,7 @@ export function Canvas({
     };
     if (event.key in moves) {
       const [dx, dy] = moves[event.key];
-      onChange(selected.id, { x: selected.x + dx, y: selected.y + dy });
+      updateLayer(selected.id, { x: selected.x + dx, y: selected.y + dy });
     } else {
       return;
     }
@@ -498,7 +496,7 @@ export function Canvas({
             .filter((item) => item.type.startsWith("image/"))
             .map((item) => item.getFile()),
         );
-        onFiles(files);
+        addFiles(files);
       }}
     >
       <div
@@ -547,11 +545,11 @@ export function Canvas({
                   onDragStart={startInteracting}
                   onTransformStart={startInteracting}
                   onPointerDown={() => {
-                    if (!brushing) onSelect(layer.id);
+                    if (!brushing) select(layer.id);
                   }}
                   onDragEnd={(event) => {
                     stopInteracting();
-                    onChange(layer.id, {
+                    updateLayer(layer.id, {
                       x: event.target.x(),
                       y: event.target.y(),
                     });
@@ -559,7 +557,7 @@ export function Canvas({
                   onTransformEnd={(event) => {
                     stopInteracting();
                     const node = event.target;
-                    onChange(layer.id, {
+                    updateLayer(layer.id, {
                       x: node.x(),
                       y: node.y(),
                       rotation: node.rotation(),
@@ -669,4 +667,4 @@ export function Canvas({
       </div>
     </DropZone>
   );
-}
+});

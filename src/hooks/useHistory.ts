@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { composeLayer } from "./layers";
-import { type ArtboardState, type Layer, sameArtboardState } from "./types";
+import { composeLayer } from "../core/layers";
+import {
+  type ArtboardState,
+  type Layer,
+  sameArtboardState,
+} from "../core/types";
 
 /** Changes this close together (like one slider drag) are one undo step. */
 const MERGE_WINDOW = 500;

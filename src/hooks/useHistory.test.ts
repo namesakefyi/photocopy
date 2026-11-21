@@ -1,12 +1,12 @@
 // @vitest-environment happy-dom
 import { act, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_CANVAS } from "../core/canvasFormat";
+import { DEFAULT_SETTINGS } from "../core/photocopy";
+import { DEFAULT_THEME } from "../core/themes";
+import type { ArtboardState } from "../core/types";
 import { renderHook } from "../test/renderHook";
-import { DEFAULT_CANVAS } from "./canvasFormat";
-import { useHistory } from "./history";
-import { DEFAULT_SETTINGS } from "./photocopy";
-import { DEFAULT_THEME } from "./themes";
-import type { ArtboardState } from "./types";
+import { useHistory } from "./useHistory";
 
 const start: ArtboardState = {
   layers: [],
