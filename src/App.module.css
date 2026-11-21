@@ -1,91 +1,89 @@
-@layer components {
-  .app {
-    --strip-width: 260px;
-    --file-viewer-width: 132px;
+.app {
+  --strip-width: 260px;
+  --file-viewer-width: 132px;
 
-    display: grid;
-    grid-template-areas: "workspace strip";
-    grid-template-rows: minmax(0, 1fr);
-    grid-template-columns: minmax(0, 1fr) var(--strip-width);
-    height: 100dvh;
-    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0
-      env(safe-area-inset-left, 0px);
+  display: grid;
+  grid-template-areas: "workspace strip";
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) var(--strip-width);
+  height: 100dvh;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0
+    env(safe-area-inset-left, 0px);
 
-    @media (width < 760px) {
-      grid-template-areas:
-        "workspace"
-        "strip";
-      grid-template-rows: minmax(0, 1fr) auto;
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    &[data-file-viewer] {
-      grid-template-areas:
-        "toolbar toolbar strip"
-        "files canvas strip";
-      grid-template-rows: auto minmax(0, 1fr);
-      grid-template-columns: var(--file-viewer-width) minmax(0, 1fr) var(
-          --strip-width
-        );
-    }
+  @media (width < 760px) {
+    grid-template-areas:
+      "workspace"
+      "strip";
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .filesPanel {
-    display: flex;
-    flex-direction: column;
-    grid-area: files;
-    min-height: 0;
-    background: var(--surface);
-    border-inline-end: 1px solid var(--border);
+  &[data-file-viewer] {
+    grid-template-areas:
+      "toolbar toolbar strip"
+      "files canvas strip";
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-columns: var(--file-viewer-width) minmax(0, 1fr) var(
+        --strip-width
+      );
+  }
+}
+
+.filesPanel {
+  display: flex;
+  flex-direction: column;
+  grid-area: files;
+  min-height: 0;
+  background: var(--surface);
+  border-inline-end: 1px solid var(--border);
+}
+
+.drawerOverlay {
+  &[data-entering] {
+    animation: fade 0.18s ease-out;
   }
 
-  .drawerOverlay {
-    &[data-entering] {
-      animation: fade 0.18s ease-out;
-    }
+  &[data-exiting] {
+    animation: fade 0.15s ease-in reverse;
+  }
+}
 
-    &[data-exiting] {
-      animation: fade 0.15s ease-in reverse;
-    }
+.drawer {
+  --file-thumb-max: 200px;
+
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  display: flex;
+  width: min(220px, 80vw);
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
+  background: var(--surface);
+  box-shadow: 0 0 48px rgb(0 0 0 / 0.6);
+
+  &[data-entering] {
+    animation: slide-in 0.18s ease-out;
   }
 
+  &[data-exiting] {
+    animation: slide-in 0.15s ease-in reverse;
+  }
+}
+
+.drawerDialog {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawerOverlay,
   .drawer {
-    --file-thumb-max: 200px;
-
-    position: absolute;
-    inset-block: 0;
-    inset-inline-start: 0;
-    display: flex;
-    width: min(220px, 80vw);
-    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px)
-      env(safe-area-inset-left, 0px);
-    background: var(--surface);
-    box-shadow: 0 0 48px rgb(0 0 0 / 0.6);
-
-    &[data-entering] {
-      animation: slide-in 0.18s ease-out;
-    }
-
+    &[data-entering],
     &[data-exiting] {
-      animation: slide-in 0.15s ease-in reverse;
-    }
-  }
-
-  .drawerDialog {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    min-width: 0;
-    outline: none;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .drawerOverlay,
-    .drawer {
-      &[data-entering],
-      &[data-exiting] {
-        animation: none;
-      }
+      animation: none;
     }
   }
 }

@@ -1,155 +1,146 @@
-@layer components {
-  .fileViewer {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    min-height: 0;
+.scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  padding: 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.thumb {
+  display: block;
+  width: 100%;
+  max-height: var(--file-thumb-max, 140px);
+  object-fit: contain;
+  border-radius: var(--radius-small);
+}
+
+.placeholder {
+  aspect-ratio: 1;
+}
+
+.corner {
+  position: absolute;
+  opacity: 0;
+
+  &[data-focus-visible] {
+    opacity: 1;
+  }
+}
+
+.drag {
+  inset-block-end: 8px;
+  inset-inline-start: 8px;
+  pointer-events: none;
+}
+
+.more {
+  inset-block-start: 8px;
+  inset-inline-end: 8px;
+
+  &[data-pressed],
+  &[aria-expanded="true"] {
+    opacity: 1;
   }
 
-  .scroll {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: 6px;
-    min-height: 0;
-    padding: 10px;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-color: var(--border-strong) transparent;
-    scrollbar-width: thin;
+  @media (hover: none) {
+    opacity: 1;
+  }
+}
+
+.list {
+  gap: 2px;
+}
+
+.item {
+  position: relative;
+  flex-direction: column;
+  padding: 4px;
+
+  &:is([data-hovered], [data-selected], [data-focus-visible]) .more {
+    opacity: 1;
   }
 
-  .thumb {
-    display: block;
-    width: 100%;
-    max-height: var(--file-thumb-max, 140px);
-    object-fit: contain;
-    border-radius: var(--radius-small);
-  }
+  &[data-selected] {
+    background: transparent;
 
-  .placeholder {
-    aspect-ratio: 1;
-  }
-
-  .corner {
-    position: absolute;
-    opacity: 0;
-
-    &[data-focus-visible] {
-      opacity: 1;
+    .thumb {
+      outline: 2px solid var(--highlight);
+      outline-offset: 2px;
     }
   }
+}
 
-  .drag {
-    inset-block-end: 8px;
-    inset-inline-start: 8px;
-    pointer-events: none;
+.new {
+  flex-shrink: 0;
+  width: calc(100% - 8px);
+  aspect-ratio: 4 / 3;
+  margin: 0 4px;
+  color: var(--text-secondary);
+  border-radius: var(--radius-small);
+
+  &[data-hovered] {
+    color: var(--text);
   }
+}
 
-  .more {
-    inset-block-start: 8px;
-    inset-inline-end: 8px;
+.spinner {
+  position: absolute;
+  inset-block-start: 12px;
+  inset-inline-start: 12px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border-strong);
+  border-block-start-color: var(--progress);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgb(0 0 0 / 0.55);
+  animation: spin 0.8s linear infinite;
 
-    &[data-pressed],
-    &[aria-expanded="true"] {
-      opacity: 1;
-    }
-
-    @media (hover: none) {
-      opacity: 1;
-    }
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 2.4s;
   }
+}
 
-  .list {
-    gap: 2px;
-  }
+.confirmWindow {
+  width: min(340px, 100%);
+}
 
-  .item {
-    position: relative;
-    flex-direction: column;
-    padding: 4px;
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  font-size: 13px;
 
-    &:is([data-hovered], [data-selected], [data-focus-visible]) .more {
-      opacity: 1;
-    }
-
-    &[data-selected] {
-      background: transparent;
-
-      .thumb {
-        outline: 2px solid var(--highlight);
-        outline-offset: 2px;
-      }
-    }
-  }
-
-  .new {
-    flex-shrink: 0;
-    width: calc(100% - 8px);
-    aspect-ratio: 4 / 3;
-    margin: 0 4px;
+  p {
     color: var(--text-secondary);
-    border-radius: var(--radius-small);
+  }
+}
 
-    &[data-hovered] {
-      color: var(--text);
-    }
+.confirmPreview {
+  display: grid;
+  grid-template: 100% / 100%;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  padding: 12px;
+  background: var(--surface-inset);
+  border-radius: var(--radius-small);
+
+  > :is(img, span) {
+    height: 100%;
+    max-height: none;
   }
 
-  .spinner {
-    position: absolute;
-    inset-block-start: 12px;
-    inset-inline-start: 12px;
-    width: 12px;
-    height: 12px;
-    border: 2px solid var(--border-strong);
-    border-block-start-color: var(--progress);
-    border-radius: 50%;
-    box-shadow: 0 0 0 3px rgb(0 0 0 / 0.55);
-    animation: spin 0.8s linear infinite;
-
-    @media (prefers-reduced-motion: reduce) {
-      animation-duration: 2.4s;
-    }
+  > img {
+    width: 100%;
   }
 
-  .confirmWindow {
-    width: min(340px, 100%);
-  }
-
-  .confirm {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 20px;
-    font-size: 13px;
-
-    p {
-      color: var(--text-secondary);
-    }
-  }
-
-  .confirmPreview {
-    display: grid;
-    grid-template: 100% / 100%;
-    place-items: center;
-    aspect-ratio: 4 / 3;
-    padding: 12px;
-    background: var(--surface-inset);
-    border-radius: var(--radius-small);
-
-    > :is(img, span) {
-      height: 100%;
-      max-height: none;
-    }
-
-    > img {
-      width: 100%;
-    }
-
-    > span {
-      width: auto;
-    }
+  > span {
+    width: auto;
   }
 }
 

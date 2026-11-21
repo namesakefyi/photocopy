@@ -30,4 +30,9 @@
       background: var(--fill-subtle);
     }
   }
+
+  .search .input {
+    height: 32px;
+    font-size: inherit;
+  }
 }

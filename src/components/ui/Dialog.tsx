@@ -11,13 +11,10 @@ import styles from "./Dialog.module.css";
 export interface DialogProps extends Omit<AriaDialogProps, "className"> {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  /** Sizes the window. */
   className?: string;
-  /** Lays out the window's content. */
   contentClassName?: string;
 }
 
-/** A centered, dismissable window over the app. */
 export function Dialog({
   isOpen,
   onOpenChange,
@@ -50,7 +47,6 @@ export function DialogHeading({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** The dialog's buttons, at its end. */
 export function DialogActions({ children }: { children: React.ReactNode }) {
   return <div className={styles.actions}>{children}</div>;
 }

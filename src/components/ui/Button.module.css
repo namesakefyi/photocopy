@@ -33,7 +33,9 @@
     }
   }
 
-  .subtle {
+  .quiet,
+  .toolbar,
+  .icon {
     color: var(--text-secondary);
     background: transparent;
 
@@ -51,7 +53,8 @@
     }
   }
 
-  .default {
+  .default,
+  .primary {
     min-height: 32px;
     padding: 0 12px;
   }
@@ -76,10 +79,10 @@
     }
   }
 
-  .toolbar {
+  .toolbar,
+  .icon {
     height: 28px;
     padding: 0 10px;
-    color: var(--text-secondary);
 
     &[data-selected] {
       color: var(--text);
@@ -124,6 +127,10 @@
     &[data-pressed] {
       background: rgb(0 0 0 / 0.75);
     }
+  }
+
+  .dragHandle {
+    letter-spacing: -0.2em;
   }
 
   .chevron {

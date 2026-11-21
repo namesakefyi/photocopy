@@ -1,4 +1,4 @@
-@layer reset, base, ui, components;
+@layer reset, base, ui;
 
 @layer reset {
   *,

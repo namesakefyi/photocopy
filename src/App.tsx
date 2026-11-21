@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Dialog, Modal, ModalOverlay } from "react-aria-components";
+import {
+  Dialog,
+  Modal,
+  ModalOverlay,
+  VisuallyHidden,
+} from "react-aria-components";
 import styles from "./App.module.css";
 import {
   ArtboardEditor,
@@ -52,7 +57,7 @@ export function App() {
 
   return (
     <div className={styles.app} data-file-viewer={showsFileViewer || undefined}>
-      <h1 className="visually-hidden">Photocopy</h1>
+      <VisuallyHidden elementType="h1">Photocopy</VisuallyHidden>
       {showsFileViewer && (
         <nav className={styles.filesPanel} aria-label="Artboards">
           {fileViewer}

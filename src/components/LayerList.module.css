@@ -1,29 +1,27 @@
-@layer components {
-  .layerList {
-    gap: var(--row-gap);
+.layerList {
+  gap: var(--row-gap);
+}
+
+.item {
+  gap: 4px;
+  align-items: center;
+  height: 28px;
+  padding: 0 2px;
+  font-size: 12px;
+
+  &:not([data-hovered], [data-selected]) {
+    background: var(--fill-subtle);
   }
+}
 
-  .item {
-    gap: 4px;
-    align-items: center;
-    height: 28px;
-    padding: 0 2px;
-    font-size: 12px;
+.name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
-    &:not([data-hovered], [data-selected]) {
-      background: var(--fill-subtle);
-    }
-  }
-
-  .name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-
-    &[data-hidden] {
-      text-decoration: line-through;
-      opacity: 0.6;
-    }
+  &[data-hidden] {
+    text-decoration: line-through;
+    opacity: 0.6;
   }
 }

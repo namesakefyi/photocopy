@@ -76,88 +76,83 @@ export function FileViewer({
 
   return (
     // The editor leaves keys pressed here alone.
-    <div className={styles.fileViewer} data-own-keys>
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: keys bubble up from the list's rows */}
-      <div
-        className={styles.scroll}
-        onKeyDown={(event) => {
-          if (event.key !== "Backspace" && event.key !== "Delete") return;
-          const row = (event.target as HTMLElement).closest("[data-key]");
-          // Only from the row itself, not its More button.
-          if (!row || row !== event.target) return;
-          const artboard = artboards.find(
-            (other) => other.id === row.getAttribute("data-key"),
-          );
-          if (artboard) setDeleting(artboard);
+    // biome-ignore lint/a11y/noStaticElementInteractions: keys bubble up from the list's rows
+    <div
+      className={styles.scroll}
+      data-own-keys
+      onKeyDown={(event) => {
+        if (event.key !== "Backspace" && event.key !== "Delete") return;
+        const row = (event.target as HTMLElement).closest("[data-key]");
+        // Only from the row itself, not its More button.
+        if (!row || row !== event.target) return;
+        const artboard = artboards.find(
+          (other) => other.id === row.getAttribute("data-key"),
+        );
+        if (artboard) setDeleting(artboard);
+      }}
+    >
+      <GridList
+        aria-label="Artboards"
+        className={styles.list}
+        items={artboards}
+        selectionMode="single"
+        disallowEmptySelection
+        selectedKeys={[activeId]}
+        onSelectionChange={(keys) => {
+          const [key] = keys;
+          if (key !== undefined) onOpen(String(key));
         }}
+        dragAndDropHooks={dragAndDropHooks}
       >
-        <GridList
-          aria-label="Artboards"
-          className={styles.list}
-          items={artboards}
-          selectionMode="single"
-          disallowEmptySelection
-          selectedKeys={[activeId]}
-          onSelectionChange={(keys) => {
-            const [key] = keys;
-            if (key !== undefined) onOpen(String(key));
-          }}
-          dragAndDropHooks={dragAndDropHooks}
-        >
-          {(artboard) => {
-            const label = labels.get(artboard.id);
-            return (
-              <GridListItem
-                className={styles.item}
-                id={artboard.id}
-                textValue={label}
-              >
-                <Thumbnail artboard={artboard} />
-                <DragHandle
-                  variant="overlay"
-                  className={cx(styles.corner, styles.drag)}
-                  aria-label={`Reorder ${label}`}
+        {(artboard) => {
+          const label = labels.get(artboard.id);
+          return (
+            <GridListItem
+              className={styles.item}
+              id={artboard.id}
+              textValue={label}
+            >
+              <Thumbnail artboard={artboard} />
+              <DragHandle
+                variant="overlay"
+                className={cx(styles.corner, styles.drag)}
+                aria-label={`Reorder ${label}`}
+              />
+              {busyIds.has(artboard.id) && (
+                <span
+                  className={styles.spinner}
+                  role="img"
+                  aria-label="Removing background"
                 />
-                {busyIds.has(artboard.id) && (
-                  <span
-                    className={styles.spinner}
-                    role="img"
-                    aria-label="Removing background"
-                  />
-                )}
-                <MenuTrigger>
-                  <Button
-                    variant="overlay"
-                    className={cx(styles.corner, styles.more)}
-                    aria-label={`More for ${label}`}
+              )}
+              <MenuTrigger>
+                <Button
+                  variant="overlay"
+                  className={cx(styles.corner, styles.more)}
+                  aria-label={`More for ${label}`}
+                >
+                  <MoreIcon />
+                </Button>
+                <Popover placement="bottom start">
+                  <Menu
+                    aria-label={label}
+                    onAction={(action) => {
+                      if (action === "duplicate") onDuplicate(artboard.id);
+                      if (action === "delete") setDeleting(artboard);
+                    }}
                   >
-                    <MoreIcon />
-                  </Button>
-                  <Popover placement="bottom start">
-                    <Menu
-                      aria-label={label}
-                      onAction={(action) => {
-                        if (action === "duplicate") onDuplicate(artboard.id);
-                        if (action === "delete") setDeleting(artboard);
-                      }}
-                    >
-                      <MenuItem id="duplicate">Duplicate</MenuItem>
-                      <MenuItem id="delete">Delete…</MenuItem>
-                    </Menu>
-                  </Popover>
-                </MenuTrigger>
-              </GridListItem>
-            );
-          }}
-        </GridList>
-        <Button
-          className={styles.new}
-          aria-label="New artboard"
-          onPress={onNew}
-        >
-          <PlusIcon />
-        </Button>
-      </div>
+                    <MenuItem id="duplicate">Duplicate</MenuItem>
+                    <MenuItem id="delete">Delete…</MenuItem>
+                  </Menu>
+                </Popover>
+              </MenuTrigger>
+            </GridListItem>
+          );
+        }}
+      </GridList>
+      <Button className={styles.new} aria-label="New artboard" onPress={onNew}>
+        <PlusIcon />
+      </Button>
       <DeleteDialog
         artboard={deleting}
         onClose={() => setDeleting(null)}

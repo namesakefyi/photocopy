@@ -1,13 +1,11 @@
 import {
   Select as AriaSelect,
-  Button,
   Label,
   ListBox,
   ListBoxItem,
   SelectValue,
 } from "react-aria-components";
-import { Chevron } from "./Button";
-import buttonStyles from "./Button.module.css";
+import { Button, Chevron } from "./Button";
 import { cx } from "./cx";
 import fieldStyles from "./field.module.css";
 import { Popover } from "./Popover";
@@ -48,16 +46,8 @@ export function Select<Item extends { id: string }>({
     >
       {!isCompact && <Label className={fieldStyles.label}>{label}</Label>}
       <Button
-        className={
-          isCompact
-            ? cx(
-                buttonStyles.base,
-                buttonStyles.subtle,
-                styles.trigger,
-                styles.compact,
-              )
-            : cx(buttonStyles.base, styles.trigger, styles.field)
-        }
+        variant={isCompact ? "quiet" : "default"}
+        className={cx(styles.trigger, !isCompact && styles.field)}
       >
         {isCompact ? (
           <SelectValue>{({ selectedText }) => selectedText}</SelectValue>

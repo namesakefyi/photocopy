@@ -1,5 +1,3 @@
-@layer components {
-  .trigger {
-    min-width: 64px;
-  }
+.trigger {
+  min-width: 64px;
 }
