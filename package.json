@@ -3,7 +3,7 @@
   "description": "Create photocopy-style illustrations in the browser.",
   "private": true,
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "Ky Decker",
   "homepage": "https://photocopy.namesake.fyi",
   "license": "AGPL-3.0-only",
