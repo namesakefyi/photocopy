@@ -1,0 +1,38 @@
+@layer components {
+  .layerList {
+    gap: var(--row-gap);
+  }
+
+  .item {
+    gap: 4px;
+    align-items: center;
+    height: 28px;
+    padding: 0 2px;
+    font-size: 12px;
+    background: var(--fill-subtle);
+
+    &[data-hovered] {
+      background: var(--fill);
+    }
+
+    &[data-selected] {
+      background: var(--fill-strong);
+    }
+  }
+
+  .dragHandle {
+    letter-spacing: -0.2em;
+  }
+
+  .name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &[data-hidden] {
+      text-decoration: line-through;
+      opacity: 0.6;
+    }
+  }
+}

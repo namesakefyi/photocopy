@@ -1,0 +1,23 @@
+@layer ui {
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  fieldset.field {
+    min-inline-size: 0;
+    padding: 0;
+    border: none;
+
+    > legend {
+      padding: 0;
+      margin-block-end: 6px;
+    }
+  }
+
+  .label {
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+}

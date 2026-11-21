@@ -6,6 +6,7 @@ import {
   SliderThumb,
   SliderTrack,
 } from "react-aria-components";
+import styles from "./Slider.module.css";
 
 export interface SliderProps extends AriaSliderProps<number> {
   label: string;
@@ -13,17 +14,17 @@ export interface SliderProps extends AriaSliderProps<number> {
 
 export function Slider({ label, ...props }: SliderProps) {
   return (
-    <AriaSlider {...props} className="slider">
-      <SliderTrack>
+    <AriaSlider {...props} className={styles.slider}>
+      <SliderTrack className={styles.track}>
         {({ state }) => (
           <>
             <div
-              className="fill"
+              className={styles.fill}
               style={{ width: `${state.getThumbPercent(0) * 100}%` }}
             />
-            <Label>{label}</Label>
-            <SliderOutput />
-            <SliderThumb />
+            <Label className={styles.label}>{label}</Label>
+            <SliderOutput className={styles.output} />
+            <SliderThumb className={styles.thumb} />
           </>
         )}
       </SliderTrack>

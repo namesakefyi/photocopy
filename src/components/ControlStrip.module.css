@@ -1,0 +1,124 @@
+@layer components {
+  .strip {
+    display: flex;
+    flex-direction: column;
+    grid-area: strip;
+    min-height: 0;
+    background: var(--surface);
+    border-inline-start: 1px solid var(--border);
+
+    @media (width < 760px) {
+      height: 45dvh;
+      border-block-start: 1px solid var(--border);
+      border-inline-start: none;
+    }
+  }
+
+  .scroll {
+    position: relative;
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .chevron {
+    transition: rotate 120ms;
+  }
+
+  .section {
+    --heading-inset: calc((var(--bar-height) - 1px - 24px) / 2);
+    position: relative;
+    padding: var(--heading-inset) 16px 16px;
+    border-block-end: 1px solid var(--border);
+
+    &:last-child {
+      border-block-end: none;
+    }
+
+    &:not([open]),
+    &:has(> .body:empty) {
+      padding-block-end: var(--heading-inset);
+    }
+
+    &:not([open]) .chevron {
+      rotate: -90deg;
+    }
+  }
+
+  .heading {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    justify-content: flex-start;
+    width: fit-content;
+    height: 24px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    list-style: none;
+    border-radius: var(--radius);
+    transition: color 120ms;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    @media (hover: hover) {
+      &:hover {
+        color: var(--text);
+      }
+    }
+  }
+
+  .title {
+    color: inherit;
+  }
+
+  .action {
+    position: absolute;
+    inset-block-start: var(--heading-inset);
+    inset-inline-end: 16px;
+    display: flex;
+    align-items: center;
+    height: 24px;
+  }
+
+  .body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    margin-block-start: var(--gap);
+
+    &:empty {
+      display: none;
+    }
+  }
+
+  .layersEmpty {
+    display: flex;
+    flex-direction: column;
+    gap: var(--row-gap);
+  }
+
+  .footer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    padding: 16px;
+    padding-block-end: calc(16px + env(safe-area-inset-bottom, 0px));
+    border-block-start: 1px solid var(--border);
+  }
+
+  .exportButton {
+    gap: 10px;
+    min-height: 48px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .shortcut {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 400;
+    opacity: 0.55;
+  }
+}

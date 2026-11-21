@@ -1,3 +1,5 @@
+import styles from "./CanvasShape.module.css";
+
 export function CanvasShape({
   width,
   height,
@@ -10,12 +12,12 @@ export function CanvasShape({
   const fit = size / Math.max(width, height);
   return (
     <span
-      className="shape-box"
+      className={styles.box}
       style={{ width: size, height: size }}
       aria-hidden="true"
     >
       <span
-        className="shape"
+        className={styles.shape}
         style={{ width: width * fit, height: height * fit }}
       />
     </span>

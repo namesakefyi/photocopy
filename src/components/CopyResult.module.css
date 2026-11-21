@@ -1,0 +1,118 @@
+@layer components {
+  .copyResult {
+    --result-size: min(560px, 60dvh);
+    --details-width: 292px;
+
+    display: grid;
+    grid-template-columns: calc(var(--result-size) + 32px) var(--details-width);
+    width: calc(var(--result-size) + 32px + var(--details-width));
+    max-width: 100%;
+    outline: none;
+
+    @media (width < 760px) {
+      grid-template-columns: minmax(0, 1fr);
+      width: calc(var(--result-size) + 32px);
+    }
+  }
+
+  .preview {
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: var(--surface-inset);
+  }
+
+  .result {
+    display: grid;
+    grid-template: 100% / 100%;
+    place-items: center;
+    width: 100%;
+    aspect-ratio: 1;
+    transition: opacity 0.15s;
+
+    &[data-stale] {
+      opacity: 0.5;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+      background-color: #fff;
+      background-image: conic-gradient(
+        #e8e8e8 25%,
+        transparent 0 50%,
+        #e8e8e8 0 75%,
+        transparent 0
+      );
+      background-size: 16px 16px;
+    }
+  }
+
+  .details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    min-width: 0;
+    padding: 16px;
+  }
+
+  .heading {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .stats {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+  }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .credits {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    ul {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 0;
+      font-size: 12px;
+      color: var(--text-secondary);
+      list-style: none;
+    }
+
+    a {
+      color: inherit;
+    }
+  }
+
+  .creditsHeading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 24px;
+  }
+
+  .copyCredits {
+    font-size: 12px;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-block-start: auto;
+  }
+}

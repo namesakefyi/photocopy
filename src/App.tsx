@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog, Modal, ModalOverlay } from "react-aria-components";
+import styles from "./App.module.css";
 import {
   ArtboardEditor,
   type ArtboardEditorHandle,
 } from "./components/ArtboardEditor";
 import { FileViewer } from "./components/FileViewer";
+import { cx } from "./components/ui/cx";
 import { SidebarIcon } from "./components/ui/icons";
+import modalStyles from "./components/ui/modal.module.css";
 import { ToolToggleButton } from "./components/ui/ToolButton";
 import { readSetting, writeSetting } from "./core/settings";
 import { SHORTCUTS } from "./core/shortcuts";
@@ -31,7 +34,7 @@ export function App() {
     writeSetting(FILE_VIEWER_KEY, isFileViewerOpen ? "open" : "closed");
   }, [isFileViewerOpen]);
 
-  if (!artboards) return <div className="app" />;
+  if (!artboards) return <div className={styles.app} />;
 
   const fileViewer = (
     <FileViewer
@@ -48,10 +51,10 @@ export function App() {
   const showsFileViewer = !isNarrow && isFileViewerOpen;
 
   return (
-    <div className="app" data-file-viewer={showsFileViewer || undefined}>
+    <div className={styles.app} data-file-viewer={showsFileViewer || undefined}>
       <h1 className="visually-hidden">Photocopy</h1>
       {showsFileViewer && (
-        <nav className="file-viewer-panel" aria-label="Artboards">
+        <nav className={styles.filesPanel} aria-label="Artboards">
           {fileViewer}
         </nav>
       )}
@@ -82,13 +85,13 @@ export function App() {
       />
       {isNarrow && (
         <ModalOverlay
-          className="modal-overlay drawer-overlay"
+          className={cx(modalStyles.overlay, styles.drawerOverlay)}
           isDismissable
           isOpen={isDrawerOpen}
           onOpenChange={setIsDrawerOpen}
         >
-          <Modal className="drawer">
-            <Dialog aria-label="Artboards" className="drawer-dialog">
+          <Modal className={styles.drawer}>
+            <Dialog aria-label="Artboards" className={styles.drawerDialog}>
               {fileViewer}
             </Dialog>
           </Modal>

@@ -1,0 +1,43 @@
+@layer components {
+  .window {
+    width: 280px;
+    background: var(--surface-raised);
+    border-radius: 12px;
+    box-shadow: 0 16px 48px rgb(0 0 0 / 0.6);
+  }
+
+  .about {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    padding: 24px;
+    font-size: 12px;
+    text-align: center;
+    outline: none;
+
+    h2 {
+      font-size: 15px;
+      color: var(--text);
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    p {
+      max-width: 30ch;
+      color: var(--text-secondary);
+    }
+
+    a {
+      color: var(--text);
+    }
+  }
+
+  .version {
+    margin-block-end: 8px;
+  }
+
+  .credit {
+    margin-block-start: 8px;
+  }
+}

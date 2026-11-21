@@ -1,0 +1,139 @@
+@layer components {
+  .modal {
+    width: min(760px, 100%);
+  }
+
+  .imageSearch {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    padding: 16px;
+    outline: none;
+  }
+
+  .header {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .close {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+  }
+
+  .form {
+    display: flex;
+    flex: 1;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .searchField {
+    flex: 1;
+  }
+
+  .input {
+    height: 32px;
+    font-size: inherit;
+  }
+
+  .tabs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    min-width: 0;
+  }
+
+  .tabList {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tab {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    cursor: pointer;
+    outline: none;
+    border-radius: var(--radius);
+
+    &[data-hovered] {
+      color: var(--text);
+      background: var(--fill-subtle);
+    }
+
+    &[data-selected] {
+      color: var(--text);
+      background: var(--fill);
+    }
+
+    &[data-focus-visible] {
+      outline: 2px solid var(--highlight);
+      outline-offset: -2px;
+    }
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    outline: none;
+  }
+
+  .results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+    min-height: 0;
+    max-height: 55dvh;
+    overflow-y: auto;
+
+    &[data-empty] {
+      display: block;
+    }
+  }
+
+  .thumb {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    background: var(--fill-subtle);
+    border-radius: var(--radius);
+  }
+
+  .result {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: default;
+    outline: none;
+
+    &[data-hovered] .thumb {
+      opacity: 0.8;
+    }
+
+    &[data-focus-visible] {
+      outline: 2px solid var(--highlight);
+      outline-offset: 2px;
+    }
+
+    &[data-disabled] {
+      opacity: 0.5;
+    }
+  }
+
+  .license {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+}

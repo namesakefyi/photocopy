@@ -54,6 +54,11 @@
       }
     }
   },
+  "css": {
+    "parser": {
+      "cssModules": true
+    }
+  },
   "markdown": {
     "parser": {
       "frontmatter": true

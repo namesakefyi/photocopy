@@ -3,8 +3,11 @@ import { GridList, GridListItem, useDragAndDrop } from "react-aria-components";
 import { reorder } from "../core/reorder";
 import type { Layer } from "../core/types";
 import { useEditor } from "../hooks/useEditor";
+import styles from "./LayerList.module.css";
 import { Button } from "./ui/Button";
+import { cx } from "./ui/cx";
 import { EyeClosedIcon, EyeIcon } from "./ui/icons";
+import listStyles from "./ui/list.module.css";
 
 export interface LayerListProps {
   layers: Layer[];
@@ -40,7 +43,7 @@ export const LayerList = memo(function LayerList({
   return (
     <GridList
       aria-label="Layers"
-      className="layer-list"
+      className={cx(listStyles.list, styles.layerList)}
       items={topFirst}
       selectionMode="single"
       selectedKeys={selectedId ? [selectedId] : []}
@@ -54,17 +57,21 @@ export const LayerList = memo(function LayerList({
       dragAndDropHooks={dragAndDropHooks}
     >
       {(layer) => (
-        <GridListItem id={layer.id} textValue={layer.name}>
+        <GridListItem
+          className={cx(listStyles.item, styles.item)}
+          id={layer.id}
+          textValue={layer.name}
+        >
           <Button
             slot="drag"
             variant="quiet"
-            className="drag-handle"
+            className={styles.dragHandle}
             aria-label="Reorder"
           >
             ⋮⋮
           </Button>
           <span
-            className="layer-name"
+            className={styles.name}
             data-hidden={!layer.visible || undefined}
           >
             {layer.name}

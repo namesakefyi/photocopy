@@ -8,7 +8,9 @@ import {
 import { THEMES, type Theme } from "../core/themes";
 import type { CanvasFormat, CanvasPreset } from "../core/types";
 import { useEditor } from "../hooks/useEditor";
+import styles from "./CanvasPanel.module.css";
 import { CanvasShape } from "./CanvasShape";
+import fieldStyles from "./ui/field.module.css";
 import { NumberField } from "./ui/NumberField";
 import { Select } from "./ui/Select";
 
@@ -84,9 +86,9 @@ export const CanvasPanel = memo(function CanvasPanel({
 
   return (
     <>
-      <fieldset className="field">
-        <legend className="field-label">Size</legend>
-        <div className="canvas-size">
+      <fieldset className={fieldStyles.field}>
+        <legend className={fieldStyles.label}>Size</legend>
+        <div className={styles.size}>
           <NumberField
             aria-label="Width (px)"
             prefix="W"
@@ -96,7 +98,7 @@ export const CanvasPanel = memo(function CanvasPanel({
             value={size.width}
             onChange={(width) => changeSize({ width })}
           />
-          <span className="canvas-size-times" aria-hidden="true">
+          <span className={styles.times} aria-hidden="true">
             ×
           </span>
           <NumberField
@@ -122,7 +124,7 @@ export const CanvasPanel = memo(function CanvasPanel({
         textOf={(option) => option.name}
         iconOf={(option) => (
           <span
-            className="menu-swatch"
+            className={styles.swatch}
             style={{ background: option.color }}
             aria-hidden="true"
           />

@@ -21,8 +21,13 @@ import {
 } from "../core/imageSearch";
 import { IMAGE_SOURCES } from "../core/sources";
 import { useEditor } from "../hooks/useEditor";
+import styles from "./ImageSearch.module.css";
 import { Button } from "./ui/Button";
+import { cx } from "./ui/cx";
 import { XIcon } from "./ui/icons";
+import inputStyles from "./ui/input.module.css";
+import messageStyles from "./ui/message.module.css";
+import modalStyles from "./ui/modal.module.css";
 import { ToolButton } from "./ui/ToolButton";
 
 export interface ImageSearchProps {
@@ -144,16 +149,16 @@ export const ImageSearch = memo(function ImageSearch({
 
   return (
     <ModalOverlay
-      className="modal-overlay"
+      className={modalStyles.overlay}
       isDismissable
       isOpen={isOpen}
       onOpenChange={onOpenChange}
     >
-      <Modal className="modal image-search-modal">
-        <Dialog className="image-search" aria-label="Search images">
-          <div className="image-search-header">
+      <Modal className={cx(modalStyles.modal, styles.modal)}>
+        <Dialog className={styles.imageSearch} aria-label="Search images">
+          <div className={styles.header}>
             <Form
-              className="image-search-form"
+              className={styles.form}
               onSubmit={(event) => {
                 event.preventDefault();
                 const trimmed = search.trim();
@@ -164,12 +169,16 @@ export const ImageSearch = memo(function ImageSearch({
               }}
             >
               <SearchField
+                className={styles.searchField}
                 aria-label="Search openly licensed images"
                 value={search}
                 onChange={setSearch}
                 autoFocus
               >
-                <Input placeholder="Search openly licensed images" />
+                <Input
+                  className={cx(inputStyles.input, styles.input)}
+                  placeholder="Search openly licensed images"
+                />
               </SearchField>
               <Button
                 type="submit"
@@ -178,40 +187,36 @@ export const ImageSearch = memo(function ImageSearch({
                 {tab.isSearching ? "Searching…" : "Search"}
               </Button>
             </Form>
-            <ToolButton label="Close" slot="close">
+            <ToolButton label="Close" slot="close" className={styles.close}>
               <XIcon />
             </ToolButton>
           </div>
           <Tabs
-            className="image-search-tabs"
+            className={styles.tabs}
             selectedKey={source.id}
             onSelectionChange={selectSource}
           >
             <TabList
               aria-label="Collections"
-              className="image-search-tab-list"
+              className={styles.tabList}
               items={IMAGE_SOURCES}
             >
               {(option) => (
-                <Tab className="image-search-tab" id={option.id}>
+                <Tab className={styles.tab} id={option.id}>
                   {option.label}
                 </Tab>
               )}
             </TabList>
             {IMAGE_SOURCES.map((option) => (
-              <TabPanel
-                key={option.id}
-                id={option.id}
-                className="image-search-panel"
-              >
+              <TabPanel key={option.id} id={option.id} className={styles.panel}>
                 {error && (
-                  <p role="alert" className="error">
+                  <p role="alert" className={messageStyles.error}>
                     {error}
                   </p>
                 )}
                 <GridList
                   aria-label={`Results from ${source.name}`}
-                  className="image-search-results"
+                  className={styles.results}
                   layout="grid"
                   items={tab.results}
                   disabledKeys={
@@ -224,7 +229,7 @@ export const ImageSearch = memo(function ImageSearch({
                     if (result) add(result);
                   }}
                   renderEmptyState={() => (
-                    <p className="hint">
+                    <p className={messageStyles.hint}>
                       {tab.isSearching
                         ? "Searching…"
                         : tab.search
@@ -235,17 +240,17 @@ export const ImageSearch = memo(function ImageSearch({
                 >
                   {(result) => (
                     <GridListItem
-                      className="image-search-result"
+                      className={styles.result}
                       id={result.id}
                       textValue={`${result.credit.title}, ${result.credit.license}`}
                     >
                       <img
-                        className="image-search-thumb"
+                        className={styles.thumb}
                         src={result.thumbnail}
                         alt=""
                         loading="lazy"
                       />
-                      <span className="image-search-license">
+                      <span className={styles.license}>
                         {adding === result.id
                           ? "Adding…"
                           : result.credit.license}

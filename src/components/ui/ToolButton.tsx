@@ -7,6 +7,8 @@ import {
   Tooltip,
   TooltipTrigger,
 } from "react-aria-components";
+import { buttonClassName } from "./Button";
+import styles from "./ToolButton.module.css";
 
 interface ToolTipProps {
   /** The accessible name, also shown in the tooltip. */
@@ -16,9 +18,9 @@ interface ToolTipProps {
 
 function ToolTip({ label, shortcut }: ToolTipProps) {
   return (
-    <Tooltip className="tooltip" offset={6}>
+    <Tooltip className={styles.tooltip} offset={6}>
       {label}
-      {shortcut && <Keyboard className="shortcut">{shortcut}</Keyboard>}
+      {shortcut && <Keyboard className={styles.shortcut}>{shortcut}</Keyboard>}
     </Tooltip>
   );
 }
@@ -26,12 +28,17 @@ function ToolTip({ label, shortcut }: ToolTipProps) {
 export function ToolButton({
   label,
   shortcut,
+  className,
   children,
   ...props
-}: ButtonProps & ToolTipProps) {
+}: Omit<ButtonProps, "className"> & ToolTipProps & { className?: string }) {
   return (
     <TooltipTrigger delay={400} closeDelay={0}>
-      <Button {...props} aria-label={label} className="toolbar-button icon">
+      <Button
+        {...props}
+        aria-label={label}
+        className={buttonClassName("icon", className)}
+      >
         {children}
       </Button>
       <ToolTip label={label} shortcut={shortcut} />
@@ -45,13 +52,14 @@ export function ToolToggleButton({
   hasText = false,
   children,
   ...props
-}: ToggleButtonProps & ToolTipProps & { hasText?: boolean }) {
+}: Omit<ToggleButtonProps, "className"> &
+  ToolTipProps & { hasText?: boolean }) {
   return (
     <TooltipTrigger delay={400} closeDelay={0}>
       <ToggleButton
         {...props}
         aria-label={label}
-        className={hasText ? "toolbar-button" : "toolbar-button icon"}
+        className={buttonClassName(hasText ? "toolbar" : "icon")}
       >
         {children}
       </ToggleButton>

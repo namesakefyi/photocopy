@@ -1,0 +1,33 @@
+@layer components {
+  .canvas {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    background: var(--surface-inset);
+
+    &[data-drop-target] {
+      outline: 2px dashed var(--highlight);
+      outline-offset: -8px;
+    }
+  }
+
+  .stage {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    /* The canvas handles its own panning and pinching. */
+    touch-action: none;
+    -webkit-touch-callout: none;
+    user-select: none;
+
+    &[data-brushing] {
+      cursor: none;
+    }
+
+    &:focus,
+    &:focus-visible {
+      outline: none;
+    }
+  }
+}

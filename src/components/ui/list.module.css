@@ -1,0 +1,29 @@
+@layer ui {
+  .list {
+    display: flex;
+    flex-direction: column;
+    outline: none;
+
+    :global(.react-aria-DropIndicator)[data-drop-target] {
+      height: 2px;
+      background: var(--highlight);
+      border-radius: 1px;
+    }
+  }
+
+  .item {
+    display: flex;
+    cursor: default;
+    outline: none;
+    border-radius: var(--radius);
+
+    &[data-dragging] {
+      opacity: 0.4;
+    }
+
+    &[data-focus-visible] {
+      outline: 2px solid var(--highlight);
+      outline-offset: 2px;
+    }
+  }
+}

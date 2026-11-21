@@ -44,6 +44,7 @@ import { useHistory } from "../hooks/useHistory";
 import { usePreview } from "../hooks/usePreview";
 import { useThumbnail } from "../hooks/useThumbnail";
 import { AboutDialog } from "./AboutDialog";
+import styles from "./ArtboardEditor.module.css";
 import { Canvas, type CanvasHandle } from "./Canvas";
 import { ControlStrip } from "./ControlStrip";
 import { CopyResult } from "./CopyResult";
@@ -354,7 +355,7 @@ export function ArtboardEditor({
           if (files.length > 0) addFiles(files);
         }}
       />
-      <main className="workspace">
+      <main className={styles.workspace}>
         <LayerToolbar
           start={toolbarStart}
           selectedId={selectedId}
@@ -367,7 +368,7 @@ export function ArtboardEditor({
           canRedo={canRedo}
           zoom={zoom}
         />
-        <div className="canvas-area">
+        <div className={styles.canvasArea}>
           {removalProgress !== null && (
             <ProgressLine
               label="Removing background"
@@ -386,7 +387,7 @@ export function ArtboardEditor({
             canvasFill={background.color}
             ref={canvasRef}
           />
-          <p className="canvas-toast" role="status">
+          <p className={styles.toast} role="status">
             {status}
           </p>
         </div>

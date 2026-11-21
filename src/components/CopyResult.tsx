@@ -11,8 +11,12 @@ import {
 } from "../core/copy";
 import { formatCredit } from "../core/credits";
 import type { Credit } from "../core/types";
-import { Button } from "./ui/Button";
+import styles from "./CopyResult.module.css";
+import { Button, buttonClassName } from "./ui/Button";
 import { Checkbox } from "./ui/Checkbox";
+import { cx } from "./ui/cx";
+import messageStyles from "./ui/message.module.css";
+import modalStyles from "./ui/modal.module.css";
 
 export interface CopyResultProps {
   photocopy: Photocopy | null;
@@ -91,27 +95,30 @@ export const CopyResult = memo(function CopyResult({
 
   return (
     <ModalOverlay
-      className="modal-overlay"
+      className={modalStyles.overlay}
       isDismissable
       isOpen={photocopy !== null}
       onOpenChange={(isOpen) => {
         if (!isOpen) onClose();
       }}
     >
-      <Modal className="modal">
-        <Dialog className="copy-result">
+      <Modal className={modalStyles.modal}>
+        <Dialog className={styles.copyResult}>
           {photocopy && (
             <>
-              <div className="copy-preview">
-                <div className="result" data-stale={isEncoding || undefined}>
+              <div className={styles.preview}>
+                <div
+                  className={styles.result}
+                  data-stale={isEncoding || undefined}
+                >
                   {copy && <img src={copy.url} alt="Photocopied collage" />}
                 </div>
               </div>
-              <div className="copy-details">
-                <div className="copy-heading">
+              <div className={styles.details}>
+                <div className={styles.heading}>
                   <Heading slot="title">Export</Heading>
                   {copy && (
-                    <p className="hint">
+                    <p className={cx(messageStyles.hint, styles.stats)}>
                       <span>{formatFileSize(copy.blob.size)}</span>
                       <span>
                         {copy.width} × {copy.height} px
@@ -120,11 +127,11 @@ export const CopyResult = memo(function CopyResult({
                   )}
                 </div>
                 {encodeFailed && (
-                  <p role="alert" className="error">
+                  <p role="alert" className={messageStyles.error}>
                     Couldn’t prepare the PNG. Try exporting again.
                   </p>
                 )}
-                <div className="copy-options">
+                <div className={styles.options}>
                   <Checkbox
                     isSelected={options.cropToFit}
                     isDisabled={!photocopy.cropBounds}
@@ -140,11 +147,12 @@ export const CopyResult = memo(function CopyResult({
                   </Checkbox>
                 </div>
                 {credits.length > 0 && (
-                  <div className="credits">
-                    <div className="section-heading">
+                  <div className={styles.credits}>
+                    <div className={styles.creditsHeading}>
                       <h3>Credits</h3>
                       <Button
                         variant="quiet"
+                        className={styles.copyCredits}
                         onPress={async () => {
                           try {
                             await navigator.clipboard.writeText(creditText);
@@ -185,18 +193,21 @@ export const CopyResult = memo(function CopyResult({
                             {credit.source}
                           </a>
                           {!credit.attributionRequired && (
-                            <span className="hint"> (credit optional)</span>
+                            <span className={messageStyles.hint}>
+                              {" "}
+                              (credit optional)
+                            </span>
                           )}
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
-                <div className="row">
+                <div className={styles.actions}>
                   <Button onPress={onClose}>Cancel</Button>
                   {copy && !isEncoding ? (
                     <a
-                      className="button primary"
+                      className={buttonClassName("primary")}
                       href={copy.url}
                       download={`photocopy-${Date.now()}.png`}
                     >

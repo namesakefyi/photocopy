@@ -1,0 +1,185 @@
+@layer components {
+  .fileViewer {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .scroll {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+    padding: 10px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-color: var(--border-strong) transparent;
+    scrollbar-width: thin;
+  }
+
+  .thumb {
+    display: block;
+    width: 100%;
+    max-height: var(--file-thumb-max, 140px);
+    object-fit: contain;
+    border-radius: var(--radius-small);
+  }
+
+  .placeholder {
+    aspect-ratio: 1;
+  }
+
+  .overlay {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    color: var(--text);
+    background: rgb(0 0 0 / 0.55);
+    opacity: 0;
+
+    &[data-hovered] {
+      background: rgb(0 0 0 / 0.75);
+    }
+
+    &[data-focus-visible] {
+      opacity: 1;
+    }
+  }
+
+  .drag {
+    inset-block-end: 8px;
+    inset-inline-start: 8px;
+    letter-spacing: -0.2em;
+    pointer-events: none;
+  }
+
+  .more {
+    inset-block-start: 8px;
+    inset-inline-end: 8px;
+
+    &[data-pressed],
+    &[aria-expanded="true"] {
+      opacity: 1;
+    }
+
+    @media (hover: none) {
+      opacity: 1;
+    }
+  }
+
+  .list {
+    gap: 2px;
+  }
+
+  .item {
+    position: relative;
+    flex-direction: column;
+    padding: 4px;
+
+    &[data-hovered] {
+      background: var(--fill-subtle);
+    }
+
+    &:is([data-hovered], [data-selected], [data-focus-visible]) .more {
+      opacity: 1;
+    }
+
+    &[data-selected] {
+      background: var(--fill);
+
+      .thumb {
+        outline: 2px solid var(--highlight);
+      }
+    }
+  }
+
+  .new {
+    flex-shrink: 0;
+    width: calc(100% - 8px);
+    aspect-ratio: 4 / 3;
+    margin: 0 4px;
+    color: var(--text-secondary);
+    border-radius: var(--radius-small);
+
+    &[data-hovered] {
+      color: var(--text);
+    }
+  }
+
+  .spinner {
+    position: absolute;
+    inset-block-start: 12px;
+    inset-inline-start: 12px;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--border-strong);
+    border-block-start-color: var(--progress);
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px rgb(0 0 0 / 0.55);
+    animation: spin 0.8s linear infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation-duration: 2.4s;
+    }
+  }
+
+  .confirmWindow {
+    width: min(340px, 100%);
+  }
+
+  .confirm {
+    padding: 20px;
+    font-size: 13px;
+    outline: none;
+
+    h2 {
+      margin-block-end: 12px;
+      font-size: 15px;
+      color: var(--text);
+    }
+
+    p {
+      color: var(--text-secondary);
+    }
+  }
+
+  .confirmPreview {
+    display: grid;
+    grid-template: 100% / 100%;
+    place-items: center;
+    aspect-ratio: 4 / 3;
+    padding: 12px;
+    margin-block-end: 12px;
+    background: var(--surface-inset);
+    border-radius: var(--radius-small);
+
+    > :is(img, span) {
+      height: 100%;
+      max-height: none;
+    }
+
+    > img {
+      width: 100%;
+    }
+
+    > span {
+      width: auto;
+    }
+  }
+
+  .confirmActions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-block-start: 16px;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,33 @@
+@layer ui {
+  .numberField {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .label {
+    font-size: 12px;
+  }
+
+  .group {
+    position: relative;
+
+    > .prefixed {
+      padding-inline-start: calc(10px + 12px + 6px);
+    }
+  }
+
+  .prefix {
+    position: absolute;
+    inset-block: 0;
+    left: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    pointer-events: none;
+  }
+}
