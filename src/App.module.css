@@ -1,18 +1,16 @@
 @layer components {
-  /* Children place themselves in these areas by name. */
   .app {
     --strip-width: 260px;
     --file-viewer-width: 132px;
+
     display: grid;
     grid-template-areas: "workspace strip";
     grid-template-rows: minmax(0, 1fr);
     grid-template-columns: minmax(0, 1fr) var(--strip-width);
     height: 100dvh;
-    /* Clears notches and the home indicator's sides; the footer pads the bottom. */
     padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0
       env(safe-area-inset-left, 0px);
 
-    /* Canvas above, controls below in a capped, scrolling panel. */
     @media (width < 760px) {
       grid-template-areas:
         "workspace"
@@ -21,7 +19,6 @@
       grid-template-columns: minmax(0, 1fr);
     }
 
-    /* The workspace's toolbar and canvas join the grid, around the artboards. */
     &[data-file-viewer] {
       grid-template-areas:
         "toolbar toolbar strip"
@@ -42,7 +39,6 @@
     border-inline-end: 1px solid var(--border);
   }
 
-  /* On narrow screens, the file viewer slides in from the left. */
   .drawerOverlay {
     &[data-entering] {
       animation: fade 0.18s ease-out;
@@ -55,6 +51,7 @@
 
   .drawer {
     --file-thumb-max: 200px;
+
     position: absolute;
     inset-block: 0;
     inset-inline-start: 0;

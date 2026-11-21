@@ -17,6 +17,14 @@
     outline: none;
     border-radius: var(--radius);
 
+    &[data-hovered] {
+      background: var(--fill);
+    }
+
+    &[data-selected] {
+      background: var(--fill-strong);
+    }
+
     &[data-dragging] {
       opacity: 0.4;
     }

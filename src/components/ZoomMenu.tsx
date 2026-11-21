@@ -1,18 +1,11 @@
 import { useSyncExternalStore } from "react";
-import {
-  Keyboard,
-  Menu,
-  MenuItem,
-  MenuTrigger,
-  Popover,
-  Text,
-} from "react-aria-components";
+import { Keyboard, MenuTrigger, Text } from "react-aria-components";
 import { SHORTCUTS } from "../core/shortcuts";
 import type { ValueStore } from "../core/valueStore";
 import type { ZoomAction } from "../core/zoom";
 import { Button, Chevron } from "./ui/Button";
-import { cx } from "./ui/cx";
-import menuStyles from "./ui/menu.module.css";
+import { Menu, MenuItem } from "./ui/Menu";
+import { Popover } from "./ui/Popover";
 import styles from "./ZoomMenu.module.css";
 
 const ZOOM_MENU: { id: ZoomAction; label: string }[] = [
@@ -37,10 +30,7 @@ export function ZoomMenu({ zoom, onZoom }: ZoomMenuProps) {
         {Math.round(scale * 100)}%
         <Chevron />
       </Button>
-      <Popover
-        className={cx(menuStyles.popover, menuStyles.fit)}
-        placement="bottom start"
-      >
+      <Popover placement="bottom start">
         <Menu
           aria-label="Zoom"
           items={ZOOM_MENU}
@@ -48,9 +38,7 @@ export function ZoomMenu({ zoom, onZoom }: ZoomMenuProps) {
         >
           {(item) => (
             <MenuItem id={item.id} textValue={item.label}>
-              <Text slot="label" className={styles.label}>
-                {item.label}
-              </Text>
+              <Text slot="label">{item.label}</Text>
               <Keyboard>{SHORTCUTS[item.id]}</Keyboard>
             </MenuItem>
           )}

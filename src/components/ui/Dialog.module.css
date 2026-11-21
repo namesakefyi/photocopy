@@ -21,4 +21,21 @@
     border-radius: 12px;
     box-shadow: 0 16px 48px rgb(0 0 0 / 0.6);
   }
+
+  .dialog {
+    outline: none;
+  }
+
+  .heading {
+    font-size: 15px;
+    color: var(--text);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-block-start: auto;
+  }
 }

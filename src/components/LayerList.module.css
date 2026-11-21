@@ -9,19 +9,10 @@
     height: 28px;
     padding: 0 2px;
     font-size: 12px;
-    background: var(--fill-subtle);
 
-    &[data-hovered] {
-      background: var(--fill);
+    &:not([data-hovered], [data-selected]) {
+      background: var(--fill-subtle);
     }
-
-    &[data-selected] {
-      background: var(--fill-strong);
-    }
-  }
-
-  .dragHandle {
-    letter-spacing: -0.2em;
   }
 
   .name {

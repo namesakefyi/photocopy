@@ -49,7 +49,6 @@
     display: flex;
     gap: 4px;
     align-items: center;
-    justify-content: flex-start;
     width: fit-content;
     height: 24px;
     color: var(--text-secondary);
@@ -106,19 +105,5 @@
     padding: 16px;
     padding-block-end: calc(16px + env(safe-area-inset-bottom, 0px));
     border-block-start: 1px solid var(--border);
-  }
-
-  .exportButton {
-    gap: 10px;
-    min-height: 48px;
-    font-size: 18px;
-    font-weight: 600;
-  }
-
-  .shortcut {
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 400;
-    opacity: 0.55;
   }
 }

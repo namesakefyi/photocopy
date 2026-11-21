@@ -47,7 +47,7 @@ import { AboutDialog } from "./AboutDialog";
 import styles from "./ArtboardEditor.module.css";
 import { Canvas, type CanvasHandle } from "./Canvas";
 import { ControlStrip } from "./ControlStrip";
-import { CopyResult } from "./CopyResult";
+import { ExportDialog } from "./ExportDialog";
 import { ImageSearch } from "./ImageSearch";
 import { LayerToolbar } from "./LayerToolbar";
 import { ProgressLine } from "./ProgressLine";
@@ -404,7 +404,7 @@ export function ArtboardEditor({
       />
       <AboutDialog isOpen={isAboutOpen} onOpenChange={setIsAboutOpen} />
       <ImageSearch isOpen={isSearchOpen} onOpenChange={setIsSearchOpen} />
-      <CopyResult
+      <ExportDialog
         photocopy={photocopy}
         background={background.color}
         credits={credits}

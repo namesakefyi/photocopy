@@ -4,13 +4,13 @@ import {
   Label,
   ListBox,
   ListBoxItem,
-  Popover,
   SelectValue,
 } from "react-aria-components";
 import { Chevron } from "./Button";
 import buttonStyles from "./Button.module.css";
 import { cx } from "./cx";
 import fieldStyles from "./field.module.css";
+import { Popover } from "./Popover";
 import styles from "./Select.module.css";
 
 export interface SelectProps<Item extends { id: string }> {

@@ -1,0 +1,40 @@
+@layer ui {
+  .menu {
+    outline: none;
+  }
+
+  .item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    padding: 5px 8px;
+    font-size: 13px;
+    cursor: default;
+    outline: none;
+    border-radius: var(--radius-small);
+
+    [slot="label"] {
+      grid-column: 1;
+    }
+
+    kbd {
+      grid-column: 2;
+      padding-inline-start: 24px;
+      color: var(--text-secondary);
+    }
+
+    &[data-focused],
+    &[data-open] {
+      color: var(--surface);
+      background: var(--text);
+
+      kbd {
+        color: inherit;
+      }
+    }
+
+    &[data-disabled] {
+      color: var(--text-disabled);
+    }
+  }
+}

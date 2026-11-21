@@ -1,12 +1,5 @@
 import { memo } from "react";
-import {
-  Keyboard,
-  Menu,
-  MenuItem,
-  MenuTrigger,
-  Popover,
-  Text,
-} from "react-aria-components";
+import { Keyboard, MenuTrigger, Text } from "react-aria-components";
 import type { PhotocopySettings } from "../core/photocopy";
 import { SHORTCUTS } from "../core/shortcuts";
 import type { Theme } from "../core/themes";
@@ -18,8 +11,9 @@ import { LayerList } from "./LayerList";
 import { PresetPicker } from "./PresetPicker";
 import { Button } from "./ui/Button";
 import { ChevronIcon, PlusIcon } from "./ui/icons";
-import menuStyles from "./ui/menu.module.css";
+import { Menu, MenuItem } from "./ui/Menu";
 import messageStyles from "./ui/message.module.css";
+import { Popover } from "./ui/Popover";
 import { Slider } from "./ui/Slider";
 
 export interface ControlStripProps {
@@ -57,7 +51,7 @@ export const ControlStrip = memo(function ControlStrip({
                 <Button variant="quiet" aria-label="Add layer">
                   <PlusIcon />
                 </Button>
-                <Popover className={menuStyles.popover} placement="bottom end">
+                <Popover placement="bottom end">
                   <Menu
                     aria-label="Add layer"
                     onAction={(key) =>
@@ -134,14 +128,12 @@ export const ControlStrip = memo(function ControlStrip({
         )}
         <Button
           variant="primary"
-          className={styles.exportButton}
+          size="large"
           onPress={onExport}
           isDisabled={isCopying || !layers.some((layer) => layer.visible)}
         >
           {isCopying ? "Exporting…" : "Export"}
-          {!isCopying && (
-            <Keyboard className={styles.shortcut}>{SHORTCUTS.export}</Keyboard>
-          )}
+          {!isCopying && <Keyboard>{SHORTCUTS.export}</Keyboard>}
         </Button>
       </div>
     </aside>

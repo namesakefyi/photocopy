@@ -2,10 +2,4 @@
   .trigger {
     min-width: 64px;
   }
-
-  .label {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
 }

@@ -1,19 +1,5 @@
 import { memo, useRef, useState } from "react";
-import {
-  Dialog,
-  Form,
-  GridList,
-  GridListItem,
-  Input,
-  type Key,
-  Modal,
-  ModalOverlay,
-  SearchField,
-  Tab,
-  TabList,
-  TabPanel,
-  Tabs,
-} from "react-aria-components";
+import { Form, GridList, GridListItem, type Key } from "react-aria-components";
 import {
   type ImageResult,
   type ImageSource,
@@ -23,11 +9,11 @@ import { IMAGE_SOURCES } from "../core/sources";
 import { useEditor } from "../hooks/useEditor";
 import styles from "./ImageSearch.module.css";
 import { Button } from "./ui/Button";
-import { cx } from "./ui/cx";
+import { Dialog } from "./ui/Dialog";
 import { XIcon } from "./ui/icons";
-import inputStyles from "./ui/input.module.css";
 import messageStyles from "./ui/message.module.css";
-import modalStyles from "./ui/modal.module.css";
+import { SearchField } from "./ui/SearchField";
+import { Tab, TabList, TabPanel, Tabs } from "./ui/Tabs";
 import { ToolButton } from "./ui/ToolButton";
 
 export interface ImageSearchProps {
@@ -148,132 +134,105 @@ export const ImageSearch = memo(function ImageSearch({
   const error = addError ?? tab.error;
 
   return (
-    <ModalOverlay
-      className={modalStyles.overlay}
-      isDismissable
+    <Dialog
       isOpen={isOpen}
       onOpenChange={onOpenChange}
+      aria-label="Search images"
+      className={styles.modal}
+      contentClassName={styles.imageSearch}
     >
-      <Modal className={cx(modalStyles.modal, styles.modal)}>
-        <Dialog className={styles.imageSearch} aria-label="Search images">
-          <div className={styles.header}>
-            <Form
-              className={styles.form}
-              onSubmit={(event) => {
-                event.preventDefault();
-                const trimmed = search.trim();
-                if (!trimmed) return;
-                setSubmitted(trimmed);
-                setAddError(null);
-                runSearch(source, trimmed, 1);
+      <div className={styles.header}>
+        <Form
+          className={styles.form}
+          onSubmit={(event) => {
+            event.preventDefault();
+            const trimmed = search.trim();
+            if (!trimmed) return;
+            setSubmitted(trimmed);
+            setAddError(null);
+            runSearch(source, trimmed, 1);
+          }}
+        >
+          <SearchField
+            className={styles.searchField}
+            aria-label="Search openly licensed images"
+            value={search}
+            onChange={setSearch}
+            autoFocus
+            placeholder="Search openly licensed images"
+          />
+          <Button type="submit" isDisabled={tab.isSearching || !search.trim()}>
+            {tab.isSearching ? "Searching…" : "Search"}
+          </Button>
+        </Form>
+        <ToolButton label="Close" slot="close" className={styles.close}>
+          <XIcon />
+        </ToolButton>
+      </div>
+      <Tabs selectedKey={source.id} onSelectionChange={selectSource}>
+        <TabList aria-label="Collections" items={IMAGE_SOURCES}>
+          {(option) => <Tab id={option.id}>{option.label}</Tab>}
+        </TabList>
+        {IMAGE_SOURCES.map((option) => (
+          <TabPanel key={option.id} id={option.id}>
+            {error && (
+              <p role="alert" className={messageStyles.error}>
+                {error}
+              </p>
+            )}
+            <GridList
+              aria-label={`Results from ${source.name}`}
+              className={styles.results}
+              layout="grid"
+              items={tab.results}
+              disabledKeys={
+                adding ? tab.results.map((result) => result.id) : []
+              }
+              onAction={(key) => {
+                const result = tab.results.find((option) => option.id === key);
+                if (result) add(result);
               }}
-            >
-              <SearchField
-                className={styles.searchField}
-                aria-label="Search openly licensed images"
-                value={search}
-                onChange={setSearch}
-                autoFocus
-              >
-                <Input
-                  className={cx(inputStyles.input, styles.input)}
-                  placeholder="Search openly licensed images"
-                />
-              </SearchField>
-              <Button
-                type="submit"
-                isDisabled={tab.isSearching || !search.trim()}
-              >
-                {tab.isSearching ? "Searching…" : "Search"}
-              </Button>
-            </Form>
-            <ToolButton label="Close" slot="close" className={styles.close}>
-              <XIcon />
-            </ToolButton>
-          </div>
-          <Tabs
-            className={styles.tabs}
-            selectedKey={source.id}
-            onSelectionChange={selectSource}
-          >
-            <TabList
-              aria-label="Collections"
-              className={styles.tabList}
-              items={IMAGE_SOURCES}
-            >
-              {(option) => (
-                <Tab className={styles.tab} id={option.id}>
-                  {option.label}
-                </Tab>
+              renderEmptyState={() => (
+                <p className={messageStyles.hint}>
+                  {tab.isSearching
+                    ? "Searching…"
+                    : tab.search
+                      ? `No images found for “${tab.search}” in ${source.name}.`
+                      : `Search public domain and openly licensed images from ${source.name}.`}
+                </p>
               )}
-            </TabList>
-            {IMAGE_SOURCES.map((option) => (
-              <TabPanel key={option.id} id={option.id} className={styles.panel}>
-                {error && (
-                  <p role="alert" className={messageStyles.error}>
-                    {error}
-                  </p>
-                )}
-                <GridList
-                  aria-label={`Results from ${source.name}`}
-                  className={styles.results}
-                  layout="grid"
-                  items={tab.results}
-                  disabledKeys={
-                    adding ? tab.results.map((result) => result.id) : []
-                  }
-                  onAction={(key) => {
-                    const result = tab.results.find(
-                      (option) => option.id === key,
-                    );
-                    if (result) add(result);
-                  }}
-                  renderEmptyState={() => (
-                    <p className={messageStyles.hint}>
-                      {tab.isSearching
-                        ? "Searching…"
-                        : tab.search
-                          ? `No images found for “${tab.search}” in ${source.name}.`
-                          : `Search public domain and openly licensed images from ${source.name}.`}
-                    </p>
-                  )}
+            >
+              {(result) => (
+                <GridListItem
+                  className={styles.result}
+                  id={result.id}
+                  textValue={`${result.credit.title}, ${result.credit.license}`}
                 >
-                  {(result) => (
-                    <GridListItem
-                      className={styles.result}
-                      id={result.id}
-                      textValue={`${result.credit.title}, ${result.credit.license}`}
-                    >
-                      <img
-                        className={styles.thumb}
-                        src={result.thumbnail}
-                        alt=""
-                        loading="lazy"
-                      />
-                      <span className={styles.license}>
-                        {adding === result.id
-                          ? "Adding…"
-                          : result.credit.license}
-                      </span>
-                    </GridListItem>
-                  )}
-                </GridList>
-                {tab.nextPage !== null && (
-                  <Button
-                    onPress={() =>
-                      tab.nextPage &&
-                      runSearch(source, tab.search, tab.nextPage)
-                    }
-                    isDisabled={tab.isSearching}
-                  >
-                    {tab.isSearching ? "Loading…" : "Load more"}
-                  </Button>
-                )}
-              </TabPanel>
-            ))}
-          </Tabs>
-        </Dialog>
-      </Modal>
-    </ModalOverlay>
+                  <img
+                    className={styles.thumb}
+                    src={result.thumbnail}
+                    alt=""
+                    loading="lazy"
+                  />
+                  <span className={styles.license}>
+                    {adding === result.id ? "Adding…" : result.credit.license}
+                  </span>
+                </GridListItem>
+              )}
+            </GridList>
+            {tab.nextPage !== null && (
+              <Button
+                onPress={() =>
+                  tab.nextPage && runSearch(source, tab.search, tab.nextPage)
+                }
+                isDisabled={tab.isSearching}
+              >
+                {tab.isSearching ? "Loading…" : "Load more"}
+              </Button>
+            )}
+          </TabPanel>
+        ))}
+      </Tabs>
+    </Dialog>
   );
 });

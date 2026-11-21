@@ -1,0 +1,6 @@
+@layer ui {
+  .field .input {
+    height: 32px;
+    font-size: inherit;
+  }
+}

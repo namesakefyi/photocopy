@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Dialog, DialogTrigger, Popover } from "react-aria-components";
+import { Dialog, DialogTrigger } from "react-aria-components";
 import { createPortal } from "react-dom";
 import { MAX_BRUSH, MIN_BRUSH } from "../core/editor";
 import styles from "./BrushSizeMenu.module.css";
 import { Button, Chevron } from "./ui/Button";
-import { cx } from "./ui/cx";
-import menuStyles from "./ui/menu.module.css";
+import { Popover } from "./ui/Popover";
 import { Slider } from "./ui/Slider";
 
 export interface BrushSizeMenuProps {
@@ -55,10 +54,7 @@ export function BrushSizeMenu({
         {size} px
         <Chevron />
       </Button>
-      <Popover
-        className={cx(menuStyles.popover, styles.popover)}
-        placement="bottom"
-      >
+      <Popover className={styles.popover} placement="bottom">
         <Dialog
           aria-label="Brush size"
           className={styles.dialog}

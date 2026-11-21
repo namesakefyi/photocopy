@@ -1,27 +1,17 @@
 import { useEffect, useState } from "react";
-import {
-  Dialog,
-  GridList,
-  GridListItem,
-  Heading,
-  Menu,
-  MenuItem,
-  MenuTrigger,
-  Modal,
-  ModalOverlay,
-  Popover,
-  useDragAndDrop,
-} from "react-aria-components";
+import { MenuTrigger, useDragAndDrop } from "react-aria-components";
 import type { ArtboardSummary } from "../core/persistence";
 import { reorder } from "../core/reorder";
 import { themeById } from "../core/themes";
 import styles from "./FileViewer.module.css";
 import { Button } from "./ui/Button";
 import { cx } from "./ui/cx";
+import { Dialog, DialogActions, DialogHeading } from "./ui/Dialog";
+import { DragHandle } from "./ui/DragHandle";
+import { GridList, GridListItem } from "./ui/GridList";
 import { MoreIcon, PlusIcon } from "./ui/icons";
-import listStyles from "./ui/list.module.css";
-import menuStyles from "./ui/menu.module.css";
-import modalStyles from "./ui/modal.module.css";
+import { Menu, MenuItem } from "./ui/Menu";
+import { Popover } from "./ui/Popover";
 
 export interface FileViewerProps {
   artboards: ArtboardSummary[];
@@ -103,7 +93,7 @@ export function FileViewer({
       >
         <GridList
           aria-label="Artboards"
-          className={cx(listStyles.list, styles.list)}
+          className={styles.list}
           items={artboards}
           selectionMode="single"
           disallowEmptySelection
@@ -118,19 +108,16 @@ export function FileViewer({
             const label = labels.get(artboard.id);
             return (
               <GridListItem
-                className={cx(listStyles.item, styles.item)}
+                className={styles.item}
                 id={artboard.id}
                 textValue={label}
               >
                 <Thumbnail artboard={artboard} />
-                <Button
-                  slot="drag"
-                  variant="quiet"
-                  className={cx(styles.overlay, styles.drag)}
+                <DragHandle
+                  variant="overlay"
+                  className={cx(styles.corner, styles.drag)}
                   aria-label={`Reorder ${label}`}
-                >
-                  ⋮⋮
-                </Button>
+                />
                 {busyIds.has(artboard.id) && (
                   <span
                     className={styles.spinner}
@@ -140,16 +127,13 @@ export function FileViewer({
                 )}
                 <MenuTrigger>
                   <Button
-                    variant="quiet"
-                    className={cx(styles.overlay, styles.more)}
+                    variant="overlay"
+                    className={cx(styles.corner, styles.more)}
                     aria-label={`More for ${label}`}
                   >
                     <MoreIcon />
                   </Button>
-                  <Popover
-                    className={cx(menuStyles.popover, menuStyles.fit)}
-                    placement="bottom start"
-                  >
+                  <Popover placement="bottom start">
                     <Menu
                       aria-label={label}
                       onAction={(action) => {
@@ -193,39 +177,36 @@ function DeleteDialog({
   onDelete: (id: string) => void;
 }) {
   return (
-    <ModalOverlay
-      className={modalStyles.overlay}
-      isDismissable
+    <Dialog
       isOpen={artboard !== null}
       onOpenChange={(isOpen) => !isOpen && onClose()}
+      role="alertdialog"
+      className={styles.confirmWindow}
+      contentClassName={styles.confirm}
     >
-      <Modal className={cx(modalStyles.modal, styles.confirmWindow)}>
-        <Dialog className={styles.confirm} role="alertdialog">
-          {artboard && (
-            <>
-              <Heading slot="title">Delete artboard?</Heading>
-              <div className={styles.confirmPreview}>
-                <Thumbnail artboard={artboard} />
-              </div>
-              <p>This can’t be undone.</p>
-              <div className={styles.confirmActions}>
-                <Button variant="quiet" onPress={onClose} autoFocus>
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  onPress={() => {
-                    onDelete(artboard.id);
-                    onClose();
-                  }}
-                >
-                  Delete
-                </Button>
-              </div>
-            </>
-          )}
-        </Dialog>
-      </Modal>
-    </ModalOverlay>
+      {artboard && (
+        <>
+          <DialogHeading>Delete artboard?</DialogHeading>
+          <div className={styles.confirmPreview}>
+            <Thumbnail artboard={artboard} />
+          </div>
+          <p>This can’t be undone.</p>
+          <DialogActions>
+            <Button variant="quiet" onPress={onClose} autoFocus>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onPress={() => {
+                onDelete(artboard.id);
+                onClose();
+              }}
+            >
+              Delete
+            </Button>
+          </DialogActions>
+        </>
+      )}
+    </Dialog>
   );
 }

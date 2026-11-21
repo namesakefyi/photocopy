@@ -7,8 +7,8 @@ import {
 } from "./components/ArtboardEditor";
 import { FileViewer } from "./components/FileViewer";
 import { cx } from "./components/ui/cx";
+import dialogStyles from "./components/ui/Dialog.module.css";
 import { SidebarIcon } from "./components/ui/icons";
-import modalStyles from "./components/ui/modal.module.css";
 import { ToolToggleButton } from "./components/ui/ToolButton";
 import { readSetting, writeSetting } from "./core/settings";
 import { SHORTCUTS } from "./core/shortcuts";
@@ -85,7 +85,7 @@ export function App() {
       />
       {isNarrow && (
         <ModalOverlay
-          className={cx(modalStyles.overlay, styles.drawerOverlay)}
+          className={cx(dialogStyles.overlay, styles.drawerOverlay)}
           isDismissable
           isOpen={isDrawerOpen}
           onOpenChange={setIsDrawerOpen}
