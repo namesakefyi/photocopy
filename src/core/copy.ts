@@ -1,6 +1,7 @@
 import { canvasToBlob } from "./layers";
 import { contentBounds, type PhotocopySettings } from "./photocopy";
 import { photocopyImageData } from "./photocopyClient";
+import { encodePalettePng } from "./png";
 import { context2d, createCanvas, renderRegion } from "./render";
 import { readSetting, writeSetting } from "./settings";
 import type { Layer, Region } from "./types";
@@ -62,8 +63,20 @@ export async function encodeCopy(
     ctx.globalCompositeOperation = "multiply";
   }
   ctx.drawImage(source, x, y, width, height, 0, 0, width, height);
-  const blob = await canvasToBlob(canvas);
+  const pixels = ctx.getImageData(0, 0, width, height);
+  const blob = (await encodePalettePng(pixels)) ?? (await canvasToBlob(canvas));
   return { blob, url: URL.createObjectURL(blob), width, height };
+}
+
+/** In decimal units, like file managers: 56 KB, 1.4 MB. */
+export function formatFileSize(bytes: number, locale?: string) {
+  const isMegabytes = bytes >= 1e6;
+  return new Intl.NumberFormat(locale, {
+    style: "unit",
+    unit: isMegabytes ? "megabyte" : "kilobyte",
+    unitDisplay: "short",
+    maximumFractionDigits: isMegabytes ? 1 : 0,
+  }).format(Math.max(1, bytes / (isMegabytes ? 1e6 : 1e3)));
 }
 
 const CROP_KEY = "photocopy-crop-to-fit";

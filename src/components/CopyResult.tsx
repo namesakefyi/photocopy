@@ -4,6 +4,7 @@ import {
   type Copy,
   type ExportOptions,
   encodeCopy,
+  formatFileSize,
   type Photocopy,
   savedExportOptions,
   saveExportOptions,
@@ -111,7 +112,10 @@ export const CopyResult = memo(function CopyResult({
                   <Heading slot="title">Export</Heading>
                   {copy && (
                     <p className="hint">
-                      {copy.width} × {copy.height} px
+                      <span>{formatFileSize(copy.blob.size)}</span>
+                      <span>
+                        {copy.width} × {copy.height} px
+                      </span>
                     </p>
                   )}
                 </div>

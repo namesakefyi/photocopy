@@ -952,6 +952,8 @@ p {
     justify-content: space-between;
 
     .hint {
+      display: flex;
+      gap: 12px;
       margin: 0;
       font-size: 12px;
     }
