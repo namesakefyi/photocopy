@@ -64,8 +64,8 @@
     "pre-commit": "./node_modules/.bin/nano-staged"
   },
   "nano-staged": {
-    "*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,json,jsonc,css,astro}": [
-      "biome check --write"
+    "*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,json,jsonc,css,md,astro}": [
+      "biome check --write --no-errors-on-unmatched"
     ]
   }
 }
