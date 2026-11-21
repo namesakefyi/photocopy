@@ -10,17 +10,11 @@ export interface BrushSizeMenuProps {
   /** The brush's diameter in screen pixels. */
   size: number;
   onChange: (size: number) => void;
-  /**
-   * Called when the size changes without a pointer to show it around (from
-   * the keyboard), so the canvas can show it instead.
-   */
+  /** For keyboard changes, which have no pointer to show the size around. */
   onShowOnCanvas: () => void;
 }
 
-/**
- * The brush size, opening a slider to change it. While the slider is
- * dragged, the brush's outline follows the pointer at its real size.
- */
+/** While dragging the slider, the brush outline follows the pointer at real size. */
 export function BrushSizeMenu({
   size,
   onChange,

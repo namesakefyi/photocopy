@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vitest";
-import type { ArtboardSummary } from "../persistence";
+import type { ArtboardSummary } from "../core/persistence";
 import { render } from "../test/renderHook";
 import { FileViewer, type FileViewerProps } from "./FileViewer";
 

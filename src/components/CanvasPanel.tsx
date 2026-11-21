@@ -3,9 +3,9 @@ import {
   canvasSize,
   MAX_CANVAS_SIZE,
   MIN_CANVAS_SIZE,
-} from "../canvasFormat";
-import { THEMES, type Theme } from "../themes";
-import type { CanvasFormat, CanvasPreset } from "../types";
+} from "../core/canvasFormat";
+import { THEMES, type Theme } from "../core/themes";
+import type { CanvasFormat, CanvasPreset } from "../core/types";
 import { CanvasShape } from "./CanvasShape";
 import { NumberField } from "./ui/NumberField";
 import { Select } from "./ui/Select";
@@ -15,7 +15,6 @@ export interface CanvasPresetPickerProps {
   onCanvas: (changes: Partial<CanvasFormat>) => void;
 }
 
-/** A compact dropdown that sits in the Canvas heading, like the Appearance one. */
 export function CanvasPresetPicker({
   canvasFormat,
   onCanvas,
@@ -63,7 +62,6 @@ export interface CanvasPanelProps {
   onBackground: (background: Theme) => void;
 }
 
-/** Canvas dimensions and background; the preset picker sits in the heading. */
 export function CanvasPanel({
   canvasFormat,
   onCanvas,

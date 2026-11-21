@@ -6,10 +6,7 @@ export type RemovalProgress = (label: string, fraction: number) => void;
 /** Where each stage starts within the whole: loading, downloading, cutting out. */
 const DOWNLOAD_START = 0.05;
 const COMPUTE_START = 0.6;
-/**
- * The library reports four compute steps evenly, but inference takes nearly
- * all the time, so each step's report moves the bar this far through cutting out.
- */
+/** Inference takes nearly all the compute time, so the library's even steps are reweighted. */
 const COMPUTE_STEPS: Record<string, number> = {
   "compute:decode": 0,
   "compute:inference": 0.1,
@@ -17,11 +14,7 @@ const COMPUTE_STEPS: Record<string, number> = {
   "compute:encode": 0.95,
 };
 
-/**
- * Turns the library's per-file download and per-step compute reports into
- * one overall fraction that never moves backward (new files join the
- * download total as they start).
- */
+/** Combines the library's download and compute reports into one fraction that never goes back. */
 export function overallProgress(onProgress: RemovalProgress) {
   const downloads = new Map<string, { current: number; total: number }>();
   let reached = 0;
@@ -56,11 +49,7 @@ export function overallProgress(onProgress: RemovalProgress) {
 
 type Device = "gpu" | "cpu";
 
-/**
- * WebGPU only when the browser can actually provide an adapter: some expose
- * `navigator.gpu` but have no usable GPU (common on Linux, or blocklisted
- * drivers).
- */
+/** Some browsers expose `navigator.gpu` without a usable adapter. */
 async function detectDevice(): Promise<Device> {
   const gpu = (
     navigator as Navigator & {
@@ -74,32 +63,29 @@ async function detectDevice(): Promise<Device> {
   }
 }
 
-/**
- * Cuts the subject out of a photo in the browser. The library and its model
- * (tens of MB, from IMG.LY's CDN) load on first use; the photo never leaves
- * the device. Resolves to an image whose alpha is the cutout mask.
- */
 /** Checked once: asking for an adapter can take a while and wake the GPU. */
 let preferred: Promise<Device> | null = null;
 
+/** Cuts out the subject on-device, loading the model (tens of MB) on first use. */
 export async function removeBackground(
   source: HTMLCanvasElement,
   onProgress: RemovalProgress,
 ) {
   const progress = overallProgress(onProgress);
   progress.loading();
-  const { removeBackground: run } = await import("@imgly/background-removal");
-  const blob = await canvasToBlob(source);
+  preferred ??= detectDevice();
+  const [{ removeBackground: run }, blob, device] = await Promise.all([
+    import("@imgly/background-removal"),
+    canvasToBlob(source),
+    preferred,
+  ]);
   const cutOut = (device: Device) =>
     run(blob, { device, progress: progress.library });
-  preferred ??= detectDevice();
-  const device = await preferred;
   let result: Blob;
   try {
     result = await cutOut(device);
   } catch (cause) {
-    // A GPU that has an adapter can still fail to run the model; once it has,
-    // later cutouts go straight to the CPU.
+    // Some GPUs have an adapter but can't run the model; stay on the CPU after.
     if (device === "cpu") throw cause;
     console.warn("Background removal on the GPU failed; using the CPU", cause);
     preferred = Promise.resolve("cpu");

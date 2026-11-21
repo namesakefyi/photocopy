@@ -5,6 +5,7 @@ import type {
   PreviewLayer,
   PreviewRequest,
 } from "./photocopy.worker";
+import { context2d, scaledSize } from "./render";
 import type { Layer, Region } from "./types";
 import { resolutionStep } from "./zoom";
 
@@ -19,11 +20,7 @@ const pending = new Map<number, Pending>();
 /** Which bitmap (by key) the worker holds for each layer, for the preview. */
 const sentImages = new Map<string, string>();
 
-/**
- * Fails every waiting request and discards the worker, so the next request
- * starts a fresh one. Without this, a crashed worker (say, out of memory on a
- * huge export) would leave its callers waiting forever.
- */
+/** Rejects waiting requests and discards a crashed worker, so the next request starts fresh. */
 function failAll(error: Error) {
   for (const request of pending.values()) request.reject(error);
   pending.clear();
@@ -91,23 +88,16 @@ export async function photocopyImageData(
   );
 }
 
-/** A copy of the layer's composed image at `scale` of its size. */
 function scaledBitmap(layer: Layer, scale: number) {
-  const width = Math.max(1, Math.round(layer.width * scale));
-  const height = Math.max(1, Math.round(layer.height * scale));
+  const { width, height } = scaledSize(layer, scale);
   const canvas = new OffscreenCanvas(width, height);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas 2D is not available");
+  const ctx = context2d(canvas);
   ctx.imageSmoothingQuality = "high";
   ctx.drawImage(layer.composed, 0, 0, width, height);
   return canvas.transferToImageBitmap();
 }
 
-/**
- * Flattens and photocopies `region` at `scale` in the worker, for the live
- * preview. Only layers whose pixels or needed resolution changed since the
- * last preview are copied over, already scaled down.
- */
+/** Photocopies `region` for the live preview, sending only layer bitmaps that changed. */
 export async function renderPreview(
   layers: Layer[],
   region: Region,

@@ -1,43 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { DEFAULT_CANVAS } from "./canvasFormat";
-import {
-  canvasToBlob,
-  composeLayer,
-  cropLayerCanvases,
-  loadPhoto,
-  setMask,
-} from "./layers";
+import { canvasToBlob, cropLayerCanvases, loadPhoto, setMask } from "./layers";
 import { DEFAULT_SETTINGS, type PhotocopySettings } from "./photocopy";
 import * as storage from "./storage";
-import { savedBackground, type Theme, themeById } from "./themes";
-import type { CanvasFormat, Credit, Layer, Region } from "./types";
+import { savedBackground, themeById } from "./themes";
+import {
+  type ArtboardState,
+  type CanvasFormat,
+  type Layer,
+  sameArtboardState,
+} from "./types";
 
 const INDEX_KEY = "index";
-/** Where the single session lived before there were several artboards. */
-const LEGACY_KEY = "current";
 const SAVE_DELAY = 400;
 
-export interface SavedLayer {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  scale: number;
-  rotation: number;
-  flipX: boolean;
-  flipY: boolean;
-  visible: boolean;
-  credit?: Credit;
-  backgroundRemoved: boolean;
-  crop: Region | null;
-}
-
-export interface LegacyState {
-  version: 1;
-  layers: SavedLayer[];
-  settings: PhotocopySettings;
-  canvasFormat: CanvasFormat;
-}
+/** Pixels are stored as blobs; sizes and revisions are rebuilt on load. */
+export type SavedLayer = Omit<
+  Layer,
+  "width" | "height" | "source" | "mask" | "composed" | "revision"
+>;
 
 /** Its photos and masks are blobs, keyed by layer id. */
 export interface SavedArtboard {
@@ -71,10 +52,7 @@ const ARTBOARD_PREFIX = "doc:";
 const artboardKey = (id: string) => `${ARTBOARD_PREFIX}${id}`;
 const thumbKey = (id: string) => `thumb:${id}`;
 
-/**
- * Runs storage changes one at a time, in order, so a read-modify-write (like
- * a cutout landing while an autosave runs) never loses the other's change.
- */
+/** Runs storage changes in order, so overlapping read-modify-writes never lose updates. */
 let queue: Promise<unknown> = Promise.resolve();
 function exclusive<T>(task: () => Promise<T>): Promise<T> {
   const run = queue.then(task, task);
@@ -95,39 +73,27 @@ export async function saveSource(layer: Layer, file: Blob) {
 }
 
 async function restoreLayer(saved: SavedLayer): Promise<Layer | null> {
-  const source = await storage.get<Blob>(
-    storage.BLOB_STORE,
-    blobKey(saved.id, "source"),
+  const [source, mask] = await Promise.all(
+    BLOB_KINDS.map((kind) =>
+      storage.get<Blob>(storage.BLOB_STORE, blobKey(saved.id, kind)),
+    ),
   );
   if (!source) return null;
-  const layer = await loadPhoto(
-    new File([source], saved.name),
-    { x: saved.x, y: saved.y, maxWidth: 1, maxHeight: 1 },
-    saved.credit,
-  );
-  const base = saved.crop ? cropLayerCanvases(layer, saved.crop) : layer;
+  const layer = await loadPhoto(new File([source], saved.name), {
+    x: saved.x,
+    y: saved.y,
+    maxWidth: 1,
+    maxHeight: 1,
+  });
   const restored: Layer = {
-    ...base,
-    id: saved.id,
-    name: saved.name,
-    scale: saved.scale,
-    rotation: saved.rotation,
-    flipX: saved.flipX,
-    flipY: saved.flipY,
-    visible: saved.visible,
-    backgroundRemoved: saved.backgroundRemoved,
+    ...(saved.crop ? cropLayerCanvases(layer, saved.crop) : layer),
+    ...saved,
   };
-
-  const mask = await storage.get<Blob>(
-    storage.BLOB_STORE,
-    blobKey(saved.id, "mask"),
-  );
   if (mask) {
     const bitmap = await createImageBitmap(mask);
     setMask(restored, bitmap);
     bitmap.close();
   }
-  composeLayer(restored);
   return restored;
 }
 
@@ -177,10 +143,7 @@ function summarize(artboard: SavedArtboard, thumbnail?: Blob): ArtboardSummary {
   return { id: artboard.id, backgroundId: artboard.backgroundId, thumbnail };
 }
 
-/**
- * Removes files that no artboard uses. Done at start-up rather than on
- * delete, so undoing a layer's deletion can still bring its photo back.
- */
+/** Runs at start-up, not on delete, so undoing a layer's deletion keeps its photo. */
 async function removeUnusedFiles(artboards: SavedArtboard[]) {
   const layerIds = new Set(
     artboards.flatMap((artboard) => artboard.layers.map((layer) => layer.id)),
@@ -207,33 +170,9 @@ function writeIndex(order: string[], activeId: string) {
   return storage.put(storage.STATE_STORE, INDEX_KEY, index);
 }
 
-async function migrateLegacy() {
-  const legacy = await storage.get<LegacyState>(
-    storage.STATE_STORE,
-    LEGACY_KEY,
-  );
-  if (!legacy) return;
-  if (legacy.version === 1) {
-    await putArtboard(
-      newArtboard({
-        layers: legacy.layers,
-        settings: legacy.settings,
-        canvasFormat: legacy.canvasFormat,
-      }),
-    );
-  }
-  await storage.remove(storage.STATE_STORE, LEGACY_KEY);
-}
-
-/**
- * Migrates an older single session, and creates a first artboard when there
- * are none. Artboards the index doesn't list (say, from a crash mid-create)
- * go at the end. Unused files are cleaned up afterward, without holding up
- * the first render.
- */
+/** Creates a first artboard if needed; cleans up unused files without blocking. */
 export function loadLibrary() {
   return exclusive(async () => {
-    await migrateLegacy();
     const artboards = await allArtboards();
     if (artboards.length === 0) {
       const first = newArtboard();
@@ -277,10 +216,8 @@ export function saveIndex(order: string[], activeId: string) {
 /** Starts at the canvas size of the most recently edited artboard. */
 export function createArtboard(backgroundId: string) {
   return exclusive(async () => {
-    const latest = (await allArtboards()).reduce<SavedArtboard | undefined>(
-      (latest, artboard) =>
-        !latest || artboard.updatedAt > latest.updatedAt ? artboard : latest,
-      undefined,
+    const [latest] = (await allArtboards()).sort(
+      (a, b) => b.updatedAt - a.updatedAt,
     );
     const artboard = newArtboard({
       backgroundId,
@@ -343,10 +280,7 @@ export function duplicateArtboard(id: string) {
   });
 }
 
-/**
- * Merges changes into a saved artboard. Skipped if it's been deleted, so a
- * late save can never bring a deleted artboard back.
- */
+/** Skipped once deleted, so a late save can't bring an artboard back. */
 async function updateArtboard(
   id: string,
   change: (artboard: SavedArtboard) => Partial<SavedArtboard>,
@@ -368,10 +302,7 @@ export function saveThumbnail(id: string, thumbnail: Blob) {
   });
 }
 
-/**
- * Saves a background removal that finished after its artboard was closed.
- * Nothing can change a closed artboard, so the cutout still fits.
- */
+/** Saves a cutout that finished after its artboard was closed. */
 export function applyStoredCutout(
   artboardId: string,
   layerId: string,
@@ -381,27 +312,21 @@ export function applyStoredCutout(
     const artboard = await getArtboard(artboardId);
     if (!artboard?.layers.some((layer) => layer.id === layerId)) return;
     await storage.put(storage.BLOB_STORE, blobKey(layerId, "mask"), mask);
-    await putArtboard({
-      ...artboard,
-      updatedAt: Date.now(),
-      layers: artboard.layers.map((layer) =>
+    await updateArtboard(artboardId, ({ layers }) => ({
+      layers: layers.map((layer) =>
         layer.id === layerId ? { ...layer, backgroundRemoved: true } : layer,
       ),
-    });
+    }));
   });
 }
 
-export async function restoreArtboard(id: string): Promise<{
-  layers: Layer[];
-  settings: PhotocopySettings;
-  canvasFormat: CanvasFormat;
-  background: Theme;
-} | null> {
+export async function restoreArtboard(
+  id: string,
+): Promise<ArtboardState | null> {
   try {
     const artboard = await getArtboard(id);
     if (!artboard) return null;
-    // One photo that won't load (a corrupt or unsupported file) is dropped,
-    // rather than losing the whole artboard with it.
+    // A photo that won't load is dropped rather than losing the whole artboard.
     const layers = (
       await Promise.all(
         artboard.layers.map((saved) =>
@@ -425,27 +350,8 @@ export async function restoreArtboard(id: string): Promise<{
 }
 
 function toSaved(layer: Layer): SavedLayer {
-  return {
-    id: layer.id,
-    name: layer.name,
-    x: layer.x,
-    y: layer.y,
-    scale: layer.scale,
-    rotation: layer.rotation,
-    flipX: layer.flipX,
-    flipY: layer.flipY,
-    visible: layer.visible,
-    credit: layer.credit,
-    backgroundRemoved: layer.backgroundRemoved,
-    crop: layer.crop,
-  };
-}
-
-interface AutosaveState {
-  layers: Layer[];
-  settings: PhotocopySettings;
-  canvasFormat: CanvasFormat;
-  background: Theme;
+  const { width, height, source, mask, composed, revision, ...saved } = layer;
+  return saved;
 }
 
 interface AutosaveOptions {
@@ -459,19 +365,16 @@ interface AutosaveOptions {
 }
 
 /**
- * Saves the artboard shortly after anything changes. Masks are re-encoded
- * only when their revision changes. Saves run one at a time, in order, and a
- * save that a newer one has replaced is skipped, so an older state can never
- * finish last and overwrite a newer one. `flush` saves any pending change
- * right away, for before the artboard is closed.
+ * Saves shortly after changes, re-encoding only changed masks. Saves run in
+ * order, skipping superseded ones; `flush` saves immediately before closing.
  */
 export function useAutosave(
   artboardId: string,
-  state: AutosaveState,
+  state: ArtboardState,
   { isRestored, canSave, onError, delay = SAVE_DELAY }: AutosaveOptions,
 ) {
   const savedRevisions = useRef<Map<string, number> | null>(null);
-  const restoredState = useRef<AutosaveState | null>(null);
+  const restoredState = useRef<ArtboardState | null>(null);
   const pending = useRef<(() => Promise<void>) | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastSave = useRef<Promise<void>>(Promise.resolve());
@@ -499,14 +402,7 @@ export function useAutosave(
     const revisions = savedRevisions.current;
     const restored = restoredState.current;
     if (!revisions || !canSave) return;
-    if (
-      restored?.layers === layers &&
-      restored.settings === settings &&
-      restored.canvasFormat === canvasFormat &&
-      restored.background === background
-    ) {
-      return;
-    }
+    if (restored && sameArtboardState(restored, state)) return;
     restoredState.current = null;
     pending.current = async () => {
       try {
@@ -548,6 +444,7 @@ export function useAutosave(
     canSave,
     delay,
     runPending,
+    state,
   ]);
 
   // Saves anything still waiting when the artboard closes.

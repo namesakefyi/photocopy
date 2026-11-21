@@ -69,7 +69,6 @@ export function FlipVerticalIcon() {
   );
 }
 
-/** The front square solid, over the outline of the one behind. */
 export function BringForwardIcon() {
   return (
     <svg {...sharpIconProps}>
@@ -79,7 +78,6 @@ export function BringForwardIcon() {
   );
 }
 
-/** The back square solid, behind the outline of the one in front. */
 export function SendBackIcon() {
   return (
     <svg {...sharpIconProps}>

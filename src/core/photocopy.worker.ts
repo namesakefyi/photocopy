@@ -1,5 +1,10 @@
 import { type PhotocopySettings, photocopy } from "./photocopy";
-import { drawLayers, type LayerPlacement, regionPixels } from "./render";
+import {
+  context2d,
+  drawLayers,
+  type LayerPlacement,
+  scaledSize,
+} from "./render";
 import type { Region } from "./types";
 
 /** Photocopies already-flattened pixels (exports). */
@@ -20,9 +25,8 @@ export interface PreviewLayer extends LayerPlacement {
 }
 
 /**
- * Flattens and photocopies a region of the canvas (the live preview). The
- * worker keeps each layer's bitmap between requests, so `images` carries only
- * those that changed; layers missing from `layers` are dropped.
+ * Live preview of a region. Bitmaps persist between requests: `images` holds
+ * only changed ones, and layers missing from `layers` are dropped.
  */
 export interface PreviewRequest {
   kind: "preview";
@@ -55,10 +59,9 @@ function preview(request: PreviewRequest): ImageBitmap {
     bitmaps.delete(id);
   }
 
-  const { width, height } = regionPixels(request.region, request.scale);
+  const { width, height } = scaledSize(request.region, request.scale);
   const canvas = new OffscreenCanvas(width, height);
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  if (!ctx) throw new Error("Canvas 2D is not available in the worker");
+  const ctx = context2d(canvas, { willReadFrequently: true });
   drawLayers(
     ctx,
     request.layers.map((layer) => {

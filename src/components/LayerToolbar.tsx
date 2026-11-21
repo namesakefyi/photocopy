@@ -1,8 +1,8 @@
 import { Button, Group, Separator, Toolbar } from "react-aria-components";
-import { SHORTCUTS } from "../shortcuts";
-import type { Tool } from "../types";
-import type { ValueStore } from "../valueStore";
-import type { ZoomAction } from "../zoom";
+import { SHORTCUTS } from "../core/shortcuts";
+import type { Tool } from "../core/types";
+import type { ValueStore } from "../core/valueStore";
+import type { ZoomAction } from "../core/zoom";
 import { BrushSizeMenu } from "./BrushSizeMenu";
 import {
   BringForwardIcon,
@@ -70,10 +70,6 @@ function scrollSideways(event: React.WheelEvent<HTMLElement>) {
   event.currentTarget.scrollLeft += event.deltaY;
 }
 
-/**
- * Above the canvas: the app name, undo, redo and zoom, then the selected layer's
- * actions. Adding a layer lives in the Layers section.
- */
 export function LayerToolbar({
   hasSelection,
   canUndo,

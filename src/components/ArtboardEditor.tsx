@@ -13,41 +13,42 @@ import {
   type FitMemory,
   fitLayersToCanvas,
   MAX_CANVAS_SIZE,
-} from "../canvasFormat";
-import { makePhotocopy, type Photocopy } from "../copy";
-import { type ArtboardState, useHistory } from "../history";
+} from "../core/canvasFormat";
+import { makePhotocopy, type Photocopy } from "../core/copy";
+import { useHistory } from "../core/history";
 import {
-  composeLayer,
   croppableBounds,
   cropToVisible,
   loadPhoto,
   nextRevision,
   setMask,
-} from "../layers";
+} from "../core/layers";
 import {
   isQuotaError,
   QUOTA_MESSAGE,
   restoreArtboard,
   saveSource,
   useAutosave,
-} from "../persistence";
-import { DEFAULT_SETTINGS, type PhotocopySettings } from "../photocopy";
-import { renderPreview } from "../photocopyClient";
-import { sameRegion } from "../render";
-import { shortcutFor } from "../shortcuts";
-import { saveBackground, savedBackground, type Theme } from "../themes";
-import { renderThumbnail } from "../thumbnail";
-import type {
-  CanvasFormat,
-  Credit,
-  Layer,
-  LayerChanges,
-  Region,
-  Removal,
-  Tool,
-} from "../types";
-import { createValueStore } from "../valueStore";
-import { resolutionStep, screenPixelRatio } from "../zoom";
+} from "../core/persistence";
+import { DEFAULT_SETTINGS, type PhotocopySettings } from "../core/photocopy";
+import { renderPreview } from "../core/photocopyClient";
+import { screenPixelRatio } from "../core/render";
+import { shortcutFor } from "../core/shortcuts";
+import { saveBackground, savedBackground, type Theme } from "../core/themes";
+import { renderThumbnail } from "../core/thumbnail";
+import {
+  type ArtboardState,
+  type CanvasFormat,
+  type Credit,
+  type Layer,
+  type LayerChanges,
+  type Region,
+  type Removal,
+  sameArtboardState,
+  type Tool,
+} from "../core/types";
+import { createValueStore } from "../core/valueStore";
+import { resolutionStep } from "../core/zoom";
 import { AboutDialog } from "./AboutDialog";
 import { MAX_BRUSH, MIN_BRUSH } from "./BrushSizeMenu";
 import { Canvas, type CanvasHandle } from "./Canvas";
@@ -64,6 +65,16 @@ import {
 import { ProgressLine } from "./ProgressLine";
 
 const PREVIEW_DELAY = 150;
+
+/** Fields, dialogs, menus and the file viewer handle their own keys and paste. */
+function isOwnInputTarget(event: Event) {
+  return (
+    event.defaultPrevented ||
+    (event.target as HTMLElement).closest?.(
+      "input, textarea, select, [role=dialog], [role=menu], [data-own-keys]",
+    ) != null
+  );
+}
 const THUMBNAIL_DELAY = 1000;
 /** How long to wait for another tab to let go before saying it has this open. */
 const LOCK_GRACE = 300;
@@ -76,10 +87,7 @@ const BRUSH_LABELS: Record<Tool, string> = {
 
 export interface ArtboardEditorHandle {
   flush: () => Promise<void>;
-  /**
-   * Applies a finished background removal. `revision` is the photo's version
-   * when removal started, or null if this editor opened since then.
-   */
+  /** `revision` is the photo's version when removal started, or null if reopened since. */
   applyCutout: (
     layerId: string,
     revision: number | null,
@@ -105,10 +113,7 @@ export interface ArtboardEditorProps {
 
 type LockState = "waiting" | "held" | "elsewhere";
 
-/**
- * Holds this artboard's lock while it's open, so two tabs never save over
- * each other. Without the Web Locks API, every tab can edit, as before.
- */
+/** Holds the artboard's lock while open, so two tabs never save over each other. */
 function useArtboardLock(artboardId: string, onRegained: () => void) {
   const [state, setState] = useState<LockState>(() =>
     "locks" in navigator ? "waiting" : "held",
@@ -174,13 +179,8 @@ export function ArtboardEditor({
   } | null>(null);
   // Frees each preview's bitmap once a newer one (or none) replaces it.
   useEffect(() => () => preview?.image.close(), [preview]);
-  // What the preview should cover, and at what resolution. Updated from the
-  // canvas's view only when one of them changes, so panning and zooming
-  // don't re-render the whole app.
-  const [previewTarget, setPreviewTarget] = useState<{
-    scale: number;
-    region: Region;
-  }>({ scale: 1, region: { x: 0, y: 0, width: 0, height: 0 } });
+  // In resolution steps, so most zooms don't re-render the preview.
+  const [previewScale, setPreviewScale] = useState<number | null>(null);
   const canvasRef = useRef<CanvasHandle>(null);
   // The toolbar's zoom level; a store, so zooming re-renders only that.
   const [zoom] = useState(() => createValueStore(1));
@@ -225,11 +225,15 @@ export function ArtboardEditor({
     if (isQuotaError(cause)) setError(QUOTA_MESSAGE);
   }, []);
 
-  const autosave = useAutosave(
-    artboardId,
-    { layers, settings, canvasFormat, background },
-    { isRestored, canSave: lock === "held", onError: reportSaveError },
+  const content = useMemo<ArtboardState>(
+    () => ({ layers, settings, canvasFormat, background }),
+    [layers, settings, canvasFormat, background],
   );
+  const autosave = useAutosave(artboardId, content, {
+    isRestored,
+    canSave: lock === "held",
+    onError: reportSaveError,
+  });
 
   const applyHistory = useCallback((state: ArtboardState) => {
     setLayers(state.layers);
@@ -243,11 +247,7 @@ export function ArtboardEditor({
     setIsRefining(false);
   }, []);
 
-  const history = useHistory(
-    { layers, settings, canvasFormat, background },
-    isRestored,
-    applyHistory,
-  );
+  const history = useHistory(content, isRestored, applyHistory);
   const previewRequest = useRef(0);
 
   const artboard = canvasSize(canvasFormat);
@@ -259,25 +259,13 @@ export function ArtboardEditor({
         .map((layer) => [layer.credit?.sourceUrl, layer.credit as Credit]),
     ).values(),
   ];
-  const { region: previewRegion, scale: previewScale } = previewTarget;
 
-  const handleView = useCallback(
-    (view: { scale: number; region: Region }) => {
-      zoom.set(view.scale);
-      setPreviewTarget((current) => {
-        const scale = resolutionStep(view.scale * screenPixelRatio());
-        const region = {
-          x: 0,
-          y: 0,
-          width: artboardWidth,
-          height: artboardHeight,
-        };
-        return scale === current.scale && sameRegion(region, current.region)
-          ? current
-          : { scale, region };
-      });
+  const handleZoom = useCallback(
+    (scale: number) => {
+      zoom.set(scale);
+      setPreviewScale(resolutionStep(scale * screenPixelRatio()));
     },
-    [zoom, artboardWidth, artboardHeight],
+    [zoom],
   );
   const selectedIndex = layers.findIndex((layer) => layer.id === selectedId);
   const selected = layers[selectedIndex] ?? null;
@@ -392,8 +380,7 @@ export function ArtboardEditor({
         await Promise.all([autosave.flush(), saveThumbnailNow()]);
       },
       applyCutout(layerId, revision, cutout) {
-        // Undo, or a crop or stroke from the right-click menu, may have changed
-        // the photo meanwhile; the cutout only fits the version it started from.
+        // The cutout only fits the photo version it started from.
         const current = latestLayers.current.find(
           (other) => other.id === layerId,
         );
@@ -404,7 +391,6 @@ export function ArtboardEditor({
           return;
         }
         setMask(current, cutout);
-        composeLayer(current);
         updateLayer(current.id, {
           backgroundRemoved: true,
           revision: nextRevision(),
@@ -419,17 +405,11 @@ export function ArtboardEditor({
   const isThumbnailStale = useRef(needsThumbnail);
   useEffect(() => {
     const restored = restoredContent.current;
-    if (
-      !isRestored ||
-      (restored?.layers === layers &&
-        restored.settings === settings &&
-        restored.canvasFormat === canvasFormat &&
-        restored.background === background)
-    ) {
+    if (!isRestored || (restored && sameArtboardState(restored, content))) {
       return;
     }
     isThumbnailStale.current = true;
-  }, [layers, settings, canvasFormat, background, isRestored]);
+  }, [isRestored, content]);
 
   const saveThumbnailNow = useEffectEvent(async () => {
     // Photos without a preview yet would make a blank thumbnail.
@@ -553,18 +533,8 @@ export function ArtboardEditor({
     }
   }
 
-  // Keyboard shortcuts for the menu items, skipped while typing, in a dialog,
-  // or in a part of the app with keys of its own, like the file viewer.
   const handleShortcut = useEffectEvent((event: KeyboardEvent) => {
-    const target = event.target as HTMLElement;
-    if (
-      event.defaultPrevented ||
-      target.closest(
-        "input, textarea, select, [role=dialog], [role=menu], [data-own-keys]",
-      )
-    ) {
-      return;
-    }
+    if (isOwnInputTarget(event)) return;
     const command = shortcutFor(event);
     if (!command) return;
     if (command === "delete" && !selected) return;
@@ -602,18 +572,8 @@ export function ArtboardEditor({
     return () => window.removeEventListener("keydown", handleShortcut);
   }, []);
 
-  // Pasted images become new layers, like dropped ones. Skipped in the same
-  // places as the shortcuts, so pasting text into a field still works.
-  const handlePaste = useEffectEvent((event: ClipboardEvent) => {
-    const target = event.target as HTMLElement;
-    if (
-      event.defaultPrevented ||
-      target.closest?.(
-        "input, textarea, select, [role=dialog], [role=menu], [data-own-keys]",
-      )
-    ) {
-      return;
-    }
+  const handlePastedImages = useEffectEvent((event: ClipboardEvent) => {
+    if (isOwnInputTarget(event)) return;
     const files = [...(event.clipboardData?.files ?? [])].filter((file) =>
       file.type.startsWith("image/"),
     );
@@ -623,8 +583,8 @@ export function ArtboardEditor({
   });
 
   useEffect(() => {
-    window.addEventListener("paste", handlePaste);
-    return () => window.removeEventListener("paste", handlePaste);
+    window.addEventListener("paste", handlePastedImages);
+    return () => window.removeEventListener("paste", handlePastedImages);
   }, []);
 
   function changeCanvas(changes: Partial<CanvasFormat>) {
@@ -663,21 +623,23 @@ export function ArtboardEditor({
     if (isRestored) saveBackground(background);
   }, [background, isRestored]);
 
-  // The region's numbers are the dependencies, not its object identity.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   useEffect(() => {
-    if (layers.length === 0 || previewRegion.width === 0) {
+    if (layers.length === 0 || previewScale === null) {
       // Also retires any preview still rendering, so it can't land afterward.
       previewRequest.current += 1;
       setPreview(null);
       return;
     }
-    const region = previewRegion;
+    const region = { x: 0, y: 0, width: artboardWidth, height: artboardHeight };
     const request = ++previewRequest.current;
-    const pixelScale = previewScale;
     const timer = setTimeout(async () => {
       try {
-        const image = await renderPreview(layers, region, pixelScale, settings);
+        const image = await renderPreview(
+          layers,
+          region,
+          previewScale,
+          settings,
+        );
         if (request !== previewRequest.current) {
           image.close();
           return;
@@ -690,15 +652,7 @@ export function ArtboardEditor({
       }
     }, PREVIEW_DELAY);
     return () => clearTimeout(timer);
-  }, [
-    layers,
-    settings,
-    previewScale,
-    previewRegion.x,
-    previewRegion.y,
-    previewRegion.width,
-    previewRegion.height,
-  ]);
+  }, [layers, settings, previewScale, artboardWidth, artboardHeight]);
 
   // A preview that lands after closing would otherwise never be freed.
   useEffect(
@@ -769,10 +723,9 @@ export function ArtboardEditor({
             onSelect={select}
             onChange={updateLayer}
             onFiles={addFiles}
-            onView={handleView}
+            onZoom={handleZoom}
             ref={canvasRef}
           />
-          {/* Progress and hints, like background removal or the brush in use. */}
           <p className="canvas-toast" role="status">
             {status}
           </p>

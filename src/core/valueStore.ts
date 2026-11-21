@@ -1,7 +1,4 @@
-/**
- * A single value that components can subscribe to with useSyncExternalStore,
- * so only they re-render when it changes, not the component that owns it.
- */
+/** A value for useSyncExternalStore, so only subscribers re-render, not its owner. */
 export interface ValueStore<T> {
   get: () => T;
   set: (value: T) => void;

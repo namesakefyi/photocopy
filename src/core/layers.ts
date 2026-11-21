@@ -1,36 +1,13 @@
 import { contentBounds } from "./photocopy";
+import { context2d, createCanvas } from "./render";
 import type { Credit, Layer, Region, Tool } from "./types";
 
 /** Keeps memory in check: each layer holds three canvases this size. */
 const MAX_SIDE = 2560;
 
-function createCanvas(width: number, height: number) {
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  return canvas;
-}
-
-function context(canvas: HTMLCanvasElement) {
-  const ctx = canvas.getContext("2d", { willReadFrequently: false });
-  if (!ctx) throw new Error("Canvas 2D is not available");
-  return ctx;
-}
-
-function fillOpaque(canvas: HTMLCanvasElement) {
-  const ctx = context(canvas);
-  ctx.globalCompositeOperation = "source-over";
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-
 let lastRevision = 0;
 
-/**
- * A number for a new version of a photo's pixels, never reused in a session.
- * Undo history and autosave key mask snapshots by it, so a new edit after an
- * undo must never get the number of an edit that was undone.
- */
+/** Never reused in a session: undo history and autosave key mask snapshots by it. */
 export function nextRevision() {
   lastRevision += 1;
   return lastRevision;
@@ -48,12 +25,9 @@ export async function loadPhoto(
   const width = Math.round(bitmap.width * fit);
   const height = Math.round(bitmap.height * fit);
 
-  const source = createCanvas(width, height);
-  context(source).drawImage(bitmap, 0, 0, width, height);
+  const source = createCanvas({ width, height });
+  context2d(source).drawImage(bitmap, 0, 0, width, height);
   bitmap.close();
-
-  const mask = createCanvas(width, height);
-  fillOpaque(mask);
 
   const layer: Layer = {
     id: crypto.randomUUID(),
@@ -61,10 +35,10 @@ export async function loadPhoto(
     width,
     height,
     source,
-    mask,
+    mask: createCanvas({ width, height }),
     backgroundRemoved: false,
     crop: null,
-    composed: createCanvas(width, height),
+    composed: createCanvas({ width, height }),
     x: placement.x,
     y: placement.y,
     scale: Math.min(
@@ -79,12 +53,12 @@ export async function loadPhoto(
     credit,
     revision: nextRevision(),
   };
-  composeLayer(layer);
+  setMask(layer, null);
   return layer;
 }
 
 export function composeLayer(layer: Layer) {
-  const ctx = context(layer.composed);
+  const ctx = context2d(layer.composed);
   ctx.save();
   ctx.clearRect(0, 0, layer.width, layer.height);
   ctx.drawImage(layer.source, 0, 0);
@@ -100,7 +74,7 @@ export function paintMask(
   size: number,
   tool: Exclude<Tool, "move">,
 ) {
-  const ctx = context(layer.mask);
+  const ctx = context2d(layer.mask);
   ctx.save();
   ctx.globalCompositeOperation =
     tool === "erase" ? "destination-out" : "source-over";
@@ -116,7 +90,7 @@ export function paintMask(
 }
 
 export function setMask(layer: Layer, image: CanvasImageSource | null) {
-  const ctx = context(layer.mask);
+  const ctx = context2d(layer.mask);
   ctx.save();
   ctx.globalCompositeOperation = "copy";
   if (image) {
@@ -126,6 +100,7 @@ export function setMask(layer: Layer, image: CanvasImageSource | null) {
     ctx.fillRect(0, 0, layer.width, layer.height);
   }
   ctx.restore();
+  composeLayer(layer);
 }
 
 /** A cutout scaled to the layer, as a mask image to store. */
@@ -133,8 +108,8 @@ export function maskBlob(
   layer: Pick<Layer, "width" | "height">,
   image: CanvasImageSource,
 ) {
-  const canvas = createCanvas(layer.width, layer.height);
-  context(canvas).drawImage(image, 0, 0, layer.width, layer.height);
+  const canvas = createCanvas(layer);
+  context2d(canvas).drawImage(image, 0, 0, layer.width, layer.height);
   return canvasToBlob(canvas);
 }
 
@@ -148,8 +123,8 @@ export function canvasToBlob(canvas: HTMLCanvasElement, type = "image/png") {
 }
 
 function cropCanvas(canvas: HTMLCanvasElement, region: Region) {
-  const cropped = createCanvas(region.width, region.height);
-  context(cropped).drawImage(canvas, -region.x, -region.y);
+  const cropped = createCanvas(region);
+  context2d(cropped).drawImage(canvas, -region.x, -region.y);
   return cropped;
 }
 
@@ -162,7 +137,7 @@ export function cropLayerCanvases(layer: Layer, region: Region): Layer {
     height: region.height,
     source: cropCanvas(layer.source, region),
     mask: cropCanvas(layer.mask, region),
-    composed: createCanvas(region.width, region.height),
+    composed: createCanvas(region),
     crop: {
       x: previous.x + region.x,
       y: previous.y + region.y,
@@ -177,40 +152,21 @@ export function cropLayerCanvases(layer: Layer, region: Region): Layer {
 /** Pixels at least this opaque are the ones that print in the copy. */
 const PRINTED_ALPHA = 128;
 
-/**
- * The part of a layer that will print, or null when that's already the whole
- * layer (or nothing at all), so there's nothing to crop.
- */
+/** The part of a layer that will print, or null when there's nothing to crop. */
 export function croppableBounds(layer: Layer): Region | null {
-  const { data } = context(layer.composed).getImageData(
-    0,
-    0,
-    layer.width,
-    layer.height,
-  );
-  const bounds = contentBounds(
-    { data, width: layer.width, height: layer.height },
-    PRINTED_ALPHA,
-  );
-  if (
-    !bounds ||
-    (bounds.width === layer.width && bounds.height === layer.height)
-  ) {
-    return null;
-  }
-  return bounds;
+  const { width, height } = layer;
+  const pixels = context2d(layer.composed).getImageData(0, 0, width, height);
+  const bounds = contentBounds(pixels, PRINTED_ALPHA);
+  const isWhole = bounds?.width === width && bounds.height === height;
+  return isWhole ? null : bounds;
 }
 
-/**
- * Shrinks a layer to the part that will actually print, keeping it in the
- * same place on the artboard. Null when there's nothing to trim.
- */
+/** Trims a layer to the part that will print, keeping it in place on the artboard. */
 export function cropToVisible(layer: Layer): Layer | null {
   const bounds = croppableBounds(layer);
   if (!bounds) return null;
 
-  // The layer is positioned by its center, so move that center to the middle
-  // of the kept area, through the layer's flip, scale and rotation.
+  // Moves the center to the kept area's middle, through flip, scale and rotation.
   const localX =
     (bounds.x + bounds.width / 2 - layer.width / 2) *
     layer.scale *

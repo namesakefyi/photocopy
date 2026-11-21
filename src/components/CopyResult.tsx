@@ -7,9 +7,9 @@ import {
   type Photocopy,
   savedExportOptions,
   saveExportOptions,
-} from "../copy";
-import { creditSource, formatCredit } from "../credits";
-import type { Credit } from "../types";
+} from "../core/copy";
+import { creditSource, formatCredit } from "../core/credits";
+import type { Credit } from "../core/types";
 import { Button } from "./ui/Button";
 import { Checkbox } from "./ui/Checkbox";
 

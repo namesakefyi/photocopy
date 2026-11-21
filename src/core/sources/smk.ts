@@ -47,15 +47,18 @@ export const smk: ImageSource = {
   label: "SMK",
   name: NAME,
   async search(search, page, signal) {
-    const url = new URL(API);
-    url.search = new URLSearchParams({
-      keys: search,
-      lang: "en",
-      offset: String((page - 1) * PAGE_SIZE),
-      rows: String(PAGE_SIZE),
-      filters: "[public_domain:true],[has_image:true]",
-    }).toString();
-    const data = await fetchJson<ApiResponse>(NAME, url, { signal });
+    const data = await fetchJson<ApiResponse>(
+      NAME,
+      API,
+      {
+        keys: search,
+        lang: "en",
+        offset: String((page - 1) * PAGE_SIZE),
+        rows: String(PAGE_SIZE),
+        filters: "[public_domain:true],[has_image:true]",
+      },
+      { signal },
+    );
     const items = (data.items ?? []).filter(
       (artwork) => artwork.image_iiif_id && artwork.image_thumbnail,
     );

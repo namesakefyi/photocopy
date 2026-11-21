@@ -46,15 +46,18 @@ export const wellcome: ImageSource = {
   label: "Wellcome Collection",
   name: NAME,
   async search(search, page, signal) {
-    const url = new URL(API);
-    url.search = new URLSearchParams({
-      query: search,
-      page: String(page),
-      pageSize: String(PAGE_SIZE),
-      "locations.license": LICENSES.join(","),
-      include: "source.contributors",
-    }).toString();
-    const data = await fetchJson<ApiResponse>(NAME, url, { signal });
+    const data = await fetchJson<ApiResponse>(
+      NAME,
+      API,
+      {
+        query: search,
+        page: String(page),
+        pageSize: String(PAGE_SIZE),
+        "locations.license": LICENSES.join(","),
+        include: "source.contributors",
+      },
+      { signal },
+    );
     return {
       results: data.results.flatMap((image) => {
         const location = image.locations[0];

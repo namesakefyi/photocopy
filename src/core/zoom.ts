@@ -12,11 +12,7 @@ export interface Point {
   y: number;
 }
 
-/**
- * What the canvas shows. A null zoom fits the artboard in view, centered;
- * otherwise `center` is the artboard point at the middle of the view (null
- * for the artboard's own center).
- */
+/** A null zoom fits the artboard; a null center is the artboard's center. */
 export interface Viewport {
   zoom: number | null;
   center: Point | null;
@@ -24,7 +20,7 @@ export interface Viewport {
 
 export const FIT_VIEWPORT: Viewport = { zoom: null, center: null };
 
-/** The steps the zoom buttons and shortcuts move between. 1 is 100%: one artboard pixel per screen pixel. */
+/** 1 is one artboard pixel per screen pixel. */
 export const ZOOM_LEVELS = [
   0.05, 0.1, 0.125, 0.167, 0.25, 0.333, 0.5, 0.667, 1, 1.5, 2, 3, 4, 6, 8,
 ];
@@ -32,21 +28,14 @@ export const MIN_ZOOM = ZOOM_LEVELS[0];
 export const MAX_ZOOM = ZOOM_LEVELS[ZOOM_LEVELS.length - 1];
 const EPSILON = 0.001;
 
-/**
- * Keeps a zoom within the levels' range, except that it never pulls a zoom
- * that is already outside the range further away: a tiny canvas can fit
- * above the top level, and zooming it in shouldn't zoom it out.
- */
+/** Clamps to the levels' range, but never pulls an already out-of-range zoom further away. */
 export function clampZoom(zoom: number, current: number) {
   const min = Math.min(MIN_ZOOM, current);
   const max = Math.max(MAX_ZOOM, current);
   return Math.min(max, Math.max(min, zoom));
 }
 
-/**
- * The next zoom level in or out from any zoom, including one between levels.
- * Past the last level in that direction, the zoom stays where it is.
- */
+/** The next level in `direction`, or `zoom` itself past the last one. */
 export function zoomStep(zoom: number, direction: 1 | -1) {
   if (direction === 1) {
     return ZOOM_LEVELS.find((level) => level > zoom + EPSILON) ?? zoom;
@@ -67,10 +56,7 @@ export function wheelZoomFactor(deltaY: number) {
   return Math.exp(-amount * WHEEL_ZOOM_SPEED);
 }
 
-/**
- * The new center after zooming from `scale` to `next`, keeping the artboard
- * point under `pointer` (in screen pixels from the view's middle) in place.
- */
+/** The center that keeps the point under `pointer` (screen pixels from the middle) fixed. */
 export function zoomAround(
   center: Point,
   pointer: Point,
@@ -83,7 +69,6 @@ export function zoomAround(
   };
 }
 
-/** The nearest point to `point` inside `region`. */
 export function clampPoint(point: Point, region: Region): Point {
   return {
     x: Math.min(region.x + region.width, Math.max(region.x, point.x)),
@@ -91,24 +76,10 @@ export function clampPoint(point: Point, region: Region): Point {
   };
 }
 
-/**
- * Image pixels per artboard pixel for a given screen scale: rounded up to
- * steps of √2, so small zoom changes reuse what's already rendered, and never
- * above 1, past which zooming in shows nothing new.
- */
+/** Image pixels per artboard pixel, rounded up to √2 steps for reuse and capped at 1. */
 export function resolutionStep(scale: number) {
   if (!(scale > 0)) return 1;
   // The tolerance keeps exact steps (like 0.5) from rounding up a step.
   const steps = Math.log(scale) / Math.log(Math.SQRT2);
   return Math.min(1, Math.SQRT2 ** Math.ceil(steps - EPSILON));
-}
-
-/**
- * The canvas draws at most 2 device pixels per CSS pixel: 3× phones would
- * otherwise draw over twice as many pixels for little visible gain.
- */
-export const MAX_PIXEL_RATIO = 2;
-
-export function screenPixelRatio() {
-  return Math.min(globalThis.devicePixelRatio || 1, MAX_PIXEL_RATIO);
 }

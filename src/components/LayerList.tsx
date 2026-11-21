@@ -1,6 +1,6 @@
 import { GridList, GridListItem, useDragAndDrop } from "react-aria-components";
-import { reorder } from "../reorder";
-import type { Layer } from "../types";
+import { reorder } from "../core/reorder";
+import type { Layer } from "../core/types";
 import { Button } from "./ui/Button";
 import { EyeClosedIcon, EyeIcon } from "./ui/icons";
 

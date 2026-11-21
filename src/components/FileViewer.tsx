@@ -12,9 +12,9 @@ import {
   Popover,
   useDragAndDrop,
 } from "react-aria-components";
-import type { ArtboardSummary } from "../persistence";
-import { reorder } from "../reorder";
-import { themeById } from "../themes";
+import type { ArtboardSummary } from "../core/persistence";
+import { reorder } from "../core/reorder";
+import { themeById } from "../core/themes";
 import { Button } from "./ui/Button";
 import { MoreIcon, PlusIcon } from "./ui/icons";
 
@@ -67,8 +67,7 @@ export function FileViewer({
   );
 
   const { dragAndDropHooks } = useDragAndDrop({
-    // Always passed to the list (adding or removing it would change the
-    // list's hooks between renders); with one artboard there's no order.
+    // Always passed, so the list's hooks stay stable; one artboard has no order.
     isDisabled: artboards.length < 2,
     getItems: (keys) => [...keys].map((key) => ({ "text/plain": String(key) })),
     onReorder: ({ keys, target }) =>

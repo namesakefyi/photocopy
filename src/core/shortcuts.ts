@@ -25,25 +25,31 @@ export const SHORTCUTS = {
   nextArtboard: IS_MAC ? "⌥↓" : "Alt+↓",
 } as const;
 
-export type ShortcutCommand =
-  | "undo"
-  | "redo"
-  | "export"
-  | "forward"
-  | "back"
-  | "zoomIn"
-  | "zoomOut"
-  | "zoomActual"
-  | "zoomDouble"
-  | "zoomFit"
-  | "brushLarger"
-  | "brushSmaller"
-  | "delete"
-  | "restore"
-  | "erase"
-  | "escape"
-  | "previousArtboard"
-  | "nextArtboard";
+export type ShortcutCommand = keyof typeof SHORTCUTS | "escape";
+
+const MOD_KEYS: Record<string, ShortcutCommand> = {
+  "=": "zoomIn",
+  "+": "zoomIn",
+  "-": "zoomOut",
+  _: "zoomOut",
+  // Where the browser lets it through, ⌘1 still works.
+  "1": "zoomActual",
+  "0": "zoomFit",
+  y: "redo",
+  e: "export",
+  "]": "forward",
+  "[": "back",
+};
+
+const PLAIN_KEYS: Record<string, ShortcutCommand> = {
+  "]": "brushLarger",
+  "[": "brushSmaller",
+  delete: "delete",
+  backspace: "delete",
+  m: "erase",
+  e: "restore",
+  escape: "escape",
+};
 
 export interface KeyPress {
   key: string;
@@ -55,10 +61,7 @@ export interface KeyPress {
   code?: string;
 }
 
-/**
- * The command a key press stands for, or null for keys the app leaves to the
- * browser. ⌘ and Ctrl both count as the modifier, so either works anywhere.
- */
+/** The command for a key press, or null to leave it to the browser. ⌘ and Ctrl both work. */
 export function shortcutFor({
   key: rawKey,
   metaKey,
@@ -78,47 +81,8 @@ export function shortcutFor({
     if (code === "Digit2") return "zoomDouble";
   }
   if (metaKey || ctrlKey) {
-    switch (key) {
-      case "=":
-      case "+":
-        return "zoomIn";
-      case "-":
-      case "_":
-        return "zoomOut";
-      // Where the browser lets it through, ⌘1 still works.
-      case "1":
-        return "zoomActual";
-      case "0":
-        return "zoomFit";
-      case "z":
-        return shiftKey ? "redo" : "undo";
-      case "y":
-        return "redo";
-      case "e":
-        return "export";
-      case "]":
-        return "forward";
-      case "[":
-        return "back";
-      default:
-        return null;
-    }
+    if (key === "z") return shiftKey ? "redo" : "undo";
+    return Object.hasOwn(MOD_KEYS, key) ? MOD_KEYS[key] : null;
   }
-  switch (key) {
-    case "]":
-      return "brushLarger";
-    case "[":
-      return "brushSmaller";
-    case "delete":
-    case "backspace":
-      return "delete";
-    case "m":
-      return "erase";
-    case "e":
-      return "restore";
-    case "escape":
-      return "escape";
-    default:
-      return null;
-  }
+  return Object.hasOwn(PLAIN_KEYS, key) ? PLAIN_KEYS[key] : null;
 }

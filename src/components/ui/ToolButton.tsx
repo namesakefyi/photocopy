@@ -40,10 +40,7 @@ export function ToolButton({
   );
 }
 
-/**
- * A toggle like ToolButton; also works inside a ToggleButtonGroup. With
- * `hasText`, it shows text beside its icon instead of only the icon.
- */
+/** A toggle ToolButton, also for ToggleButtonGroups; `hasText` shows its label too. */
 export function ToolToggleButton({
   label,
   shortcut,

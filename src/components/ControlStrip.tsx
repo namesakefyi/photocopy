@@ -6,9 +6,9 @@ import {
   Popover,
   Text,
 } from "react-aria-components";
-import type { PhotocopySettings } from "../photocopy";
-import { SHORTCUTS } from "../shortcuts";
-import type { Layer } from "../types";
+import type { PhotocopySettings } from "../core/photocopy";
+import { SHORTCUTS } from "../core/shortcuts";
+import type { Layer } from "../core/types";
 import { PresetPicker } from "./PresetPicker";
 import { Button } from "./ui/Button";
 import { ChevronIcon, PlusIcon } from "./ui/icons";
@@ -142,10 +142,7 @@ export function ControlStrip({
   );
 }
 
-/**
- * A collapsible sidebar section. Its trailing control sits beside the summary
- * rather than in it, so the toggle never contains another button.
- */
+/** The trailing control sits beside the toggle, never nested inside it. */
 function Section({
   title,
   action,

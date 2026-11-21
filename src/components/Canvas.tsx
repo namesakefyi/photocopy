@@ -18,20 +18,20 @@ import {
   Stage,
   Transformer,
 } from "react-konva";
-import { composeLayer, nextRevision, paintMask } from "../layers";
-import type { Layer, LayerChanges, Region, Tool } from "../types";
+import { composeLayer, nextRevision, paintMask } from "../core/layers";
+import { screenPixelRatio } from "../core/render";
+import type { Layer, LayerChanges, Region, Tool } from "../core/types";
 import {
   clampPoint,
   clampZoom,
   FIT_VIEWPORT,
   type Point,
-  screenPixelRatio,
   type Viewport,
   wheelZoomFactor,
   type ZoomAction,
   zoomAround,
   zoomStep,
-} from "../zoom";
+} from "../core/zoom";
 
 // Set before any stage is created; Konva reads it for each canvas it makes.
 Konva.pixelRatio = screenPixelRatio();
@@ -43,7 +43,6 @@ const MASK_COLOR = "#ff2020";
 /** The surround's color, covering anything hanging off the artboard (not saved). */
 const OFF_CANVAS = "rgb(22 22 22 / 0.8)";
 
-/** The light grid that stands in for transparency, like in image editors. */
 /** White under black, so the brush outline shows on any photo. */
 function BrushOutline({
   x,
@@ -97,13 +96,11 @@ export interface CanvasProps {
   isMaskMode: boolean;
   /** The photocopied region, shown over the photos. */
   preview: { image: ImageBitmap; region: Region } | null;
-  /** The background color. */
   canvasFill: string;
   onSelect: (id: string | null) => void;
   onChange: (id: string, changes: LayerChanges) => void;
   onFiles: (files: File[]) => void;
-  /** Reports the zoom and the part of the artboard the canvas shows. */
-  onView: (view: { scale: number; region: Region }) => void;
+  onZoom: (scale: number) => void;
   /** For zooming from outside, like keyboard shortcuts. */
   ref?: React.Ref<CanvasHandle>;
 }
@@ -125,7 +122,7 @@ export function Canvas({
   onSelect,
   onChange,
   onFiles,
-  onView,
+  onZoom,
   ref,
 }: CanvasProps) {
   // The canvas owns its zoom and pan, so panning re-renders only the canvas.
@@ -139,8 +136,7 @@ export function Canvas({
   const stroke = useRef<{ x: number; y: number } | null>(null);
   const frame = useRef(0);
   const [isInteracting, setIsInteracting] = useState(false);
-  // The preview from before a drag still shows the old position, so it stays
-  // hidden until a fresh one arrives.
+  // Hidden after a drag until a preview of the new position arrives.
   const [stalePreview, setStalePreview] =
     useState<CanvasProps["preview"]>(null);
 
@@ -175,7 +171,7 @@ export function Canvas({
 
   const { scale, center } = resolve(viewport);
 
-  /** Steps or sets the zoom, from the latest viewport, around the view's middle. */
+  /** Zooms around the view's middle, from the latest viewport. */
   function zoom(action: ZoomAction) {
     if (action === "zoomFit") {
       setViewport(FIT_VIEWPORT);
@@ -212,10 +208,7 @@ export function Canvas({
     [artboard.width, artboard.height],
   );
 
-  /**
-   * Zooms by `factor` around `pointer` (relative to the canvas), then pans by
-   * `pan` screen pixels. Applied to the latest viewport, so quick events add up.
-   */
+  /** Zooms around `pointer`, then pans; applied to the latest viewport so quick events add up. */
   function moveView(pointer: Point, factor: number, pan: Point) {
     queueView((current) => {
       const view = resolve(current);
@@ -235,8 +228,7 @@ export function Canvas({
     });
   }
 
-  // Wheel, pinch and pan events can arrive several times a frame; their moves
-  // are applied together, once per frame, so the canvas renders only once.
+  // Wheel, pinch and pan moves are batched to render once per frame.
   const queuedMoves = useRef<((view: Viewport) => Viewport)[]>([]);
   const viewFrame = useRef(0);
 
@@ -344,18 +336,7 @@ export function Canvas({
     };
   }, []);
 
-  const visible: Region = {
-    x: -offset.x / scale,
-    y: -offset.y / scale,
-    width: size.width / scale,
-    height: size.height / scale,
-  };
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the numbers are the dependencies, not the object
-  useEffect(
-    () => onView({ scale, region: visible }),
-    [scale, visible.x, visible.y, visible.width, visible.height, onView],
-  );
+  useEffect(() => onZoom(scale), [scale, onZoom]);
 
   // Mask edits redraw the same canvas object, which Konva can't see.
   useEffect(() => {

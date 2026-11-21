@@ -18,9 +18,9 @@ import {
   type ImageResult,
   type ImageSource,
   searchErrorMessage,
-} from "../imageSearch";
-import { IMAGE_SOURCES } from "../sources";
-import type { Credit } from "../types";
+} from "../core/imageSearch";
+import { IMAGE_SOURCES } from "../core/sources";
+import type { Credit } from "../core/types";
 import { Button } from "./ui/Button";
 import { XIcon } from "./ui/icons";
 import { ToolButton } from "./ui/ToolButton";

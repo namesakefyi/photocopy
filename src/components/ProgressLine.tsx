@@ -7,11 +7,6 @@ export interface ProgressLineProps {
   fraction: number;
 }
 
-/**
- * A thin full-width bar along the top of the canvas. A progressbar rather
- * than a live region, so screen readers can check it without hearing every
- * step.
- */
 export function ProgressLine({ label, fraction }: ProgressLineProps) {
   return (
     <ProgressBar

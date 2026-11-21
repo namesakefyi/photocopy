@@ -1,8 +1,7 @@
-import { regionPixels } from "./render";
+import { context2d, scaledSize } from "./render";
 import type { Region } from "./types";
 
-/** On the long side; enough for 2× screens. */
-const THUMBNAIL_SIDE = 240;
+const THUMBNAIL_LONG_SIDE = 240;
 
 /** Scales down the live preview, which is already photocopied, so it's cheap. */
 export async function renderThumbnail(
@@ -10,11 +9,10 @@ export async function renderThumbnail(
   fill: string,
   preview: { image: ImageBitmap; region: Region } | null,
 ) {
-  const fit = THUMBNAIL_SIDE / Math.max(artboard.width, artboard.height);
-  const { width, height } = regionPixels({ x: 0, y: 0, ...artboard }, fit);
+  const fit = THUMBNAIL_LONG_SIDE / Math.max(artboard.width, artboard.height);
+  const { width, height } = scaledSize(artboard, fit);
   const canvas = new OffscreenCanvas(width, height);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas 2D is not available");
+  const ctx = context2d(canvas);
   ctx.fillStyle = fill;
   ctx.fillRect(0, 0, width, height);
   if (preview) {

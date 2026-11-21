@@ -8,11 +8,6 @@ export interface PhotocopySettings {
   seed: number;
 }
 
-/**
- * Tuned by running the source composite of passport.psd (Filter Gallery:
- * Grain 58/44 → Stamp 3/1) through this pipeline and matching the result
- * to web/src/pages/home/passport.png.
- */
 export const DEFAULT_SETTINGS: PhotocopySettings = {
   darkness: 50,
   grain: 58,
@@ -77,10 +72,7 @@ const WHITE = 255;
 const EDGE_RADIUS = 4;
 /** Slight softening before printing, matching Stamp's Smoothness of 1. */
 const SOFTEN_SIGMA = 0.8;
-/**
- * How far each grain speck spreads, in artboard pixels: about one pixel, the
- * finest grain that still reads as specks rather than per-pixel noise.
- */
+/** In artboard pixels: the finest grain that still reads as specks, not noise. */
 const GRAIN_SIGMA = 0.6;
 
 /** Small, fast seeded PRNG so the same seed always gives the same grain. */
@@ -95,10 +87,7 @@ export function mulberry32(seed: number) {
   };
 }
 
-/**
- * Luminance with partial transparency blended over white, so soft cutout
- * edges don't pick up a dark halo from the transparent pixels around them.
- */
+/** Blends partial transparency over white, so soft cutout edges don't get dark halos. */
 export function toLuminance({ data, width, height }: Pixels): Float32Array {
   const luminance = new Float32Array(width * height);
   for (let pixel = 0, offset = 0; pixel < luminance.length; pixel++) {
@@ -173,10 +162,7 @@ export function enhanceEdges(
   }
 }
 
-/**
- * Uniform noise softened into specks, then rescaled so `strength` is its
- * standard deviation no matter how much the softening flattened it.
- */
+/** Uniform noise softened into specks, rescaled so `strength` is its standard deviation. */
 export function grainField(
   width: number,
   height: number,
@@ -206,11 +192,8 @@ export function threshold(darkness: number) {
 }
 
 /**
- * Returns new pixels that are only pure black or white, with alpha that is
- * only fully opaque or fully transparent.
- *
- * `pixelScale` is output pixels per artboard pixel, so a low-resolution
- * preview softens, speckles and sharpens by the same relative amount.
+ * Returns pure black or white pixels, fully opaque or transparent. `pixelScale`
+ * is output pixels per artboard pixel, so previews match full-size output.
  */
 export function photocopy(
   pixels: Pixels,
@@ -249,10 +232,7 @@ export function photocopy(
   return { data: output, width, height };
 }
 
-/**
- * Bounding box of every pixel at least `minAlpha` opaque, or null when there
- * are none.
- */
+/** Bounds of every pixel at least `minAlpha` opaque, or null if there are none. */
 export function contentBounds({ data, width, height }: Pixels, minAlpha = 1) {
   let top = height;
   let left = width;

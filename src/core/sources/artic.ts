@@ -33,23 +33,25 @@ export const artic: ImageSource = {
   label: "Art Institute of Chicago",
   name: NAME,
   async search(search, page, signal) {
-    const url = new URL(API);
-    url.search = new URLSearchParams({
-      q: search,
-      page: String(page),
-      limit: String(PAGE_SIZE),
-      fields: "id,title,artist_display,image_id",
-      "query[bool][filter][0][term][is_public_domain]": "true",
-      "query[bool][filter][1][exists][field]": "image_id",
-    }).toString();
-    const data = await fetchJson<ApiResponse>(NAME, url, {
-      signal,
-      // The Art Institute asks API users to identify themselves this way,
-      // since browsers won't let pages set User-Agent.
-      headers: {
-        "AIC-User-Agent": "Namesake-Photocopy/0.1 (hey@namesake.fyi)",
+    const data = await fetchJson<ApiResponse>(
+      NAME,
+      API,
+      {
+        q: search,
+        page: String(page),
+        limit: String(PAGE_SIZE),
+        fields: "id,title,artist_display,image_id",
+        "query[bool][filter][0][term][is_public_domain]": "true",
+        "query[bool][filter][1][exists][field]": "image_id",
       },
-    });
+      {
+        signal,
+        // The API's requested stand-in for User-Agent, which browsers can't set.
+        headers: {
+          "AIC-User-Agent": "Namesake-Photocopy/0.1 (hey@namesake.fyi)",
+        },
+      },
+    );
     return {
       results: data.data.map((artwork) => {
         const title = clean(artwork.title) || "Untitled";

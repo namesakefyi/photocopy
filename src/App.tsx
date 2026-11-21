@@ -7,7 +7,7 @@ import {
 import { FileViewer } from "./components/FileViewer";
 import { SidebarIcon } from "./components/ui/icons";
 import { ToolToggleButton } from "./components/ui/ToolButton";
-import { maskBlob } from "./layers";
+import { maskBlob } from "./core/layers";
 import {
   type ArtboardSummary,
   applyStoredCutout,
@@ -19,11 +19,12 @@ import {
   QUOTA_MESSAGE,
   saveIndex,
   saveThumbnail,
-} from "./persistence";
-import { removeBackground } from "./removeBackground";
-import { SHORTCUTS } from "./shortcuts";
-import { savedBackground } from "./themes";
-import type { Layer, Removal } from "./types";
+} from "./core/persistence";
+import { removeBackground } from "./core/removeBackground";
+import { readSetting, writeSetting } from "./core/settings";
+import { SHORTCUTS } from "./core/shortcuts";
+import { savedBackground } from "./core/themes";
+import type { Layer, Removal } from "./core/types";
 
 const FILE_VIEWER_KEY = "photocopy-file-viewer";
 const NARROW = "(width < 760px)";
@@ -39,23 +40,12 @@ function useMediaQuery(query: string) {
   return matches;
 }
 
-function savedFileViewerOpen() {
-  try {
-    return localStorage.getItem(FILE_VIEWER_KEY) !== "closed";
-  } catch {
-    return true;
-  }
-}
-
 /** Asks the browser not to evict saved work under storage pressure. */
 function persistStorage() {
   navigator.storage?.persist?.().catch(() => {});
 }
 
-/**
- * Only the open artboard is loaded: each photo can take tens of megabytes of
- * canvas memory, so the rest wait in IndexedDB until they're opened.
- */
+/** Only the open artboard is loaded; photos are large, so the rest stay in IndexedDB. */
 export function App() {
   const [artboards, setArtboards] = useState<ArtboardSummary[] | null>(null);
   const [activeId, setActiveId] = useState("");
@@ -66,7 +56,9 @@ export function App() {
     Record<string, Removal & { artboardId: string }>
   >({});
   const isNarrow = useMediaQuery(NARROW);
-  const [isFileViewerOpen, setIsFileViewerOpen] = useState(savedFileViewerOpen);
+  const [isFileViewerOpen, setIsFileViewerOpen] = useState(
+    () => readSetting(FILE_VIEWER_KEY) !== "closed",
+  );
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const editorRef = useRef<ArtboardEditorHandle>(null);
   const isSwitching = useRef(false);
@@ -113,14 +105,7 @@ export function App() {
   }, [artboards, activeId]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        FILE_VIEWER_KEY,
-        isFileViewerOpen ? "open" : "closed",
-      );
-    } catch {
-      // Storage can be unavailable; the file viewer still toggles.
-    }
+    writeSetting(FILE_VIEWER_KEY, isFileViewerOpen ? "open" : "closed");
   }, [isFileViewerOpen]);
 
   function reportError(message: string, cause: unknown) {
@@ -224,10 +209,7 @@ export function App() {
     [activeId],
   );
 
-  /**
-   * Background removal runs here rather than in the editor, so it keeps going
-   * when its artboard is closed, and lands wherever that artboard is.
-   */
+  /** Runs here, not in the editor, so it finishes even if its artboard is closed. */
   const handleRemoveBackground = useCallback(
     async (layer: Layer) => {
       const artboardId = activeId;
@@ -248,8 +230,7 @@ export function App() {
         try {
           const editor = editorRef.current;
           if (editor && latestActiveId.current === artboardId) {
-            // Opened again since, the photo couldn't change while its
-            // removal was in flight, so the cutout still fits.
+            // If reopened, the photo couldn't change mid-removal, so the cutout fits.
             const sameEditor = latestEditorKey.current === session;
             editor.applyCutout(id, sameEditor ? revision : null, cutout);
           } else {

@@ -1,3 +1,6 @@
+import type { PhotocopySettings } from "./photocopy";
+import type { Theme } from "./themes";
+
 /** Where an openly licensed photo came from, for attribution. */
 export interface Credit {
   title: string;
@@ -19,7 +22,6 @@ export interface Layer {
   source: HTMLCanvasElement;
   /** Alpha mask painted by background removal and the brushes. */
   mask: HTMLCanvasElement;
-  /** Set once Remove background has cut this photo out. */
   backgroundRemoved: boolean;
   /** Where the source sits within the photo as loaded, after shrink to fit. */
   crop: Region | null;
@@ -76,4 +78,21 @@ export interface Region {
 export interface Removal {
   label: string;
   fraction: number;
+}
+
+/** Everything undo and autosave track for an artboard. */
+export interface ArtboardState {
+  layers: Layer[];
+  settings: PhotocopySettings;
+  canvasFormat: CanvasFormat;
+  background: Theme;
+}
+
+export function sameArtboardState(a: ArtboardState, b: ArtboardState) {
+  return (
+    a.layers === b.layers &&
+    a.settings === b.settings &&
+    a.canvasFormat === b.canvasFormat &&
+    a.background === b.background
+  );
 }

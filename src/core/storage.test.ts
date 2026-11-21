@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
+import { clearStorage } from "../test/storage";
 import * as storage from "./storage";
-import { clearStorage } from "./test/storage";
 
 beforeEach(clearStorage);
 

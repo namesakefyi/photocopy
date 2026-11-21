@@ -1,7 +1,8 @@
 import { canvasToBlob } from "./layers";
 import { contentBounds, type PhotocopySettings } from "./photocopy";
 import { photocopyImageData } from "./photocopyClient";
-import { renderRegion } from "./render";
+import { context2d, createCanvas, renderRegion } from "./render";
+import { readSetting, writeSetting } from "./settings";
 import type { Layer, Region } from "./types";
 
 export interface Copy {
@@ -24,10 +25,7 @@ export interface EncodeOptions {
   cropToFit: boolean;
 }
 
-/**
- * Renders a region at full size (or scaled down so neither side passes
- * `maxSize`) and photocopies it. Null when nothing would print.
- */
+/** Photocopies a region at full size (up to `maxSize`); null when nothing would print. */
 export async function makePhotocopy(
   layers: Layer[],
   region: Region,
@@ -56,11 +54,8 @@ export async function encodeCopy(
     width: source.width,
     height: source.height,
   };
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas 2D is not available");
+  const canvas = createCanvas({ width, height });
+  const ctx = context2d(canvas);
   if (background) {
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, width, height);
@@ -81,21 +76,13 @@ export interface ExportOptions {
 }
 
 export function savedExportOptions(): ExportOptions {
-  try {
-    return {
-      cropToFit: localStorage.getItem(CROP_KEY) === "true",
-      transparent: localStorage.getItem(TRANSPARENT_KEY) === "true",
-    };
-  } catch {
-    return { cropToFit: false, transparent: false };
-  }
+  return {
+    cropToFit: readSetting(CROP_KEY) === "true",
+    transparent: readSetting(TRANSPARENT_KEY) === "true",
+  };
 }
 
 export function saveExportOptions({ cropToFit, transparent }: ExportOptions) {
-  try {
-    localStorage.setItem(CROP_KEY, String(cropToFit));
-    localStorage.setItem(TRANSPARENT_KEY, String(transparent));
-  } catch {
-    // Storage can be unavailable (private windows); the choices still apply.
-  }
+  writeSetting(CROP_KEY, String(cropToFit));
+  writeSetting(TRANSPARENT_KEY, String(transparent));
 }

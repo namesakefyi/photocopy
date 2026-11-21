@@ -2,13 +2,14 @@
 import "fake-indexeddb/auto";
 import { act, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { renderHook } from "../test/renderHook";
+import { clearStorage } from "../test/storage";
 import { DEFAULT_CANVAS } from "./canvasFormat";
 import {
   applyStoredCutout,
   createArtboard,
   deleteArtboard,
   duplicateArtboard,
-  type LegacyState,
   loadLibrary,
   restoreArtboard,
   type SavedArtboard,
@@ -17,8 +18,6 @@ import {
 } from "./persistence";
 import { DEFAULT_SETTINGS } from "./photocopy";
 import * as storage from "./storage";
-import { renderHook } from "./test/renderHook";
-import { clearStorage } from "./test/storage";
 import { DEFAULT_THEME, THEMES } from "./themes";
 import type { CanvasFormat } from "./types";
 
@@ -78,27 +77,7 @@ describe("loadLibrary", () => {
     );
   });
 
-  it("turns the single session from before into the first artboard", async () => {
-    const legacy: LegacyState = {
-      version: 1,
-      layers: [savedLayer("a")],
-      settings: { ...DEFAULT_SETTINGS, darkness: 70 },
-      canvasFormat: { ...DEFAULT_CANVAS, preset: "video" },
-    };
-    await storage.put(storage.STATE_STORE, "current", legacy);
-    await putBlob("a:source");
-    const library = await loadLibrary();
-    expect(library.artboards).toHaveLength(1);
-    const migrated = await readArtboard(library.activeId);
-    expect(migrated?.layers).toEqual(legacy.layers);
-    expect(migrated?.settings.darkness).toBe(70);
-    expect(migrated?.canvasFormat.preset).toBe("video");
-    expect(await storage.get(storage.STATE_STORE, "current")).toBeUndefined();
-    expect(await blobKeys()).toEqual(["a:source"]);
-  });
-
-  it("drops an old session from an unknown version, and its files", async () => {
-    await storage.put(storage.STATE_STORE, "current", { version: 9 });
+  it("removes files no artboard uses", async () => {
     await putBlob("a:source");
     const library = await loadLibrary();
     expect(library.artboards).toHaveLength(1);
@@ -318,8 +297,7 @@ describe("useAutosave", () => {
       act(() => {
         result.current.setSettings({ ...DEFAULT_SETTINGS, darkness });
       });
-      // Past the delay, so each change starts a save while the last may
-      // still be writing.
+      // Past the delay, so each save starts while the last may still be writing.
       await wait(TEST_DELAY + 1);
     }
     await vi.waitFor(async () => {

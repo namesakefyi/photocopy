@@ -46,10 +46,11 @@ export class SearchError extends Error {
 
 export async function fetchJson<T>(
   source: string,
-  url: URL | string,
+  api: string,
+  params: Record<string, string>,
   init?: RequestInit,
 ) {
-  const response = await fetch(url, init);
+  const response = await fetch(`${api}?${new URLSearchParams(params)}`, init);
   if (!response.ok) throw new SearchError(source, response.status);
   return (await response.json()) as T;
 }

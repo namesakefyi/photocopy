@@ -1,4 +1,4 @@
-import * as storage from "../storage";
+import * as storage from "../core/storage";
 
 /** Empties both IndexedDB stores, so each test starts from a blank slate. */
 export async function clearStorage() {

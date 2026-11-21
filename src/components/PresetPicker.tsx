@@ -3,7 +3,7 @@ import {
   type PhotocopyLook,
   type PhotocopySettings,
   PRESETS,
-} from "../photocopy";
+} from "../core/photocopy";
 import { Select } from "./ui/Select";
 
 const CUSTOM = "custom";
@@ -13,7 +13,6 @@ export interface PresetPickerProps {
   onChange: (look: PhotocopyLook) => void;
 }
 
-/** A compact dropdown that sits in the Appearance heading. */
 export function PresetPicker({ settings, onChange }: PresetPickerProps) {
   const current = matchingPreset(settings);
   const options = PRESETS.map(({ id, title }) => ({ id, title }));

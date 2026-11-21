@@ -9,11 +9,7 @@ import {
 } from "react-aria-components";
 
 export interface SelectProps<Item extends { id: string }> {
-  /**
-   * `compact`: a small quiet dropdown for a section heading, showing only the
-   * chosen option's text. `field`: a full-width, labelled dropdown showing the
-   * whole option, icon included.
-   */
+  /** `compact` for section headings (text only); `field` is full-width with icons. */
   variant: "compact" | "field";
   /** Shown above a field; the accessible name for a compact one. */
   label: string;

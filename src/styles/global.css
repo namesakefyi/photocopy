@@ -8,8 +8,7 @@
   --gray-3: rgb(225 225 225 / 0.25);
   --gray-4: rgb(225 225 225 / 0.5);
   --gray-5: rgb(225 225 225 / 0.72);
-  /* Opaque equivalents on --bg, for icons whose overlapping strokes would
-     otherwise show through each other. */
+  /* Opaque on --bg, so icons' overlapping strokes don't show through. */
   --gray-3-solid: #505050;
   --gray-5-solid: #ababab;
   --canvas-bg: #161616;
@@ -33,8 +32,7 @@
     ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   font-family: var(--font);
   font-size: 14px;
-  /* Even-width digits everywhere, so changing numbers (zoom, sizes, slider
-     values, progress) don't jitter. */
+  /* Even-width digits, so changing numbers don't jitter. */
   font-variant-numeric: tabular-nums;
   line-height: 1.35;
   color: var(--ink);
@@ -64,8 +62,7 @@ body,
   margin: 0;
 }
 
-/* The app fills the screen and scrolls only inside its panels, so the page
-   itself never moves or rubber-bands under a finger. */
+/* Only panels scroll, so the page never rubber-bands under a finger. */
 html,
 body {
   overflow: hidden;
@@ -81,8 +78,7 @@ body {
   }
 }
 
-/* iOS zooms into any field under 16px when it's focused. The :root prefix
-   outranks the 12px rules on individual fields. */
+/* iOS zooms into focused fields under 16px; :root outranks the 12px field rules. */
 @media (width < 760px) and (pointer: coarse) {
   html:root
     :is(
@@ -129,8 +125,7 @@ p {
   padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0
     env(safe-area-inset-left, 0px);
 
-  /* Canvas above, controls below; the controls scroll inside a capped panel
-     so Export stays in reach. */
+  /* Canvas above, controls below in a capped, scrolling panel. */
   @media (width < 760px) {
     grid-template-rows: minmax(0, 1fr) auto;
     grid-template-columns: minmax(0, 1fr);
@@ -161,9 +156,7 @@ p {
   background: var(--bg);
   border-block-end: 1px solid var(--gray-2);
 
-  /* On narrow screens, the selected layer's actions drop into a second row
-     floating over the top of the canvas, so selecting never resizes the canvas
-     (which would shift the view and re-render the preview). */
+  /* Narrow: layer actions float over the canvas, so selecting never resizes it. */
   @media (width < 760px) {
     position: relative;
     z-index: 1;
@@ -182,7 +175,6 @@ p {
 }
 
 /* Scrolls sideways when the actions don't fit; the app name stays put. */
-/* On wide screens, at the bar's right end. */
 .layer-toolbar-scroll {
   display: flex;
   flex: 0 1 auto;
@@ -257,8 +249,7 @@ p {
   transition: width 200ms ease-out;
 }
 
-/* Progress and hints over the canvas's top right; hidden while empty, but
-   kept in the page so screen readers hear each new message. */
+/* Hidden while empty, but kept in the page so screen readers hear each message. */
 .canvas-toast {
   position: absolute;
   inset-block-start: 12px;
@@ -308,8 +299,7 @@ p {
   outline: none;
 }
 
-/* The brush's outline around the pointer while its size slider is dragged:
-   white under black, like the canvas's brush cursor. */
+/* The brush outline that follows the pointer while its size slider is dragged. */
 .brush-preview {
   position: fixed;
   /* Above popovers, which React Aria places at z-index 100000. */
@@ -401,8 +391,7 @@ p {
   }
 }
 
-/* The zoom level in the toolbar, wide enough that it doesn't jitter as it changes. */
-/* Only as wide as its items, unlike the menus with longer labels. */
+/* Only as wide as their items, unlike menus with longer labels. */
 .menu-popover.zoom-popover,
 .menu-popover.file-popover {
   min-width: 0;
@@ -425,8 +414,7 @@ p {
     cursor: none;
   }
 
-  /* Focused only so arrow keys nudge the selected photo; the selection
-     handles already show what they'll move, so no ring. */
+  /* Focusable for arrow-key nudging; the selection handles stand in for a ring. */
   &:focus,
   &:focus-visible {
     outline: none;
@@ -459,8 +447,7 @@ p {
 }
 
 .strip .section {
-  /* Centers the 24px heading row on the toolbar's row (less its bottom border),
-     so the first heading shares a baseline with the toolbar text. */
+  /* Aligns the first heading's baseline with the toolbar text. */
   --heading-inset: calc((var(--bar-height) - 1px - 24px) / 2);
   position: relative;
   padding: var(--heading-inset) 16px 16px;
@@ -580,11 +567,7 @@ p {
 
 /* Buttons */
 
-/*
- * Every button-like control shares one flat base: a soft fill that brightens
- * on hover and press, and the same focus ring. Quiet ones have no fill until
- * hovered. Each kind further down adds only its size and layout.
- */
+/* The shared base for every button-like control; each kind below adds size and layout. */
 .button,
 .toolbar-button,
 .compact-select-button,
@@ -904,7 +887,6 @@ p {
 
 /* Layer list */
 
-/* Each layer is its own rounded flat row, like the sliders. */
 /* Lists whose items can be dragged into a new order. */
 :is(.layer-list, .file-list) {
   display: flex;
@@ -1382,8 +1364,7 @@ p {
   }
 }
 
-/* "W" and "H", inside the fields before the numbers. Centered in a fixed box,
-   so the wide W and the narrow H sit the same distance from the number. */
+/* A fixed box, so the wide W and narrow H sit equally far from the number. */
 .number-prefix {
   position: absolute;
   inset-block: 0;
@@ -1515,8 +1496,7 @@ fieldset.field {
   display: flex;
   flex: 1;
   flex-direction: column;
-  /* Thumbnails are 10px apart (2px gap plus 4px padding each side); the
-     card after them sits as far from the last one. */
+  /* With 4px padding per side, thumbnails and the card after them are 10px apart. */
   gap: 6px;
   min-height: 0;
   padding: 10px;
@@ -1752,8 +1732,7 @@ fieldset.field {
   margin-block-start: 16px;
 }
 
-/* The file viewer sits under the toolbar, left of the canvas. The
-   workspace's toolbar and canvas join the app's grid around it. */
+/* The file viewer sits under the toolbar, left of the canvas. */
 .app[data-file-viewer] {
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-columns: var(--file-viewer-width) minmax(0, 1fr) var(

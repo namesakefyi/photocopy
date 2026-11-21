@@ -1,3 +1,5 @@
+import { readSetting, writeSetting } from "./settings";
+
 export interface Theme {
   id: string;
   name: string;
@@ -25,19 +27,11 @@ export function themeById(id: string | null | undefined): Theme {
 }
 
 export function savedBackground(): Theme {
-  try {
-    const id = localStorage.getItem(STORAGE_KEY);
-    return THEMES.find((theme) => theme.id === id) ?? DEFAULT_THEME;
-  } catch {
-    return DEFAULT_THEME;
-  }
+  const id = readSetting(STORAGE_KEY);
+  return THEMES.find((theme) => theme.id === id) ?? DEFAULT_THEME;
 }
 
 /** Remembers the background. It only colors the canvas, never the interface. */
 export function saveBackground(theme: Theme) {
-  try {
-    localStorage.setItem(STORAGE_KEY, theme.id);
-  } catch {
-    // Storage can be unavailable (private windows); the background still applies.
-  }
+  writeSetting(STORAGE_KEY, theme.id);
 }

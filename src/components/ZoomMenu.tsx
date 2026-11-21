@@ -8,9 +8,9 @@ import {
   Popover,
   Text,
 } from "react-aria-components";
-import { SHORTCUTS } from "../shortcuts";
-import type { ValueStore } from "../valueStore";
-import type { ZoomAction } from "../zoom";
+import { SHORTCUTS } from "../core/shortcuts";
+import type { ValueStore } from "../core/valueStore";
+import type { ZoomAction } from "../core/zoom";
 
 const ZOOM_MENU: { id: ZoomAction; label: string }[] = [
   { id: "zoomIn", label: "Zoom in" },
@@ -26,7 +26,6 @@ export interface ZoomMenuProps {
   onZoom: (action: ZoomAction) => void;
 }
 
-/** The zoom level, opening a menu of zoom commands. */
 export function ZoomMenu({ zoom, onZoom }: ZoomMenuProps) {
   const scale = useSyncExternalStore(zoom.subscribe, zoom.get);
   return (

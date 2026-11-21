@@ -49,24 +49,27 @@ function creditFrom(title: string, info: ImageInfo): Credit {
 }
 
 function query(params: Record<string, string>, signal?: AbortSignal) {
-  const url = new URL(API);
-  url.search = new URLSearchParams({
-    action: "query",
-    format: "json",
-    formatversion: "2",
-    origin: "*",
-    prop: "imageinfo",
-    iiprop: "url|extmetadata",
-    iiextmetadatafilter:
-      "ObjectName|Artist|LicenseShortName|LicenseUrl|AttributionRequired",
-    ...params,
-  }).toString();
-  return fetchJson<ApiResponse>(NAME, url, {
-    signal,
-    headers: {
-      "Api-User-Agent": "Namesake-Photocopy/0.1 (https://namesake.fyi)",
+  return fetchJson<ApiResponse>(
+    NAME,
+    API,
+    {
+      action: "query",
+      format: "json",
+      formatversion: "2",
+      origin: "*",
+      prop: "imageinfo",
+      iiprop: "url|extmetadata",
+      iiextmetadatafilter:
+        "ObjectName|Artist|LicenseShortName|LicenseUrl|AttributionRequired",
+      ...params,
     },
-  });
+    {
+      signal,
+      headers: {
+        "Api-User-Agent": "Namesake-Photocopy/0.1 (https://namesake.fyi)",
+      },
+    },
+  );
 }
 
 /** Asks again for a large copy, since search only returns thumbnails. */

@@ -1,26 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { composeLayer } from "./layers";
-import type { PhotocopySettings } from "./photocopy";
-import type { Theme } from "./themes";
-import type { CanvasFormat, Layer } from "./types";
+import { type ArtboardState, type Layer, sameArtboardState } from "./types";
 
 /** Changes this close together (like one slider drag) are one undo step. */
 const MERGE_WINDOW = 500;
 const MAX_STEPS = 50;
 
-export interface ArtboardState {
-  layers: Layer[];
-  settings: PhotocopySettings;
-  canvasFormat: CanvasFormat;
-  background: Theme;
-}
-
 const maskKey = (layer: Layer) => `${layer.id}:${layer.revision}`;
 
-/**
- * Brush strokes edit a mask canvas in place, so each mask version is kept as
- * its alpha channel alone: a quarter of the memory of a full copy.
- */
+/** Masks are edited in place, so versions keep only alpha: a quarter of the memory. */
 function captureAlpha(layer: Layer) {
   const ctx = layer.mask.getContext("2d");
   if (!ctx) return new Uint8ClampedArray(0);
@@ -36,18 +24,15 @@ function restoreAlpha(layer: Layer, alpha: Uint8ClampedArray) {
   const ctx = layer.mask.getContext("2d");
   if (!ctx || alpha.length !== layer.width * layer.height) return;
   const image = ctx.createImageData(layer.width, layer.height);
+  image.data.fill(255);
   for (let pixel = 0; pixel < alpha.length; pixel++) {
-    image.data.set([255, 255, 255, alpha[pixel]], pixel * 4);
+    image.data[pixel * 4 + 3] = alpha[pixel];
   }
   ctx.putImageData(image, 0, 0);
   composeLayer(layer);
 }
 
-/**
- * Records the artboard after each change and steps back and forth through
- * those records. Recording starts once `isReady` (after the saved session
- * has loaded), so the restored session is the first step.
- */
+/** Undo and redo through artboard snapshots, starting once the saved session is `isReady`. */
 export function useHistory(
   current: ArtboardState,
   isReady: boolean,
@@ -105,13 +90,8 @@ export function useHistory(
         const alpha = masks.current.get(maskKey(layer));
         if (alpha) restoreAlpha(layer, alpha);
       }
-      const now = latest.current;
       // Only skip the next recording if applying will actually change state.
-      isApplying.current =
-        now.layers !== state.layers ||
-        now.settings !== state.settings ||
-        now.canvasFormat !== state.canvasFormat ||
-        now.background !== state.background;
+      isApplying.current = !sameArtboardState(latest.current, state);
       index.current = target;
       lastChange.current = 0;
       apply(state);

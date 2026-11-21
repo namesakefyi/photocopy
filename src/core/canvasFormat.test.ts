@@ -59,8 +59,7 @@ describe("fitLayersToCanvas", () => {
   });
 
   it("never makes a photo wider than the canvas allows", () => {
-    // Nearly as wide as the Social canvas: it should stay within each later
-    // canvas's width too.
+    // Nearly as wide as Social, so it must stay within each later canvas too.
     const social = size("social");
     const photoWidth = social.width - 20;
     const start = [
