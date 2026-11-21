@@ -3,7 +3,7 @@
   "baseBranch": "main",
   "changelog": [
     "@changesets/changelog-github",
-    { "repo": "namesakefyi/photocopy" }
+    { "disableThanks": true, "repo": "namesakefyi/photocopy" }
   ],
   "commit": false,
   "format": false,
