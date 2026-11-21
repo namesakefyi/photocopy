@@ -1,5 +1,13 @@
 # photocopy
 
+## 0.1.1
+
+### Patch Changes
+
+- [#7](https://github.com/namesakefyi/photocopy/pull/7) [`233454c`](https://github.com/namesakefyi/photocopy/commit/233454ca7abaa1bca69360cb419df586ba5aae62) - Compress exported PNGs by saving only 1-2 bits per pixel to take advantage of the tool's limited color palette. Exported files are about 72–75% smaller.
+  
+  Display filesize in export pane.
+
 ## 0.1.0
 
 ### Minor Changes
