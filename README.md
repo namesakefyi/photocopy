@@ -1,3 +1,5 @@
+![A photocopy-style image of Sylvia Rivera, trans rights activist](public/og.png)
+
 # Photocopy
 
 A browser tool for making photocopy-style collage illustrations.
