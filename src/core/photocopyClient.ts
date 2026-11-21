@@ -62,7 +62,6 @@ function send(
   });
 }
 
-/** Runs the photocopy pipeline off the main thread. */
 export async function photocopyImageData(
   image: ImageData,
   settings: PhotocopySettings,
@@ -97,7 +96,7 @@ function scaledBitmap(layer: Layer, scale: number) {
   return canvas.transferToImageBitmap();
 }
 
-/** Photocopies `region` for the live preview, sending only layer bitmaps that changed. */
+/** Sends only the layer bitmaps that changed since the last preview. */
 export async function renderPreview(
   layers: Layer[],
   region: Region,

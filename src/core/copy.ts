@@ -12,7 +12,6 @@ export interface Copy {
   height: number;
 }
 
-/** A finished photocopy on a transparent canvas, ready to encode. */
 export interface Photocopy {
   canvas: HTMLCanvasElement;
   /** The photocopied pixels, or null when they fill the whole canvas. */
@@ -25,7 +24,7 @@ export interface EncodeOptions {
   cropToFit: boolean;
 }
 
-/** Photocopies a region at full size (up to `maxSize`); null when nothing would print. */
+/** Null when nothing would print. */
 export async function makePhotocopy(
   layers: Layer[],
   region: Region,

@@ -1,6 +1,5 @@
 const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform);
 
-/** The modifier key as shown in shortcut hints, like ⌘ or Ctrl+. */
 const MOD = IS_MAC ? "⌘" : "Ctrl+";
 
 export const SHORTCUTS = {
@@ -61,7 +60,7 @@ export interface KeyPress {
   code?: string;
 }
 
-/** The command for a key press, or null to leave it to the browser. ⌘ and Ctrl both work. */
+/** Null leaves the key to the browser. ⌘ and Ctrl both work everywhere. */
 export function shortcutFor({
   key: rawKey,
   metaKey,

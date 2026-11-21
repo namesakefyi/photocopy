@@ -35,7 +35,6 @@ export function clampZoom(zoom: number, current: number) {
   return Math.min(max, Math.max(min, zoom));
 }
 
-/** The next level in `direction`, or `zoom` itself past the last one. */
 export function zoomStep(zoom: number, direction: 1 | -1) {
   if (direction === 1) {
     return ZOOM_LEVELS.find((level) => level > zoom + EPSILON) ?? zoom;
@@ -82,4 +81,79 @@ export function resolutionStep(scale: number) {
   // The tolerance keeps exact steps (like 0.5) from rounding up a step.
   const steps = Math.log(scale) / Math.log(Math.SQRT2);
   return Math.min(1, Math.SQRT2 ** Math.ceil(steps - EPSILON));
+}
+
+type Size = { width: number; height: number };
+
+export interface Frame {
+  view: Size;
+  artboard: Size;
+}
+
+const FIT_PADDING = 48;
+
+export function fitScale({ view, artboard }: Frame) {
+  return Math.max(
+    0.01,
+    Math.min(
+      (view.width - FIT_PADDING * 2) / artboard.width,
+      (view.height - FIT_PADDING * 2) / artboard.height,
+    ),
+  );
+}
+
+export function resolveViewport(viewport: Viewport, frame: Frame) {
+  const { artboard } = frame;
+  return {
+    scale: viewport.zoom ?? fitScale(frame),
+    center:
+      viewport.zoom !== null && viewport.center
+        ? viewport.center
+        : { x: artboard.width / 2, y: artboard.height / 2 },
+  };
+}
+
+export function zoomViewport(
+  viewport: Viewport,
+  action: ZoomAction,
+  frame: Frame,
+): Viewport {
+  if (action === "zoomFit") return FIT_VIEWPORT;
+  const { scale, center } = resolveViewport(viewport, frame);
+  const zoom =
+    action === "zoomActual"
+      ? 1
+      : action === "zoomDouble"
+        ? 2
+        : zoomStep(scale, action === "zoomIn" ? 1 : -1);
+  return { zoom, center };
+}
+
+export interface ViewMove {
+  /** Screen pixels from the view's top left. */
+  pointer: Point;
+  factor: number;
+  /** Screen pixels to pan by after zooming. */
+  pan: Point;
+}
+
+export function moveViewport(
+  viewport: Viewport,
+  { pointer, factor, pan }: ViewMove,
+  frame: Frame,
+): Viewport {
+  const { scale, center } = resolveViewport(viewport, frame);
+  const next = clampZoom(scale * factor, scale);
+  const fromMiddle = {
+    x: pointer.x - frame.view.width / 2,
+    y: pointer.y - frame.view.height / 2,
+  };
+  const zoomed = zoomAround(center, fromMiddle, scale, next);
+  return {
+    zoom: next,
+    center: clampPoint(
+      { x: zoomed.x + pan.x / next, y: zoomed.y + pan.y / next },
+      { x: 0, y: 0, ...frame.artboard },
+    ),
+  };
 }

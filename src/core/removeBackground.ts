@@ -1,6 +1,5 @@
 import { canvasToBlob } from "./layers";
 
-/** What's happening, and how far along the whole removal is, from 0 to 1. */
 export type RemovalProgress = (label: string, fraction: number) => void;
 
 /** Where each stage starts within the whole: loading, downloading, cutting out. */
@@ -14,7 +13,6 @@ const COMPUTE_STEPS: Record<string, number> = {
   "compute:encode": 0.95,
 };
 
-/** Combines the library's download and compute reports into one fraction that never goes back. */
 export function overallProgress(onProgress: RemovalProgress) {
   const downloads = new Map<string, { current: number; total: number }>();
   let reached = 0;

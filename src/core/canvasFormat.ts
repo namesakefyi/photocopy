@@ -47,7 +47,6 @@ function samePlacement(a: Placement, b: Placement) {
   return a.x === b.x && a.y === b.y && a.scale === b.scale;
 }
 
-/** Keeps photos in the same relative spot and size across canvas sizes. */
 export function fitLayersToCanvas<T extends Placement & Pick<Layer, "id">>(
   layers: T[],
   from: Size,

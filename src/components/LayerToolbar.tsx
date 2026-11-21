@@ -18,7 +18,6 @@ import {
 import { ToolButton, ToolToggleButton } from "./ui/ToolButton";
 import { ZoomMenu } from "./ZoomMenu";
 
-/** The selected layer's state, as the toolbar's buttons need it. */
 interface LayerActionsProps {
   selectedId: string;
   /** False while the background is being removed, which replaces the mask. */

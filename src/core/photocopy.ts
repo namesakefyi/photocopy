@@ -191,10 +191,7 @@ export function threshold(darkness: number) {
   return 118 + (darkness - 50) * 2.4;
 }
 
-/**
- * Returns pure black or white pixels, fully opaque or transparent. `pixelScale`
- * is output pixels per artboard pixel, so previews match full-size output.
- */
+/** `pixelScale` is output pixels per artboard pixel, so previews match exports. */
 export function photocopy(
   pixels: Pixels,
   settings: PhotocopySettings,
@@ -232,7 +229,6 @@ export function photocopy(
   return { data: output, width, height };
 }
 
-/** Bounds of every pixel at least `minAlpha` opaque, or null if there are none. */
 export function contentBounds({ data, width, height }: Pixels, minAlpha = 1) {
   let top = height;
   let left = width;

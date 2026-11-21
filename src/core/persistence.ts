@@ -13,7 +13,6 @@ export type SavedLayer = Omit<
   "width" | "height" | "source" | "mask" | "composed" | "revision"
 >;
 
-/** Its photos and masks are blobs, keyed by layer id. */
 export interface SavedArtboard {
   version: 2;
   id: string;
@@ -163,7 +162,6 @@ function writeIndex(order: string[], activeId: string) {
   return storage.put(storage.STATE_STORE, INDEX_KEY, index);
 }
 
-/** Creates a first artboard if needed; cleans up unused files without blocking. */
 export function loadLibrary() {
   return exclusive(async () => {
     const artboards = await allArtboards();
@@ -295,7 +293,6 @@ export function saveThumbnail(id: string, thumbnail: Blob) {
   });
 }
 
-/** Saves a cutout that finished after its artboard was closed. */
 export function applyStoredCutout(
   artboardId: string,
   layerId: string,
@@ -347,10 +344,7 @@ function toSaved(layer: Layer): SavedLayer {
   return saved;
 }
 
-/**
- * Saves `state` in order with other storage changes, re-encoding only the masks
- * whose revision differs from `revisions`, which it updates as they're written.
- */
+/** Re-encodes only the masks whose revision differs from `revisions`. */
 export function saveArtboardState(
   artboardId: string,
   { layers, settings, canvasFormat, background }: ArtboardState,

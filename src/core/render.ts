@@ -23,7 +23,6 @@ export function context2d(
   return ctx;
 }
 
-/** `size` at `scale`, in whole pixels, at least 1×1. */
 export function scaledSize(size: Size, scale: number): Size {
   return {
     width: Math.max(1, Math.round(size.width * scale)),
@@ -31,7 +30,6 @@ export function scaledSize(size: Size, scale: number): Size {
   };
 }
 
-/** Where a layer sits on the artboard: everything drawing it needs but the pixels. */
 export type LayerPlacement = Pick<
   Layer,
   | "x"
@@ -45,7 +43,7 @@ export type LayerPlacement = Pick<
   | "visible"
 >;
 
-/** Draws visible layers in `region` at `scale`, stretching each image to its layer's size. */
+/** Stretches each image to its layer's size, so scaled-down copies draw in place. */
 export function drawLayers(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   layers: (LayerPlacement & { image: CanvasImageSource })[],
@@ -74,7 +72,6 @@ export function drawLayers(
   }
 }
 
-/** Flattens visible layers in `region` onto a transparent canvas at `scale`. */
 export function renderRegion(layers: Layer[], region: Region, scale: number) {
   const canvas = createCanvas(scaledSize(region, scale));
   const ctx = context2d(canvas, { willReadFrequently: true });

@@ -15,10 +15,7 @@ interface AutosaveOptions {
   delay?: number;
 }
 
-/**
- * Saves shortly after changes, re-encoding only changed masks. Saves run in
- * order, skipping superseded ones; `flush` saves immediately before closing.
- */
+/** Saves run in order, and a save replaced by a newer one is skipped. */
 export function useAutosave(
   artboardId: string,
   state: ArtboardState,

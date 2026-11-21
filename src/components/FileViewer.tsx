@@ -21,7 +21,6 @@ import { MoreIcon, PlusIcon } from "./ui/icons";
 export interface FileViewerProps {
   artboards: ArtboardSummary[];
   activeId: string;
-  /** Artboards with a background removal in flight. */
   busyIds: Set<string>;
   onOpen: (id: string) => void;
   onNew: () => void;

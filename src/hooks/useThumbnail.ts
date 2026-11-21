@@ -18,7 +18,6 @@ interface ThumbnailOptions {
   onThumbnail: (thumbnail: Blob) => void;
 }
 
-/** Renders a thumbnail from the preview once the picture settles; returns a save-now. */
 export function useThumbnail({
   content,
   restored,

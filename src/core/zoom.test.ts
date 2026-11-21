@@ -2,12 +2,16 @@ import { describe, expect, it } from "vitest";
 import {
   clampPoint,
   clampZoom,
+  FIT_VIEWPORT,
   MAX_ZOOM,
   MIN_ZOOM,
+  moveViewport,
   resolutionStep,
+  resolveViewport,
   wheelZoomFactor,
   zoomAround,
   zoomStep,
+  zoomViewport,
 } from "./zoom";
 
 describe("zoomStep", () => {
@@ -99,5 +103,45 @@ describe("resolutionStep", () => {
   it("treats a missing or zero scale as full resolution", () => {
     expect(resolutionStep(0)).toBe(1);
     expect(resolutionStep(Number.NaN)).toBe(1);
+  });
+});
+
+describe("viewport", () => {
+  const frame = {
+    view: { width: 1096, height: 696 },
+    artboard: { width: 2000, height: 1000 },
+  };
+
+  it("fits the artboard inside the padded view, centered", () => {
+    expect(resolveViewport(FIT_VIEWPORT, frame)).toEqual({
+      scale: 0.5,
+      center: { x: 1000, y: 500 },
+    });
+  });
+
+  it("zooms from the fitted view to the next level, then back to fit", () => {
+    const zoomed = zoomViewport(FIT_VIEWPORT, "zoomIn", frame);
+    expect(zoomed).toEqual({ zoom: 0.667, center: { x: 1000, y: 500 } });
+    expect(zoomViewport(zoomed, "zoomFit", frame)).toBe(FIT_VIEWPORT);
+  });
+
+  it("keeps the point under the pointer still while zooming", () => {
+    const pointer = { x: 148, y: 98 };
+    const next = moveViewport(
+      FIT_VIEWPORT,
+      { pointer, factor: 2, pan: { x: 0, y: 0 } },
+      frame,
+    );
+    // The artboard point (200, 0) stays under the pointer: 400 × 250 from the middle.
+    expect(next).toEqual({ zoom: 1, center: { x: 600, y: 250 } });
+  });
+
+  it("stops panning once the view's middle reaches the artboard's edge", () => {
+    const next = moveViewport(
+      FIT_VIEWPORT,
+      { pointer: { x: 0, y: 0 }, factor: 1, pan: { x: -10000, y: 10000 } },
+      frame,
+    );
+    expect(next.center).toEqual({ x: 0, y: 1000 });
   });
 });

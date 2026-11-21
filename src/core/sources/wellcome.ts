@@ -13,7 +13,6 @@ const LICENSES = ["cc-0", "cc-by", "cc-by-sa", "pdm"];
 const NO_ATTRIBUTION = ["cc-0", "pdm"];
 
 interface Location {
-  /** The IIIF info.json for the image. */
   url: string;
   credit?: string;
   license?: { id: string; label: string; url?: string };

@@ -5,12 +5,14 @@ import {
   fitLayersToCanvas,
 } from "./canvasFormat";
 import { DEFAULT_SETTINGS, type PhotocopySettings } from "./photocopy";
+import type { ShortcutCommand } from "./shortcuts";
 import type { Theme } from "./themes";
 import type {
   ArtboardState,
   CanvasFormat,
   Layer,
   LayerChanges,
+  Removal,
   Tool,
 } from "./types";
 
@@ -181,5 +183,76 @@ export function editorReducer(
     }
     case "setBackground":
       return { ...state, background: action.background };
+  }
+}
+
+export function placeNewPhotos(
+  count: number,
+  { width, height }: { width: number; height: number },
+) {
+  return Array.from({ length: count }, (_, index) => ({
+    x: width / 2 + index * 60,
+    y: height / 2 + index * 60,
+    maxWidth: width * 0.6,
+    maxHeight: height * 0.6,
+  }));
+}
+
+export function selectionState(
+  { layers, selectedId }: EditorState,
+  removals: Record<string, Removal>,
+) {
+  const index = layers.findIndex((layer) => layer.id === selectedId);
+  const selected = layers[index] ?? null;
+  const removal = selected ? removals[selected.id] : undefined;
+  // Background removal replaces the mask, so mask edits wait for it.
+  const canEditMask = selected !== null && removal === undefined;
+  return {
+    selected,
+    removal,
+    canEditMask,
+    canRemoveBackground: canEditMask && !selected.backgroundRemoved,
+    canBringForward: selected !== null && index < layers.length - 1,
+    canSendBack: selected !== null && index > 0,
+  };
+}
+
+const BRUSH_LABELS = { restore: "Erasing mask", erase: "Masking" };
+
+export function statusMessage(
+  isLockedElsewhere: boolean,
+  removal: Removal | undefined,
+  tool: Tool,
+) {
+  if (isLockedElsewhere) {
+    return "Open in another tab · Changes here won’t be saved";
+  }
+  if (removal) return `${removal.label}…`;
+  return tool === "move" ? null : `${BRUSH_LABELS[tool]} · Esc to stop`;
+}
+
+export function shortcutAction(command: ShortcutCommand): EditorAction | null {
+  switch (command) {
+    case "restore":
+    case "erase":
+      return { type: "setTool", tool: command };
+    case "escape":
+      return { type: "escape" };
+    case "delete":
+      return { type: "deleteSelected" };
+    case "forward":
+    case "back":
+      return {
+        type: "moveSelected",
+        direction: command === "forward" ? 1 : -1,
+      };
+    case "brushLarger":
+    case "brushSmaller":
+      return {
+        type: "resizeBrush",
+        direction: command === "brushLarger" ? 1 : -1,
+      };
+    default:
+      return null;
   }
 }

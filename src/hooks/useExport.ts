@@ -4,7 +4,6 @@ import { makePhotocopy, type Photocopy } from "../core/copy";
 import type { PhotocopySettings } from "../core/photocopy";
 import type { Layer } from "../core/types";
 
-/** Makes a full-size photocopy of the artboard for the export dialog. */
 export function useExport(
   layers: Layer[],
   settings: PhotocopySettings,

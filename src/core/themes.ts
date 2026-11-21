@@ -31,7 +31,6 @@ export function savedBackground(): Theme {
   return THEMES.find((theme) => theme.id === id) ?? DEFAULT_THEME;
 }
 
-/** Remembers the background. It only colors the canvas, never the interface. */
 export function saveBackground(theme: Theme) {
   writeSetting(STORAGE_KEY, theme.id);
 }

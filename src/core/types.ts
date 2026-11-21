@@ -1,7 +1,6 @@
 import type { PhotocopySettings } from "./photocopy";
 import type { Theme } from "./themes";
 
-/** Where an openly licensed photo came from, for attribution. */
 export interface Credit {
   title: string;
   author: string;
@@ -20,7 +19,6 @@ export interface Layer {
   height: number;
   /** The photo as loaded, never modified. */
   source: HTMLCanvasElement;
-  /** Alpha mask painted by background removal and the brushes. */
   mask: HTMLCanvasElement;
   backgroundRemoved: boolean;
   /** Where the source sits within the photo as loaded, after shrink to fit. */
@@ -35,7 +33,6 @@ export interface Layer {
   flipX: boolean;
   flipY: boolean;
   visible: boolean;
-  /** Set for photos added from an image search. */
   credit?: Credit;
   /** Bumped whenever the mask changes, so dependents re-render. */
   revision: number;
@@ -74,13 +71,11 @@ export interface Region {
   height: number;
 }
 
-/** Progress of an in-flight background removal. */
 export interface Removal {
   label: string;
   fraction: number;
 }
 
-/** Everything undo and autosave track for an artboard. */
 export interface ArtboardState {
   layers: Layer[];
   settings: PhotocopySettings;

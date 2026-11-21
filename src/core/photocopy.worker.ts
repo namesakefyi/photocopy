@@ -7,7 +7,6 @@ import {
 } from "./render";
 import type { Region } from "./types";
 
-/** Photocopies already-flattened pixels (exports). */
 export interface PhotocopyRequest {
   kind: "photocopy";
   id: number;
@@ -24,10 +23,7 @@ export interface PreviewLayer extends LayerPlacement {
   key: string;
 }
 
-/**
- * Live preview of a region. Bitmaps persist between requests: `images` holds
- * only changed ones, and layers missing from `layers` are dropped.
- */
+/** Bitmaps persist between requests, so `images` holds only changed ones. */
 export interface PreviewRequest {
   kind: "preview";
   id: number;

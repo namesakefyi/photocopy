@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { type EditorState, editorReducer, initialEditorState } from "./editor";
+import { creditsOf } from "./credits";
+import {
+  type EditorState,
+  editorReducer,
+  initialEditorState,
+  placeNewPhotos,
+  selectionState,
+  shortcutAction,
+  statusMessage,
+} from "./editor";
 import { DEFAULT_THEME } from "./themes";
 import type { Layer } from "./types";
 
@@ -72,4 +81,56 @@ describe("editorReducer", () => {
     });
     expect(back.layers[0]).toMatchObject({ x: 100, y: 0, scale: 1 });
   });
+});
+
+describe("selectionState", () => {
+  it("can't edit the mask while the background is being removed", () => {
+    const state = { ...withLayers("a", "b"), selectedId: "a" };
+    expect(selectionState(state, {})).toMatchObject({
+      canEditMask: true,
+      canBringForward: true,
+      canSendBack: false,
+    });
+    const removing = { a: { label: "Cutting out", fraction: 0.5 } };
+    expect(selectionState(state, removing)).toMatchObject({
+      canEditMask: false,
+      canRemoveBackground: false,
+    });
+  });
+});
+
+describe("statusMessage", () => {
+  it("puts another tab's lock first, then removal progress, then the brush", () => {
+    const removal = { label: "Cutting out", fraction: 0.5 };
+    expect(statusMessage(true, removal, "erase")).toMatch(/another tab/);
+    expect(statusMessage(false, removal, "erase")).toBe("Cutting out…");
+    expect(statusMessage(false, undefined, "erase")).toBe(
+      "Masking · Esc to stop",
+    );
+    expect(statusMessage(false, undefined, "move")).toBeNull();
+  });
+});
+
+it("maps state-only shortcuts to reducer actions", () => {
+  expect(shortcutAction("back")).toEqual({
+    type: "moveSelected",
+    direction: -1,
+  });
+  expect(shortcutAction("undo")).toBeNull();
+});
+
+it("staggers new photos from the middle of the artboard", () => {
+  const [first, second] = placeNewPhotos(2, { width: 1000, height: 500 });
+  expect(first).toEqual({ x: 500, y: 250, maxWidth: 600, maxHeight: 300 });
+  expect(second).toMatchObject({ x: 560, y: 310 });
+});
+
+it("credits each visible source once", () => {
+  const credit = { sourceUrl: "https://example.com/1" } as Layer["credit"];
+  const layers = [
+    { ...layer("a"), visible: true, credit },
+    { ...layer("b"), visible: true, credit },
+    { ...layer("c"), visible: false, credit: { ...credit, sourceUrl: "x" } },
+  ] as Layer[];
+  expect(creditsOf(layers)).toEqual([credit]);
 });

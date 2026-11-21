@@ -103,7 +103,6 @@ export function setMask(layer: Layer, image: CanvasImageSource | null) {
   composeLayer(layer);
 }
 
-/** A cutout scaled to the layer, as a mask image to store. */
 export function maskBlob(
   layer: Pick<Layer, "width" | "height">,
   image: CanvasImageSource,
@@ -128,7 +127,6 @@ function cropCanvas(canvas: HTMLCanvasElement, region: Region) {
   return cropped;
 }
 
-/** Trims every canvas of a layer to `region`, in the layer's own pixels. */
 export function cropLayerCanvases(layer: Layer, region: Region): Layer {
   const previous = layer.crop ?? { x: 0, y: 0 };
   const cropped: Layer = {
@@ -149,10 +147,8 @@ export function cropLayerCanvases(layer: Layer, region: Region): Layer {
   return cropped;
 }
 
-/** Pixels at least this opaque are the ones that print in the copy. */
 const PRINTED_ALPHA = 128;
 
-/** The part of a layer that will print, or null when there's nothing to crop. */
 export function croppableBounds(layer: Layer): Region | null {
   const { width, height } = layer;
   const pixels = context2d(layer.composed).getImageData(0, 0, width, height);
@@ -161,7 +157,6 @@ export function croppableBounds(layer: Layer): Region | null {
   return isWhole ? null : bounds;
 }
 
-/** Trims a layer to the part that will print, keeping it in place on the artboard. */
 export function cropToVisible(layer: Layer): Layer | null {
   const bounds = croppableBounds(layer);
   if (!bounds) return null;

@@ -36,7 +36,7 @@ function restoreAlpha(layer: Layer, alpha: Uint8ClampedArray) {
   composeLayer(layer);
 }
 
-/** Undo and redo through artboard snapshots, starting once the saved session is `isReady`. */
+/** Recording starts once `isReady`, so the restored session is the first step. */
 export function useHistory(
   current: ArtboardState,
   isReady: boolean,

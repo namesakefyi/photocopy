@@ -12,7 +12,6 @@ export interface Preview {
   region: Region;
 }
 
-/** Photocopies the artboard in the worker shortly after anything changes. */
 export function usePreview(
   layers: Layer[],
   settings: PhotocopySettings,

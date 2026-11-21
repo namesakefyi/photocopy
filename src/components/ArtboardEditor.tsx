@@ -8,7 +8,15 @@ import {
   useState,
 } from "react";
 import { canvasSize } from "../core/canvasFormat";
-import { editorReducer, initialEditorState } from "../core/editor";
+import { creditsOf } from "../core/credits";
+import {
+  editorReducer,
+  initialEditorState,
+  placeNewPhotos,
+  selectionState,
+  shortcutAction,
+  statusMessage,
+} from "../core/editor";
 import {
   croppableBounds,
   cropToVisible,
@@ -43,8 +51,6 @@ import { ImageSearch } from "./ImageSearch";
 import { LayerToolbar } from "./LayerToolbar";
 import { ProgressLine } from "./ProgressLine";
 
-const BRUSH_LABELS = { restore: "Erasing mask", erase: "Masking" };
-
 export interface ArtboardEditorHandle {
   flush: () => Promise<void>;
   /** `revision` is the photo's version when removal started, or null if reopened since. */
@@ -58,7 +64,6 @@ export interface ArtboardEditorHandle {
 
 export interface ArtboardEditorProps {
   artboardId: string;
-  /** Background removals in flight for this artboard, by layer id. */
   removals: Record<string, Removal>;
   needsThumbnail: boolean;
   toolbarStart?: React.ReactNode;
@@ -178,19 +183,9 @@ export function ArtboardEditor({
       setError(null);
       let added: Layer[];
       try {
+        const places = placeNewPhotos(files.length, { width, height });
         added = await Promise.all(
-          files.map((file, index) =>
-            loadPhoto(
-              file,
-              {
-                x: width / 2 + index * 60,
-                y: height / 2 + index * 60,
-                maxWidth: width * 0.6,
-                maxHeight: height * 0.6,
-              },
-              credit,
-            ),
-          ),
+          files.map((file, index) => loadPhoto(file, places[index], credit)),
         );
       } catch {
         setError("Couldn’t open one of those files as an image.");
@@ -279,11 +274,7 @@ export function ArtboardEditor({
     [autosave, saveThumbnail],
   );
 
-  const selectedIndex = layers.findIndex((layer) => layer.id === selectedId);
-  const selected = layers[selectedIndex] ?? null;
-  const removal = selected ? removals[selected.id] : undefined;
-  // Background removal replaces the mask, so mask edits wait for it.
-  const canEditMask = selected !== null && removal === undefined;
+  const { selected, removal, ...selection } = selectionState(state, removals);
   // Reads the selected photo's pixels, so only when its mask or crop changes.
   // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the canvas and revision, not the layer object
   const canCropSelected = useMemo(
@@ -297,32 +288,28 @@ export function ArtboardEditor({
       ? allRemovals.reduce((sum, { fraction }) => sum + fraction, 0) /
         allRemovals.length
       : null;
-  const status =
-    lock === "elsewhere"
-      ? "Open in another tab · Changes here won’t be saved"
-      : removal
-        ? `${removal.label}…`
-        : tool !== "move"
-          ? `${BRUSH_LABELS[tool]} · Esc to stop`
-          : null;
-  const credits = useMemo(
-    () => [
-      ...new Map(
-        layers
-          .filter((layer) => layer.visible && layer.credit)
-          .map((layer) => [layer.credit?.sourceUrl, layer.credit as Credit]),
-      ).values(),
-    ],
-    [layers],
-  );
+  const status = statusMessage(lock === "elsewhere", removal, tool);
+  const credits = useMemo(() => creditsOf(layers), [layers]);
 
   useEventListener(window, "keydown", (event) => {
     if (isOwnInputTarget(event)) return;
     const command = shortcutFor(event);
     if (!command) return;
-    if (command === "delete" && !selected) return;
-    if ((command === "restore" || command === "erase") && !canEditMask) return;
+    const isBrushSize = command === "brushLarger" || command === "brushSmaller";
+    if ((command === "delete" || isBrushSize) && !selected) return;
+    if (
+      (command === "restore" || command === "erase") &&
+      !selection.canEditMask
+    ) {
+      return;
+    }
     event.preventDefault();
+    const action = shortcutAction(command);
+    if (action) {
+      dispatch(action);
+      if (isBrushSize) showBrushSize();
+      return;
+    }
     switch (command) {
       case "undo":
         return undo();
@@ -336,33 +323,13 @@ export function ArtboardEditor({
       case "zoomDouble":
       case "zoomFit":
         return commands.zoom(command);
-      case "restore":
-      case "erase":
-        return dispatch({ type: "setTool", tool: command });
-      case "escape":
-        return dispatch({ type: "escape" });
       case "previousArtboard":
         return onSwitchArtboard(-1);
       case "nextArtboard":
         return onSwitchArtboard(1);
-      case "delete":
-        return dispatch({ type: "deleteSelected" });
-      case "forward":
-        return dispatch({ type: "moveSelected", direction: 1 });
-      case "back":
-        return dispatch({ type: "moveSelected", direction: -1 });
-      case "brushLarger":
-      case "brushSmaller":
-        if (!selected) return;
-        dispatch({
-          type: "resizeBrush",
-          direction: command === "brushLarger" ? 1 : -1,
-        });
-        return showBrushSize();
     }
   });
 
-  // Pasted images become new layers, like dropped ones.
   useEventListener(window, "paste", (event) => {
     if (isOwnInputTarget(event)) return;
     const files = [...(event.clipboardData?.files ?? [])].filter((file) =>
@@ -391,13 +358,8 @@ export function ArtboardEditor({
         <LayerToolbar
           start={toolbarStart}
           selectedId={selectedId}
-          canEditMask={canEditMask}
-          canRemoveBackground={canEditMask && !selected.backgroundRemoved}
+          {...selection}
           canCrop={canCropSelected && removal === undefined}
-          canBringForward={
-            selected !== null && selectedIndex < layers.length - 1
-          }
-          canSendBack={selected !== null && selectedIndex > 0}
           isRefining={state.isRefining}
           tool={tool}
           brushSize={state.brushSize}

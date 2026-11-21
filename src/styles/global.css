@@ -16,7 +16,6 @@
   --progress: #3b82f6;
   --strip-width: 260px;
   --file-viewer-width: 132px;
-  /* The toolbar above the canvas. */
   --bar-height: 44px;
   --radius: 3px;
   /* Popovers inset their items, so their corners nest around the items'. */
@@ -25,7 +24,6 @@
   /* Borderless popovers sit a shade above the interface to stay distinct. */
   --popover-bg: #262626;
   --gap: 12px;
-  /* Between stacked rows: layers, sliders. */
   --row-gap: 6px;
   --rule: 1px solid var(--ink);
   --font:
@@ -89,7 +87,6 @@ body {
   }
 }
 
-/* Section headings, the same size as the toolbar text. */
 h2,
 h3 {
   margin: 0;
@@ -131,8 +128,6 @@ p {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-
-/* Menu bar */
 
 /* Workspace: the layer toolbar above the canvas */
 
@@ -217,7 +212,6 @@ p {
   }
 }
 
-/* The canvas and what floats over it. */
 .canvas-area {
   position: relative;
   display: flex;
@@ -226,7 +220,6 @@ p {
   min-height: 0;
 }
 
-/* Background removal's progress, along the top of the canvas, under the toolbar. */
 .progress-line {
   position: absolute;
   inset-block-start: 0;
@@ -288,7 +281,6 @@ p {
   padding: 0 6px;
 }
 
-/* A popover holding a single slider, like the brush size. */
 .menu-popover.slider-popover {
   width: 240px;
   min-width: 0;
@@ -299,7 +291,6 @@ p {
   outline: none;
 }
 
-/* The brush outline that follows the pointer while its size slider is dragged. */
 .brush-preview {
   position: fixed;
   /* Above popovers, which React Aria places at z-index 100000. */
@@ -470,14 +461,12 @@ p {
     width: fit-content;
     cursor: pointer;
     list-style: none;
-    /* Rounds the focus ring to match the buttons and dropdowns. */
     border-radius: var(--popover-radius);
 
     &::-webkit-details-marker {
       display: none;
     }
 
-    /* The title and chevron share the summary's color. */
     color: var(--gray-5);
     transition: color 120ms;
 
@@ -502,7 +491,6 @@ p {
   }
 }
 
-/* The heading's trailing control, over the end of the summary row. */
 .section-action {
   position: absolute;
   inset-block-start: var(--heading-inset);
@@ -523,14 +511,12 @@ p {
   }
 }
 
-/* With no layers yet, the ways to add one, full width. */
 .layers-empty {
   display: flex;
   flex-direction: column;
   gap: var(--row-gap);
 }
 
-/* Every heading row is the same height, and its trailing control the same size. */
 .section-heading {
   display: flex;
   align-items: center;
@@ -567,7 +553,6 @@ p {
 
 /* Buttons */
 
-/* The shared base for every button-like control; each kind below adds size and layout. */
 .button,
 .toolbar-button,
 .compact-select-button,
@@ -651,12 +636,10 @@ p {
   }
 }
 
-/* Small, like the compact dropdowns that also sit in headings. */
 .section-heading .button.quiet {
   font-size: 12px;
 }
 
-/* Toolbar buttons: quiet, 28px, with opaque grays for the icons. */
 .toolbar-button {
   height: 28px;
   padding: 0 10px;
@@ -668,7 +651,6 @@ p {
     padding: 0;
   }
 
-  /* The app name, which opens the About window. */
   &.brand {
     flex-shrink: 0;
     padding: 0 8px;
@@ -773,12 +755,10 @@ p {
   }
 }
 
-/* The Appearance sliders sit close together as one group. */
 .slider + .slider {
   margin-block-start: calc(var(--row-gap) - var(--gap));
 }
 
-/* Same size as the Preset label above them. */
 .strip .slider {
   font-size: 12px;
 }
@@ -836,8 +816,6 @@ p {
   }
 }
 
-/* Text inputs: flat and rounded like the sliders, layer rows and dropdowns. */
-
 .number-field input,
 .image-search-form input {
   width: 100%;
@@ -887,7 +865,6 @@ p {
 
 /* Layer list */
 
-/* Lists whose items can be dragged into a new order. */
 :is(.layer-list, .file-list) {
   display: flex;
   flex-direction: column;
@@ -994,7 +971,6 @@ p {
     width: calc(var(--result-size) + 32px);
   }
 
-  /* A darker panel, edge to edge, sets the preview apart from the controls. */
   .copy-preview {
     display: grid;
     place-items: center;
@@ -1059,7 +1035,6 @@ p {
     background-size: 16px 16px;
   }
 
-  /* The buttons sit at the bottom of the details, level with the image. */
   .row {
     justify-content: flex-end;
     margin-block-start: auto;
@@ -1390,7 +1365,6 @@ p {
   gap: 6px;
 }
 
-/* A fieldset grouping fields under one label, without the browser's box. */
 fieldset.field {
   min-inline-size: 0;
   padding: 0;
@@ -1404,13 +1378,11 @@ fieldset.field {
   }
 }
 
-/* Small, quieter labels over the canvas fields. */
 .field-label {
   font-size: 11px;
   color: var(--gray-5);
 }
 
-/* A full-width dropdown, flat and rounded like the sliders and layer rows. */
 .field-select-button {
   display: flex;
   gap: 8px;
@@ -1506,7 +1478,6 @@ fieldset.field {
   scrollbar-width: thin;
 }
 
-/* Small buttons over a thumbnail's corners, hidden until needed. */
 .button.file-overlay {
   position: absolute;
   width: 24px;
@@ -1732,7 +1703,6 @@ fieldset.field {
   margin-block-start: 16px;
 }
 
-/* The file viewer sits under the toolbar, left of the canvas. */
 .app[data-file-viewer] {
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-columns: var(--file-viewer-width) minmax(0, 1fr) var(

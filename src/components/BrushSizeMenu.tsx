@@ -23,7 +23,6 @@ export function BrushSizeMenu({
   const isPressed = useRef(false);
   const isDragging = pointer !== null;
 
-  // Follows the pointer from press to release, wherever it goes.
   useEffect(() => {
     if (!isDragging) return;
     const move = (event: PointerEvent) =>
