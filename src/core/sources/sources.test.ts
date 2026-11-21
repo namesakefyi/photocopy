@@ -1,15 +1,11 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { formatCredit } from "../credits";
 import { downloadImage, SearchError, searchErrorMessage } from "../imageSearch";
 import { artic } from "./artic";
 import { commons } from "./commons";
 import { smk } from "./smk";
 import { wellcome } from "./wellcome";
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
 
 interface StubResponse {
   ok?: boolean;
@@ -343,15 +339,12 @@ describe("formatCredit", () => {
     license: "CC BY 4.0",
     sourceUrl: "https://example.org/cat",
     attributionRequired: true,
+    source: "SMK",
   };
 
   it("writes a TASL-style line naming the source", () => {
-    expect(formatCredit({ ...credit, source: "SMK" })).toBe(
+    expect(formatCredit(credit)).toBe(
       "“Cat” by Jo, CC BY 4.0, via SMK (https://example.org/cat)",
     );
-  });
-
-  it("credits Commons for the earliest saved photos", () => {
-    expect(formatCredit(credit)).toContain("via Wikimedia Commons");
   });
 });

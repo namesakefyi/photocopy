@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { act, useState } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CANVAS } from "../core/canvasFormat";
 import { DEFAULT_SETTINGS } from "../core/photocopy";
 import { DEFAULT_THEME } from "../core/themes";
@@ -25,9 +25,6 @@ let now = 0;
 beforeEach(() => {
   now = 10_000;
   vi.spyOn(performance, "now").mockImplementation(() => now);
-});
-afterEach(() => {
-  vi.restoreAllMocks();
 });
 
 function renderHistory(isReady = true) {

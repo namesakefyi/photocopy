@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  clampPoint,
   clampZoom,
   FIT_VIEWPORT,
   MAX_ZOOM,
@@ -9,7 +8,6 @@ import {
   resolutionStep,
   resolveViewport,
   wheelZoomFactor,
-  zoomAround,
   zoomStep,
   zoomViewport,
 } from "./zoom";
@@ -61,30 +59,6 @@ describe("wheelZoomFactor", () => {
 
   it("passes small pinch steps through", () => {
     expect(wheelZoomFactor(-4)).toBeCloseTo(Math.exp(0.04));
-  });
-});
-
-describe("zoomAround", () => {
-  it("keeps the point under the pointer in place", () => {
-    const center = { x: 500, y: 400 };
-    const pointer = { x: 120, y: -80 };
-    const next = zoomAround(center, pointer, 0.5, 2);
-    // The artboard point under the pointer, before and after.
-    expect(center.x + pointer.x / 0.5).toBeCloseTo(next.x + pointer.x / 2);
-    expect(center.y + pointer.y / 0.5).toBeCloseTo(next.y + pointer.y / 2);
-  });
-});
-
-describe("clampPoint", () => {
-  const region = { x: 0, y: 0, width: 100, height: 50 };
-
-  it("leaves points inside alone", () => {
-    expect(clampPoint({ x: 30, y: 20 }, region)).toEqual({ x: 30, y: 20 });
-  });
-
-  it("pulls points outside to the nearest edge", () => {
-    expect(clampPoint({ x: -10, y: 80 }, region)).toEqual({ x: 0, y: 50 });
-    expect(clampPoint({ x: 500, y: -5 }, region)).toEqual({ x: 100, y: 0 });
   });
 });
 

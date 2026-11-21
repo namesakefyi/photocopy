@@ -89,13 +89,6 @@ async function restoreLayer(saved: SavedLayer): Promise<Layer | null> {
   return restored;
 }
 
-/** Sessions saved with the old edgeless canvas keep the area it framed. */
-function restoreCanvasFormat(format: CanvasFormat): CanvasFormat {
-  return (format.preset as string) === "trimmed"
-    ? { ...format, preset: "custom", customWidth: 1500, customHeight: 1500 }
-    : format;
-}
-
 async function getArtboard(id: string) {
   const artboard = await storage.get<SavedArtboard>(
     storage.STATE_STORE,
@@ -212,9 +205,7 @@ export function createArtboard(backgroundId: string) {
     );
     const artboard = newArtboard({
       backgroundId,
-      canvasFormat: latest
-        ? restoreCanvasFormat(latest.canvasFormat)
-        : DEFAULT_CANVAS,
+      canvasFormat: latest?.canvasFormat ?? DEFAULT_CANVAS,
     });
     await putArtboard(artboard);
     return summarize(artboard);
@@ -330,7 +321,7 @@ export async function restoreArtboard(
     return {
       layers,
       settings: artboard.settings,
-      canvasFormat: restoreCanvasFormat(artboard.canvasFormat),
+      canvasFormat: artboard.canvasFormat,
       background: themeById(artboard.backgroundId),
     };
   } catch (cause) {

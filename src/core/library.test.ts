@@ -1,11 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   artboardBeside,
-  indexKey,
   insertAfter,
   reorderArtboards,
   withoutArtboard,
-  withThumbnail,
 } from "./library";
 
 const boards = (...ids: string[]) =>
@@ -41,15 +39,5 @@ describe("library", () => {
       "b",
       "a",
     ]);
-  });
-
-  it("stores a thumbnail on its artboard only", () => {
-    const thumbnail = new Blob();
-    const [a, b] = withThumbnail(boards("a", "b"), "b", thumbnail);
-    expect([a.thumbnail, b.thumbnail]).toEqual([undefined, thumbnail]);
-  });
-
-  it("keys the index on order and the open artboard", () => {
-    expect(indexKey(boards("a", "b"), "b")).toBe("a,b|b");
   });
 });

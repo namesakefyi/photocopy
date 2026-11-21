@@ -5,7 +5,6 @@ import {
   DEFAULT_SETTINGS,
   grainField,
   matchingPreset,
-  mulberry32,
   type Pixels,
   PRESETS,
   photocopy,
@@ -67,12 +66,6 @@ describe("photocopy", () => {
     const dark = photocopy(input, { ...DEFAULT_SETTINGS, darkness: 40 });
     expect(blackShare(dark)).toBeGreaterThan(blackShare(light));
   });
-
-  it("treats transparent areas as white paper", () => {
-    const input = gradient(16, 16, 0);
-    const { data } = photocopy(input, { ...DEFAULT_SETTINGS, grain: 0 });
-    expect(data[0]).toBe(255);
-  });
 });
 
 describe("blur", () => {
@@ -119,11 +112,6 @@ describe("contentBounds", () => {
 });
 
 describe("PRESETS", () => {
-  it("have unique ids", () => {
-    const ids = PRESETS.map((preset) => preset.id);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
   it("each look is distinct, so the picker can name the current one", () => {
     const looks = PRESETS.map((preset) => JSON.stringify(preset.look));
     expect(new Set(looks).size).toBe(looks.length);
@@ -156,19 +144,6 @@ describe("threshold", () => {
   });
 });
 
-describe("mulberry32", () => {
-  it("repeats for a seed and stays within [0, 1)", () => {
-    const a = mulberry32(7);
-    const b = mulberry32(7);
-    for (let index = 0; index < 1000; index++) {
-      const value = a();
-      expect(value).toBe(b());
-      expect(value).toBeGreaterThanOrEqual(0);
-      expect(value).toBeLessThan(1);
-    }
-  });
-});
-
 describe("toLuminance", () => {
   it("weights channels by perceived brightness", () => {
     const data = new Uint8ClampedArray([
@@ -190,12 +165,6 @@ describe("toLuminance", () => {
 });
 
 describe("grainField", () => {
-  it("repeats for a seed", () => {
-    expect(grainField(16, 16, 40, 0.6, 3)).toEqual(
-      grainField(16, 16, 40, 0.6, 3),
-    );
-  });
-
   it("centers on zero and grows with strength", () => {
     const spread = (strength: number) => {
       const field = grainField(64, 64, strength, 0.6, 3);

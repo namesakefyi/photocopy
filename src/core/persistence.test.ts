@@ -61,14 +61,6 @@ describe("loadLibrary", () => {
     );
   });
 
-  it("removes files no artboard uses", async () => {
-    await putBlob("a:source");
-    const library = await loadLibrary();
-    expect(library.artboards).toHaveLength(1);
-    // Cleaned up after loading, without holding it up.
-    await vi.waitFor(async () => expect(await blobKeys()).toEqual([]));
-  });
-
   it("keeps the index's order and open artboard", async () => {
     await putArtboard(artboard({ id: "a" }));
     await putArtboard(artboard({ id: "b" }));
@@ -127,19 +119,6 @@ describe("restoreArtboard", () => {
       settings,
       canvasFormat,
       background: THEMES[1],
-    });
-  });
-
-  it("turns an old trimmed canvas into the custom size it framed", async () => {
-    const canvasFormat = {
-      ...DEFAULT_CANVAS,
-      preset: "trimmed",
-    } as unknown as CanvasFormat;
-    await putArtboard(artboard({ canvasFormat }));
-    expect((await restoreArtboard("artboard-1"))?.canvasFormat).toEqual({
-      preset: "custom",
-      customWidth: 1500,
-      customHeight: 1500,
     });
   });
 

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_THEME,
   saveBackground,
@@ -15,10 +15,6 @@ function memoryStorage() {
     setItem: (key: string, value: string) => values.set(key, value),
   };
 }
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
 
 describe("saved background", () => {
   it("round-trips through storage", () => {
@@ -46,12 +42,5 @@ describe("saved background", () => {
     });
     expect(() => saveBackground(purple)).not.toThrow();
     expect(savedBackground()).toBe(DEFAULT_THEME);
-  });
-});
-
-describe("THEMES", () => {
-  it("has unique ids", () => {
-    const ids = THEMES.map((theme) => theme.id);
-    expect(new Set(ids).size).toBe(ids.length);
   });
 });

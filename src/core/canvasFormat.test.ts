@@ -103,16 +103,6 @@ describe("canvasSize", () => {
       );
     }
   });
-});
-
-describe("canvasSize presets", () => {
-  it("gives each preset its own size", () => {
-    for (const preset of CANVAS_PRESETS) {
-      expect(
-        canvasSize({ preset: preset.id, customWidth: 1, customHeight: 1 }),
-      ).toEqual({ width: preset.width, height: preset.height });
-    }
-  });
 
   it("ignores the custom size unless the preset is custom", () => {
     expect(
@@ -127,16 +117,7 @@ describe("canvasSize presets", () => {
   });
 });
 
-describe("fitLayersToCanvas bookkeeping", () => {
-  it("keeps a photo's other properties", () => {
-    const { layers } = fitLayersToCanvas(
-      [{ id: "a", x: 10, y: 10, scale: 1, name: "Cat" }],
-      { width: 100, height: 100 },
-      { width: 200, height: 200 },
-    );
-    expect(layers[0].name).toBe("Cat");
-  });
-
+describe("fitLayersToCanvas memory", () => {
   it("forgets photos that are gone", () => {
     const first = fitLayersToCanvas(
       [

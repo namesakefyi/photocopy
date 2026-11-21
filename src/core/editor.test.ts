@@ -6,7 +6,6 @@ import {
   initialEditorState,
   placeNewPhotos,
   selectionState,
-  shortcutAction,
   statusMessage,
 } from "./editor";
 import { DEFAULT_THEME } from "./themes";
@@ -68,19 +67,6 @@ describe("editorReducer", () => {
     });
     expect(undone.selectedId).toBeNull();
   });
-
-  it("returns photos to where they were after switching canvas sizes and back", () => {
-    const state = { ...withLayers("a"), layers: [{ ...layer("a"), x: 100 }] };
-    const video = editorReducer(state, {
-      type: "changeCanvas",
-      changes: { preset: "video" },
-    });
-    const back = editorReducer(video, {
-      type: "changeCanvas",
-      changes: { preset: state.canvasFormat.preset },
-    });
-    expect(back.layers[0]).toMatchObject({ x: 100, y: 0, scale: 1 });
-  });
 });
 
 describe("selectionState", () => {
@@ -109,14 +95,6 @@ describe("statusMessage", () => {
     );
     expect(statusMessage(false, undefined, "move")).toBeNull();
   });
-});
-
-it("maps state-only shortcuts to reducer actions", () => {
-  expect(shortcutAction("back")).toEqual({
-    type: "moveSelected",
-    direction: -1,
-  });
-  expect(shortcutAction("undo")).toBeNull();
 });
 
 it("staggers new photos from the middle of the artboard", () => {

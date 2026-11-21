@@ -7,8 +7,8 @@ export interface Credit {
   license: string;
   licenseUrl?: string;
   sourceUrl: string;
-  /** Where the photo comes from, like "flickr.com". */
-  source?: string;
+  /** The collection it came from, like "SMK". */
+  source: string;
   attributionRequired: boolean;
 }
 

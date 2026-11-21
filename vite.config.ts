@@ -4,5 +4,10 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   worker: { format: "es" },
-  test: { environment: "node" },
+  test: {
+    environment: "node",
+    isolate: false,
+    restoreMocks: true,
+    unstubGlobals: true,
+  },
 });

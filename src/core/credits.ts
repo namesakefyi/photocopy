@@ -8,12 +8,7 @@ export function formatCredit({
   sourceUrl,
   source,
 }: Credit) {
-  return `“${title}” by ${author}, ${license}, via ${creditSource(source)} (${sourceUrl})`;
-}
-
-/** The earliest saved credits have no source; they all came from Commons. */
-export function creditSource(source?: string) {
-  return source ?? "Wikimedia Commons";
+  return `“${title}” by ${author}, ${license}, via ${source} (${sourceUrl})`;
 }
 
 export function creditsOf(layers: Layer[]): Credit[] {

@@ -43,14 +43,6 @@ export function PlusIcon() {
   );
 }
 
-export function MinusIcon() {
-  return (
-    <svg {...sharpIconProps}>
-      <path d="M5 12h14" />
-    </svg>
-  );
-}
-
 export function FlipHorizontalIcon() {
   return (
     <svg {...sharpIconProps}>
