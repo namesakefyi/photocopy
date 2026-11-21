@@ -602,6 +602,31 @@ export function ArtboardEditor({
     return () => window.removeEventListener("keydown", handleShortcut);
   }, []);
 
+  // Pasted images become new layers, like dropped ones. Skipped in the same
+  // places as the shortcuts, so pasting text into a field still works.
+  const handlePaste = useEffectEvent((event: ClipboardEvent) => {
+    const target = event.target as HTMLElement;
+    if (
+      event.defaultPrevented ||
+      target.closest?.(
+        "input, textarea, select, [role=dialog], [role=menu], [data-own-keys]",
+      )
+    ) {
+      return;
+    }
+    const files = [...(event.clipboardData?.files ?? [])].filter((file) =>
+      file.type.startsWith("image/"),
+    );
+    if (files.length === 0) return;
+    event.preventDefault();
+    addFiles(files);
+  });
+
+  useEffect(() => {
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, []);
+
   function changeCanvas(changes: Partial<CanvasFormat>) {
     const next = canvasSize({ ...canvasFormat, ...changes });
     const fitted = fitLayersToCanvas(layers, artboard, next, fitMemory.current);
