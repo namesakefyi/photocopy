@@ -1,6 +1,7 @@
 import { canvasToBlob } from "./layers";
 import { contentBounds, type PhotocopySettings } from "./photocopy";
 import { photocopyImageData } from "./photocopyClient";
+import { encodePalettePng } from "./png";
 import { context2d, createCanvas, renderRegion } from "./render";
 import { readSetting, writeSetting } from "./settings";
 import type { Layer, Region } from "./types";
@@ -62,7 +63,8 @@ export async function encodeCopy(
     ctx.globalCompositeOperation = "multiply";
   }
   ctx.drawImage(source, x, y, width, height, 0, 0, width, height);
-  const blob = await canvasToBlob(canvas);
+  const pixels = ctx.getImageData(0, 0, width, height);
+  const blob = (await encodePalettePng(pixels)) ?? (await canvasToBlob(canvas));
   return { blob, url: URL.createObjectURL(blob), width, height };
 }
 
