@@ -1,5 +1,11 @@
 # photocopy
 
+## 0.1.2
+
+### Patch Changes
+
+- [#13](https://github.com/namesakefyi/photocopy/pull/13) [`e6834c8`](https://github.com/namesakefyi/photocopy/commit/e6834c88be9b7f484f6b3f151ae42a97d099be40) - Convert uploaded images to webp to preserve storage space and improve load times
+
 ## 0.1.1
 
 ### Patch Changes
