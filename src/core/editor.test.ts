@@ -23,9 +23,9 @@ describe("editorReducer", () => {
       { ...withLayers("a", "b"), selectedId: "a" },
       { type: "setTool", tool: "restore" },
     );
-    expect(masking).toMatchObject({ tool: "restore", isRefining: true });
+    expect(masking).toMatchObject({ tool: "restore" });
     const next = editorReducer(masking, { type: "select", id: "b" });
-    expect(next).toMatchObject({ tool: "move", isRefining: false });
+    expect(next).toMatchObject({ tool: "move" });
   });
 
   it("selects the last of the added layers", () => {
@@ -40,10 +40,10 @@ describe("editorReducer", () => {
   it("escape leaves the mask first, then the selection", () => {
     const refining = editorReducer(
       { ...withLayers("a"), selectedId: "a" },
-      { type: "setRefining", isRefining: true },
+      { type: "setTool", tool: "erase" },
     );
     const once = editorReducer(refining, { type: "escape" });
-    expect(once).toMatchObject({ selectedId: "a", isRefining: false });
+    expect(once).toMatchObject({ selectedId: "a", tool: "move" });
     expect(editorReducer(once, { type: "escape" }).selectedId).toBeNull();
   });
 

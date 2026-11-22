@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Dialog, DialogTrigger } from "react-aria-components";
 import { createPortal } from "react-dom";
 import { MAX_BRUSH, MIN_BRUSH } from "../core/editor";
+import { useEventListener } from "../hooks/useEventListener";
 import styles from "./BrushSizeMenu.module.css";
 import { Button, Chevron } from "./ui/Button";
 import { Popover } from "./ui/Popover";
@@ -24,25 +25,16 @@ export function BrushSizeMenu({
   const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
   // Set as the press starts, before the slider's first change arrives.
   const isPressed = useRef(false);
-  const isDragging = pointer !== null;
-
-  useEffect(() => {
-    if (!isDragging) return;
-    const move = (event: PointerEvent) =>
-      setPointer({ x: event.clientX, y: event.clientY });
-    const end = () => {
-      isPressed.current = false;
-      setPointer(null);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", end);
-    window.addEventListener("pointercancel", end);
-    return () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", end);
-      window.removeEventListener("pointercancel", end);
-    };
-  }, [isDragging]);
+  const end = () => {
+    if (!pointer) return;
+    isPressed.current = false;
+    setPointer(null);
+  };
+  useEventListener(window, "pointermove", (event) => {
+    if (pointer) setPointer({ x: event.clientX, y: event.clientY });
+  });
+  useEventListener(window, "pointerup", end);
+  useEventListener(window, "pointercancel", end);
 
   return (
     <DialogTrigger>

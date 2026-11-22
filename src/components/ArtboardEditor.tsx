@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { ProgressBar } from "react-aria-components";
 import { canvasSize } from "../core/canvasFormat";
 import { creditsOf } from "../core/credits";
 import {
@@ -56,7 +57,6 @@ import { ControlStrip } from "./ControlStrip";
 import { ExportDialog } from "./ExportDialog";
 import { ImageSearch } from "./ImageSearch";
 import { LayerToolbar } from "./LayerToolbar";
-import { ProgressLine } from "./ProgressLine";
 
 export interface ArtboardEditorHandle {
   flush: () => Promise<void>;
@@ -149,13 +149,12 @@ export function ArtboardEditor({
     () => ({ layers, settings, canvasFormat, background }),
     [layers, settings, canvasFormat, background],
   );
-  const reportSaveError = useCallback((cause: unknown) => {
-    if (isQuotaError(cause)) setError(QUOTA_MESSAGE);
-  }, []);
   const autosave = useAutosave(artboardId, content, {
     isRestored,
     canSave: lock === "held",
-    onError: reportSaveError,
+    onError: (cause) => {
+      if (isQuotaError(cause)) setError(QUOTA_MESSAGE);
+    },
     onSaved: (saved) => onSaved(artboardId, saved.canvasFormat),
   });
   const undoTo = useCallback(
@@ -171,6 +170,7 @@ export function ArtboardEditor({
   const { width, height } = canvasSize(canvasFormat);
   const artboard = useMemo(() => ({ width, height }), [width, height]);
   const { preview, setViewScale } = usePreview(layers, settings, width, height);
+
   const saveThumbnail = useThumbnail({
     content,
     restored,
@@ -203,9 +203,7 @@ export function ArtboardEditor({
       }
       // Stored before the layers exist, so autosave never sees them unsaved.
       try {
-        await Promise.all(
-          added.map((layer, index) => saveSource(layer, files[index])),
-        );
+        await Promise.all(added.map((layer) => saveSource(layer)));
       } catch (cause) {
         console.warn("Couldn’t save photo locally", cause);
         if (isQuotaError(cause)) setError(QUOTA_MESSAGE);
@@ -254,6 +252,13 @@ export function ArtboardEditor({
     zoom,
     setViewScale,
   ]);
+
+  // Leaving the page (or switching apps on a phone) may be the last chance.
+  useEventListener(document, "visibilitychange", () => {
+    if (document.visibilityState !== "hidden") return;
+    autosave.flush();
+    saveThumbnail();
+  });
 
   useImperativeHandle(
     ref,
@@ -364,13 +369,16 @@ export function ArtboardEditor({
           if (files.length > 0) addFiles(files);
         }}
       />
-      <main className={styles.workspace}>
+      <main
+        className={styles.workspace}
+        data-has-selection={selectedId !== null || undefined}
+      >
         <LayerToolbar
           start={toolbarStart}
           selectedId={selectedId}
           {...selection}
           canCrop={canCropSelected && removal === undefined}
-          isRefining={state.isRefining}
+          isRefining={tool !== "move"}
           tool={tool}
           brushSize={state.brushSize}
           canUndo={canUndo}
@@ -379,10 +387,18 @@ export function ArtboardEditor({
         />
         <div className={styles.canvasArea}>
           {removalProgress !== null && (
-            <ProgressLine
-              label="Removing background"
-              fraction={removalProgress}
-            />
+            <ProgressBar
+              className={styles.progress}
+              aria-label="Removing background"
+              value={removalProgress * 100}
+            >
+              {({ percentage }) => (
+                <div
+                  className={styles.progressFill}
+                  style={{ width: `${percentage}%` }}
+                />
+              )}
+            </ProgressBar>
           )}
           <Canvas
             layers={layers}
@@ -391,7 +407,7 @@ export function ArtboardEditor({
             tool={tool}
             brushSize={state.brushSize}
             isSizingBrush={isSizingBrush && selected !== null}
-            isMaskMode={state.isRefining}
+            isMaskMode={tool !== "move"}
             preview={preview}
             canvasFill={background.color}
             ref={canvasRef}

@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef } from "react";
 import { saveArtboardState } from "../core/persistence";
 import { type ArtboardState, sameArtboardState } from "../core/types";
-import { useEventListener } from "./useEventListener";
 
 const SAVE_DELAY = 400;
 
@@ -33,10 +32,10 @@ export function useAutosave(
   const pending = useRef<(() => Promise<void>) | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastSave = useRef<Promise<void>>(Promise.resolve());
-  const latestError = useRef(onError);
-  latestError.current = onError;
-  const latestSaved = useRef(onSaved);
-  latestSaved.current = onSaved;
+  const reportError = useEffectEvent((cause: unknown) => onError?.(cause));
+  const reportSaved = useEffectEvent((saved: ArtboardState) =>
+    onSaved?.(saved),
+  );
   const { layers, settings, canvasFormat, background } = state;
 
   // What was just restored is already saved; only later changes need saving.
@@ -64,10 +63,10 @@ export function useAutosave(
     restoredState.current = null;
     pending.current = () =>
       saveArtboardState(artboardId, current, revisions)
-        .then(() => latestSaved.current?.(current))
+        .then(() => reportSaved(current))
         .catch((cause) => {
           console.warn("Couldn’t save the artboard locally", cause);
-          latestError.current?.(cause);
+          reportError(cause);
         });
     clearTimeout(timer.current);
     timer.current = setTimeout(runPending, delay);
@@ -82,11 +81,8 @@ export function useAutosave(
     runPending,
   ]);
 
-  // Saves anything still waiting when the artboard closes, or the page hides.
+  // Saves anything still waiting when the artboard closes.
   useEffect(() => () => void runPending(), [runPending]);
-  useEventListener(document, "visibilitychange", () => {
-    if (document.visibilityState === "hidden") runPending();
-  });
 
   return useMemo(() => ({ flush: runPending }), [runPending]);
 }

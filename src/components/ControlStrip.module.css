@@ -34,8 +34,7 @@
     border-block-end: none;
   }
 
-  &:not([open]),
-  &:has(> .body:empty) {
+  &:not([open]) {
     padding-block-end: var(--heading-inset);
   }
 
@@ -85,10 +84,6 @@
   flex-direction: column;
   gap: var(--gap);
   margin-block-start: var(--gap);
-
-  &:empty {
-    display: none;
-  }
 }
 
 .layersEmpty {

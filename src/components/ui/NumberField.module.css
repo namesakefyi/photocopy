@@ -1,19 +1,12 @@
 @layer ui {
   .numberField {
-    display: flex;
     flex: 1;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .label {
-    font-size: 12px;
   }
 
   .group {
     position: relative;
 
-    > .prefixed {
+    > .input {
       padding-inline-start: calc(10px + 12px + 6px);
     }
   }

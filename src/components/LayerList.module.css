@@ -8,9 +8,20 @@
   height: 28px;
   padding: 0 2px;
   font-size: 12px;
+  background: var(--fill-subtle);
+  border-radius: var(--radius);
 
-  &:not([data-hovered], [data-selected]) {
-    background: var(--fill-subtle);
+  &[data-hovered] {
+    background: var(--fill);
+  }
+
+  &[data-selected] {
+    background: var(--fill-strong);
+  }
+
+  &[data-focus-visible] {
+    outline: 2px solid var(--highlight);
+    outline-offset: 2px;
   }
 }
 

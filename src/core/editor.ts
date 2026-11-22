@@ -22,9 +22,8 @@ const BRUSH_STEP = 1.25;
 
 export interface EditorState extends ArtboardState {
   selectedId: string | null;
+  /** Any tool but "move" is mask mode: the red overlay shows, and a brush is active. */
   tool: Tool;
-  /** Mask mode: the red overlay shows, and a brush is always active. */
-  isRefining: boolean;
   brushSize: number;
   fitMemory: FitMemory;
 }
@@ -41,7 +40,6 @@ export type EditorAction =
   | { type: "moveSelected"; direction: 1 | -1 }
   | { type: "flipSelected"; axis: "flipX" | "flipY" }
   | { type: "setTool"; tool: Tool }
-  | { type: "setRefining"; isRefining: boolean }
   | { type: "stopRefining"; layerId: string }
   | { type: "setBrushSize"; size: number }
   | { type: "resizeBrush"; direction: 1 | -1 }
@@ -57,16 +55,13 @@ export const initialEditorState = (background: Theme): EditorState => ({
   background,
   selectedId: null,
   tool: "move",
-  isRefining: false,
   brushSize: 40,
   fitMemory: {},
 });
 
 /** Selecting another layer (or none) puts the brushes away. */
 const select = (state: EditorState, id: string | null): EditorState =>
-  id === state.selectedId
-    ? state
-    : { ...state, selectedId: id, tool: "move", isRefining: false };
+  id === state.selectedId ? state : { ...state, selectedId: id, tool: "move" };
 
 const mapLayer = (
   state: EditorState,
@@ -94,7 +89,6 @@ export function editorReducer(
         ...action.state,
         selectedId: isKept ? state.selectedId : null,
         tool: "move",
-        isRefining: false,
       };
     }
     case "select":
@@ -138,18 +132,10 @@ export function editorReducer(
         [action.axis]: !layer[action.axis],
       }));
     case "setTool":
-      return action.tool === "move"
-        ? { ...state, tool: "move", isRefining: false }
-        : { ...state, tool: action.tool, isRefining: true };
-    case "setRefining":
-      return {
-        ...state,
-        isRefining: action.isRefining,
-        tool: action.isRefining ? "erase" : "move",
-      };
+      return { ...state, tool: action.tool };
     case "stopRefining":
-      return state.selectedId === action.layerId && state.isRefining
-        ? { ...state, isRefining: false, tool: "move" }
+      return state.selectedId === action.layerId && state.tool !== "move"
+        ? { ...state, tool: "move" }
         : state;
     case "setBrushSize":
       return { ...state, brushSize: action.size };
@@ -161,8 +147,8 @@ export function editorReducer(
       };
     }
     case "escape":
-      return state.isRefining
-        ? { ...state, isRefining: false, tool: "move" }
+      return state.tool !== "move"
+        ? { ...state, tool: "move" }
         : select(state, null);
     case "changeSettings":
       return { ...state, settings: { ...state.settings, ...action.changes } };

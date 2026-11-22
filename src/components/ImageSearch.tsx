@@ -53,11 +53,15 @@ export const ImageSearch = memo(function ImageSearch({
   // Per source, a new request cancels the one before it.
   const requests = useRef<Record<string, AbortController>>({});
 
-  function updateTab(id: string, changes: Partial<TabState>) {
-    setTabs((current) => ({
-      ...current,
-      [id]: { ...(current[id] ?? emptyTab), ...changes },
-    }));
+  function updateTab(
+    id: string,
+    changes: Partial<TabState> | ((tab: TabState) => Partial<TabState>),
+  ) {
+    setTabs((current) => {
+      const tab = current[id] ?? emptyTab;
+      const next = typeof changes === "function" ? changes(tab) : changes;
+      return { ...current, [id]: { ...tab, ...next } };
+    });
   }
 
   async function runSearch(source: ImageSource, search: string, page: number) {
@@ -73,8 +77,7 @@ export const ImageSearch = memo(function ImageSearch({
     try {
       const found = await source.search(search, page, request.signal);
       if (!isLatest()) return;
-      setTabs((current) => {
-        const tab = current[source.id] ?? emptyTab;
+      updateTab(source.id, (tab) => {
         // Pages can overlap when results reorder between requests.
         const seen = new Set(tab.results.map((result) => result.id));
         const results =
@@ -85,14 +88,10 @@ export const ImageSearch = memo(function ImageSearch({
                 ...found.results.filter((result) => !seen.has(result.id)),
               ];
         return {
-          ...current,
-          [source.id]: {
-            ...tab,
-            search,
-            results,
-            nextPage: found.nextPage,
-            isSearching: false,
-          },
+          search,
+          results,
+          nextPage: found.nextPage,
+          isSearching: false,
         };
       });
     } catch (error) {
@@ -171,7 +170,7 @@ export const ImageSearch = memo(function ImageSearch({
       </div>
       <Tabs selectedKey={source.id} onSelectionChange={selectSource}>
         <TabList aria-label="Collections" items={IMAGE_SOURCES}>
-          {(option) => <Tab id={option.id}>{option.label}</Tab>}
+          {(option) => <Tab id={option.id}>{option.label ?? option.name}</Tab>}
         </TabList>
         {IMAGE_SOURCES.map((option) => (
           <TabPanel key={option.id} id={option.id}>

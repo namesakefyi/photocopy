@@ -14,8 +14,9 @@ export interface SearchPage {
 
 export interface ImageSource {
   id: string;
-  label: string;
   name: string;
+  /** A shorter name for the tab, when `name` is long. */
+  label?: string;
   search: (
     search: string,
     page: number,

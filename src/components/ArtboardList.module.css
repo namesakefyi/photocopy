@@ -72,17 +72,13 @@
     opacity: 1;
   }
 
-  &[data-focus-visible] {
-    outline: none;
+  &[data-hovered]:not([data-selected]) {
+    background: var(--fill);
   }
 
-  &[data-selected] {
-    background: transparent;
-
-    .thumb {
-      outline: 2px solid var(--highlight);
-      outline-offset: 2px;
-    }
+  &[data-selected] .thumb {
+    outline: 2px solid var(--highlight);
+    outline-offset: 2px;
   }
 }
 

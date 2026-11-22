@@ -60,9 +60,10 @@ export function isQuotaError(cause: unknown) {
 export const QUOTA_MESSAGE =
   "Out of browser storage. Delete an artboard to free space.";
 
-/** Keeps the original file so a restore rebuilds the photo at full quality. */
-export async function saveSource(layer: Layer, file: Blob) {
-  await storage.put(storage.BLOB_STORE, blobKey(layer.id, "source"), file);
+/** Covert loaded images to webp at 0.9 quality to conserve storage and improve load times */
+export async function saveSource(layer: Layer) {
+  const blob = await canvasToBlob(layer.source, "image/webp", 0.9);
+  await storage.put(storage.BLOB_STORE, blobKey(layer.id, "source"), blob);
 }
 
 async function restoreLayer(saved: SavedLayer): Promise<Layer | null> {
@@ -78,6 +79,12 @@ async function restoreLayer(saved: SavedLayer): Promise<Layer | null> {
     maxWidth: 1,
     maxHeight: 1,
   });
+  // Photos saved as the original upload are swapped for the smaller copy once.
+  if (source.type === "image/jpeg" || source.type === "image/heic") {
+    saveSource({ ...layer, id: saved.id }).catch((cause) =>
+      console.warn("Couldn’t shrink the saved photo", cause),
+    );
+  }
   const restored: Layer = {
     ...(saved.crop ? cropLayerCanvases(layer, saved.crop) : layer),
     ...saved,
@@ -264,20 +271,6 @@ export function duplicateArtboard(id: string) {
   });
 }
 
-/** Skipped once deleted, so a late save can't bring an artboard back. */
-async function updateArtboard(
-  id: string,
-  change: (artboard: SavedArtboard) => Partial<SavedArtboard>,
-) {
-  const artboard = await getArtboard(id);
-  if (!artboard) return;
-  await putArtboard({
-    ...artboard,
-    ...change(artboard),
-    updatedAt: Date.now(),
-  });
-}
-
 export function saveThumbnail(id: string, thumbnail: Blob) {
   return exclusive(async () => {
     if (await getArtboard(id)) {
@@ -295,11 +288,13 @@ export function applyStoredCutout(
     const artboard = await getArtboard(artboardId);
     if (!artboard?.layers.some((layer) => layer.id === layerId)) return;
     await storage.put(storage.BLOB_STORE, blobKey(layerId, "mask"), mask);
-    await updateArtboard(artboardId, ({ layers }) => ({
-      layers: layers.map((layer) =>
+    await putArtboard({
+      ...artboard,
+      layers: artboard.layers.map((layer) =>
         layer.id === layerId ? { ...layer, backgroundRemoved: true } : layer,
       ),
-    }));
+      updatedAt: Date.now(),
+    });
   });
 }
 
@@ -347,24 +342,25 @@ export function saveArtboardState(
     const changed = layers.filter(
       (layer) => revisions.get(layer.id) !== layer.revision,
     );
-    const masks = await Promise.all(
-      changed.map((layer) => canvasToBlob(layer.mask)),
-    );
     await Promise.all(
-      changed.map((layer, index) =>
+      changed.map(async (layer) =>
         storage.put(
           storage.BLOB_STORE,
           blobKey(layer.id, "mask"),
-          masks[index],
+          await canvasToBlob(layer.mask),
         ),
       ),
     );
     for (const layer of changed) revisions.set(layer.id, layer.revision);
-    await updateArtboard(artboardId, () => ({
+    const artboard = await getArtboard(artboardId);
+    if (!artboard) return;
+    await putArtboard({
+      ...artboard,
       layers: layers.map(toSaved),
       settings,
       canvasFormat,
       backgroundId: background.id,
-    }));
+      updatedAt: Date.now(),
+    });
   });
 }

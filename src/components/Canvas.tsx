@@ -44,26 +44,17 @@ function BrushOutline({
   y: number;
   radius: number;
 }) {
-  return (
-    <>
-      <Circle
-        x={x}
-        y={y}
-        radius={radius}
-        stroke="#fff"
-        strokeWidth={3}
-        listening={false}
-      />
-      <Circle
-        x={x}
-        y={y}
-        radius={radius}
-        stroke="#000"
-        strokeWidth={1}
-        listening={false}
-      />
-    </>
-  );
+  return (["#fff", "#000"] as const).map((stroke, index) => (
+    <Circle
+      key={stroke}
+      x={x}
+      y={y}
+      radius={radius}
+      stroke={stroke}
+      strokeWidth={index === 0 ? 3 : 1}
+      listening={false}
+    />
+  ));
 }
 
 const IMAGE_TYPES = [
@@ -170,10 +161,6 @@ export const Canvas = memo(function Canvas({
     stageRef.current?.batchDraw();
   }, [isMaskMode, selected?.id, selected?.revision]);
 
-  function startInteracting() {
-    setIsInteracting(true);
-  }
-
   function stopInteracting() {
     setIsInteracting(false);
     setStalePreview(preview);
@@ -263,12 +250,9 @@ export const Canvas = memo(function Canvas({
       ArrowUp: [0, -step],
       ArrowDown: [0, step],
     };
-    if (event.key in moves) {
-      const [dx, dy] = moves[event.key];
-      updateLayer(selected.id, { x: selected.x + dx, y: selected.y + dy });
-    } else {
-      return;
-    }
+    if (!(event.key in moves)) return;
+    const [dx, dy] = moves[event.key];
+    updateLayer(selected.id, { x: selected.x + dx, y: selected.y + dy });
     event.preventDefault();
   }
 
@@ -334,8 +318,8 @@ export const Canvas = memo(function Canvas({
                   visible={layer.visible}
                   opacity={showPreview ? 0 : 1}
                   draggable={!brushing}
-                  onDragStart={startInteracting}
-                  onTransformStart={startInteracting}
+                  onDragStart={() => setIsInteracting(true)}
+                  onTransformStart={() => setIsInteracting(true)}
                   onPointerDown={() => {
                     if (!brushing) select(layer.id);
                   }}
@@ -384,38 +368,22 @@ export const Canvas = memo(function Canvas({
                 listening={false}
               />
             )}
-            <Rect
-              x={-far}
-              y={-far}
-              width={far * 2 + artboard.width}
-              height={far}
-              fill={OFF_CANVAS}
-              listening={false}
-            />
-            <Rect
-              x={-far}
-              y={artboard.height}
-              width={far * 2 + artboard.width}
-              height={far}
-              fill={OFF_CANVAS}
-              listening={false}
-            />
-            <Rect
-              x={-far}
-              y={0}
-              width={far}
-              height={artboard.height}
-              fill={OFF_CANVAS}
-              listening={false}
-            />
-            <Rect
-              x={artboard.width}
-              y={0}
-              width={far}
-              height={artboard.height}
-              fill={OFF_CANVAS}
-              listening={false}
-            />
+            {[
+              [-far, -far, far * 2 + artboard.width, far],
+              [-far, artboard.height, far * 2 + artboard.width, far],
+              [-far, 0, far, artboard.height],
+              [artboard.width, 0, far, artboard.height],
+            ].map(([x, y, width, height]) => (
+              <Rect
+                key={`${x},${y}`}
+                x={x}
+                y={y}
+                width={width}
+                height={height}
+                fill={OFF_CANVAS}
+                listening={false}
+              />
+            ))}
           </KonvaLayer>
           <KonvaLayer>
             <Transformer
