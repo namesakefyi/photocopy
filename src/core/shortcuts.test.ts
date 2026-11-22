@@ -69,7 +69,7 @@ describe("shortcutFor", () => {
 
   it("leaves other keys to the browser", () => {
     expect(shortcutFor(press("a"))).toBeNull();
-    expect(shortcutFor(mod("c"))).toBeNull();
+    expect(shortcutFor(mod("a"))).toBeNull();
     expect(shortcutFor(mod("r"))).toBeNull();
   });
 

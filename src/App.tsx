@@ -54,6 +54,11 @@ export function App() {
     />
   );
   const showsArtboardList = !isNarrow && isArtboardListOpen;
+  // On narrow screens the list is a drawer instead of a panel.
+  const isArtboardListShown = isNarrow ? isDrawerOpen : isArtboardListOpen;
+  const setArtboardListShown = isNarrow
+    ? setIsDrawerOpen
+    : setIsArtboardListOpen;
 
   return (
     <div
@@ -78,14 +83,14 @@ export function App() {
           <ToolToggleButton
             label="Show artboards"
             shortcut={`${SHORTCUTS.previousArtboard} ${SHORTCUTS.nextArtboard}`}
-            isSelected={isNarrow ? isDrawerOpen : isArtboardListOpen}
-            onChange={(isOpen) =>
-              isNarrow ? setIsDrawerOpen(isOpen) : setIsArtboardListOpen(isOpen)
-            }
+            isSelected={isArtboardListShown}
+            onChange={setArtboardListShown}
           >
             <SidebarIcon />
           </ToolToggleButton>
         }
+        isArtboardListShown={isArtboardListShown}
+        onArtboardListShownChange={setArtboardListShown}
         onRemoveBackground={removals.start}
         onThumbnail={library.setThumbnail}
         onSaved={library.setSaved}

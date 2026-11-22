@@ -7,6 +7,10 @@ export interface EditorCommands {
   dispatch: Dispatch<EditorAction>;
   undo: () => void;
   redo: () => void;
+  /** Copy and cut act on the selected layer. */
+  copy: () => void;
+  cut: () => void;
+  paste: () => void;
   addFiles: (files: File[], credit?: Credit) => Promise<void>;
   removeBackground: (layerId: string) => void;
   cropToVisible: (layerId: string) => void;

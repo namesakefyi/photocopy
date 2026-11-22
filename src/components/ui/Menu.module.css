@@ -37,4 +37,17 @@
       color: var(--text-disabled);
     }
   }
+
+  .separator {
+    height: 1px;
+    margin: 4px 0;
+    background: var(--border);
+    border: none;
+  }
+
+  .header {
+    padding: 5px 8px 3px;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
 }

@@ -6,6 +6,9 @@ export const SHORTCUTS = {
   undo: `${MOD}Z`,
   redo: IS_MAC ? "⇧⌘Z" : "Ctrl+Shift+Z",
   export: `${MOD}E`,
+  copy: `${MOD}C`,
+  cut: `${MOD}X`,
+  paste: `${MOD}V`,
   forward: `${MOD}]`,
   back: `${MOD}[`,
   // The "erase" tool masks the photo away (Mask); "restore" paints it back (Erase).
@@ -36,6 +39,8 @@ const MOD_KEYS: Record<string, ShortcutCommand> = {
   "0": "zoomFit",
   y: "redo",
   e: "export",
+  c: "copy",
+  x: "cut",
   "]": "forward",
   "[": "back",
 };
