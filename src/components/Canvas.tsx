@@ -20,7 +20,7 @@ import {
 import { composeLayer, nextRevision, paintMask } from "../core/layers";
 import { screenPixelRatio } from "../core/render";
 import type { Layer, LayerChanges, Region, Tool } from "../core/types";
-import type { ZoomAction } from "../core/zoom";
+import type { Viewport, ZoomAction } from "../core/zoom";
 import { useEditor } from "../hooks/useEditor";
 import { useViewport } from "../hooks/useViewport";
 import styles from "./Canvas.module.css";
@@ -78,6 +78,9 @@ export interface CanvasProps {
   isMaskMode: boolean;
   preview: { image: ImageBitmap; region: Region } | null;
   canvasFill: string;
+  /** Where the view was left when this artboard was last open. */
+  initialViewport?: Viewport;
+  onViewportChange?: (viewport: Viewport) => void;
   ref?: React.Ref<CanvasHandle>;
 }
 
@@ -95,6 +98,8 @@ export const Canvas = memo(function Canvas({
   isMaskMode,
   preview,
   canvasFill,
+  initialViewport,
+  onViewportChange,
   ref,
 }: CanvasProps) {
   const { dispatch, addFiles, reportZoom } = useEditor();
@@ -113,12 +118,18 @@ export const Canvas = memo(function Canvas({
   const [stalePreview, setStalePreview] =
     useState<CanvasProps["preview"]>(null);
   // The canvas owns its zoom and pan, so panning re-renders only the canvas.
-  const view = useViewport(containerRef, artboard, () => {
-    for (const node of nodes.current.values()) {
-      if (node.isDragging()) node.stopDrag();
-    }
-    transformerRef.current?.stopTransform();
-  });
+  const view = useViewport(
+    containerRef,
+    artboard,
+    () => {
+      for (const node of nodes.current.values()) {
+        if (node.isDragging()) node.stopDrag();
+      }
+      transformerRef.current?.stopTransform();
+    },
+    initialViewport,
+    onViewportChange,
+  );
   const { size, scale, offset } = view;
   useImperativeHandle(ref, () => ({ zoom: view.zoom }));
 

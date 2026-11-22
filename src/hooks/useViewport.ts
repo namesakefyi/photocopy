@@ -25,8 +25,10 @@ export function useViewport(
   containerRef: React.RefObject<HTMLElement | null>,
   artboard: { width: number; height: number },
   onPinchStart: () => void,
+  initialViewport: Viewport = FIT_VIEWPORT,
+  onChange?: (viewport: Viewport) => void,
 ) {
-  const [viewport, setViewport] = useState<Viewport>(FIT_VIEWPORT);
+  const [viewport, setViewport] = useState(initialViewport);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const frame: Frame = { view: size, artboard };
   const { scale, center } = resolveViewport(viewport, frame);
@@ -38,6 +40,8 @@ export function useViewport(
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    // Measure now so the first paint fits the real size, not 0×0 (a 1% zoom).
+    setSize({ width: container.clientWidth, height: container.clientHeight });
     const observer = new ResizeObserver(([entry]) =>
       setSize({
         width: entry.contentRect.width,
@@ -49,8 +53,16 @@ export function useViewport(
   }, [containerRef]);
 
   // A new canvas size starts over, fitted.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the size is the trigger
-  useEffect(() => setViewport(FIT_VIEWPORT), [artboard.width, artboard.height]);
+  const fittedSize = useRef(artboard);
+  useEffect(() => {
+    const { width, height } = fittedSize.current;
+    if (artboard.width === width && artboard.height === height) return;
+    fittedSize.current = artboard;
+    setViewport(FIT_VIEWPORT);
+  }, [artboard]);
+
+  const reportChange = useEffectEvent((next: Viewport) => onChange?.(next));
+  useEffect(() => reportChange(viewport), [viewport]);
 
   // Wheel, pinch and pan moves are batched to render once per frame.
   const queuedMoves = useRef<ViewMove[]>([]);

@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { ProgressBar } from "react-aria-components";
+import { cacheArtboard, cachedArtboard } from "../core/artboardCache";
 import { canvasSize } from "../core/canvasFormat";
 import { creditsOf } from "../core/credits";
 import {
@@ -41,6 +42,7 @@ import type {
   Removal,
 } from "../core/types";
 import { createValueStore } from "../core/valueStore";
+import { FIT_VIEWPORT, type Viewport } from "../core/zoom";
 import { useArtboardLock } from "../hooks/useArtboardLock";
 import { useAutosave } from "../hooks/useAutosave";
 import { useBrushPreview } from "../hooks/useBrushPreview";
@@ -105,15 +107,22 @@ export function ArtboardEditor({
   onReload,
   ref,
 }: ArtboardEditorProps) {
+  // Reopened from the cache, it shows at once, without loading or decoding.
+  const [cached] = useState(() => cachedArtboard(artboardId));
   const [state, dispatch] = useReducer(
     editorReducer,
     savedBackground(),
-    initialEditorState,
+    (background) => ({
+      ...initialEditorState(background),
+      ...cached?.state,
+    }),
   );
   const { layers, settings, canvasFormat, background, selectedId, tool } =
     state;
   // What was loaded, or null for a new artboard; undefined while loading.
-  const [restored, setRestored] = useState<ArtboardState | null>();
+  const [restored, setRestored] = useState<ArtboardState | null | undefined>(
+    cached?.state,
+  );
   const isRestored = restored !== undefined;
   const [error, setError] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -129,6 +138,7 @@ export function ArtboardEditor({
   const lock = useArtboardLock(artboardId, onReload);
 
   useEffect(() => {
+    if (cached) return;
     let isCurrent = true;
     restoreArtboard(artboardId).then((loaded) => {
       if (!isCurrent) return;
@@ -138,7 +148,7 @@ export function ArtboardEditor({
     return () => {
       isCurrent = false;
     };
-  }, [artboardId]);
+  }, [artboardId, cached]);
 
   // The last background picked becomes the default for new artboards.
   useEffect(() => {
@@ -149,6 +159,26 @@ export function ArtboardEditor({
     () => ({ layers, settings, canvasFormat, background }),
     [layers, settings, canvasFormat, background],
   );
+  // Kept for the cache on close; only while this tab holds the artboard, so it's current.
+  const viewport = useRef<Viewport>(cached?.viewport ?? FIT_VIEWPORT);
+  const rememberViewport = useCallback((next: Viewport) => {
+    viewport.current = next;
+  }, []);
+  const closing = useRef({ content, isRestored, lock });
+  closing.current = { content, isRestored, lock };
+  useEffect(
+    () => () => {
+      const { content, isRestored, lock } = closing.current;
+      if (isRestored && lock === "held") {
+        cacheArtboard(artboardId, {
+          state: content,
+          viewport: viewport.current,
+        });
+      }
+    },
+    [artboardId],
+  );
+
   const autosave = useAutosave(artboardId, content, {
     isRestored,
     canSave: lock === "held",
@@ -410,6 +440,8 @@ export function ArtboardEditor({
             isMaskMode={tool !== "move"}
             preview={preview}
             canvasFill={background.color}
+            initialViewport={cached?.viewport}
+            onViewportChange={rememberViewport}
             ref={canvasRef}
           />
           <p className={styles.toast} role="status">
