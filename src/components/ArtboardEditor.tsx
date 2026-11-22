@@ -170,6 +170,7 @@ export function ArtboardEditor({
   const { width, height } = canvasSize(canvasFormat);
   const artboard = useMemo(() => ({ width, height }), [width, height]);
   const { preview, setViewScale } = usePreview(layers, settings, width, height);
+
   const saveThumbnail = useThumbnail({
     content,
     restored,
@@ -202,9 +203,7 @@ export function ArtboardEditor({
       }
       // Stored before the layers exist, so autosave never sees them unsaved.
       try {
-        await Promise.all(
-          added.map((layer, index) => saveSource(layer, files[index])),
-        );
+        await Promise.all(added.map((layer) => saveSource(layer)));
       } catch (cause) {
         console.warn("Couldn’t save photo locally", cause);
         if (isQuotaError(cause)) setError(QUOTA_MESSAGE);

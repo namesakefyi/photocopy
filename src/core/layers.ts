@@ -112,10 +112,16 @@ export function maskBlob(
   return canvasToBlob(canvas);
 }
 
-export function canvasToBlob(canvas: HTMLCanvasElement) {
+export function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type?: string,
+  quality?: number,
+) {
   return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((blob) =>
-      blob ? resolve(blob) : reject(new Error("Export failed")),
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("Export failed"))),
+      type,
+      quality,
     );
   });
 }

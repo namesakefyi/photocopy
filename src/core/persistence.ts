@@ -60,9 +60,10 @@ export function isQuotaError(cause: unknown) {
 export const QUOTA_MESSAGE =
   "Out of browser storage. Delete an artboard to free space.";
 
-/** Keeps the original file so a restore rebuilds the photo at full quality. */
-export async function saveSource(layer: Layer, file: Blob) {
-  await storage.put(storage.BLOB_STORE, blobKey(layer.id, "source"), file);
+/** Covert loaded images to webp at 0.9 quality to conserve storage and improve load times */
+export async function saveSource(layer: Layer) {
+  const blob = await canvasToBlob(layer.source, "image/webp", 0.9);
+  await storage.put(storage.BLOB_STORE, blobKey(layer.id, "source"), blob);
 }
 
 async function restoreLayer(saved: SavedLayer): Promise<Layer | null> {
@@ -78,6 +79,12 @@ async function restoreLayer(saved: SavedLayer): Promise<Layer | null> {
     maxWidth: 1,
     maxHeight: 1,
   });
+  // Photos saved as the original upload are swapped for the smaller copy once.
+  if (source.type === "image/jpeg" || source.type === "image/heic") {
+    saveSource({ ...layer, id: saved.id }).catch((cause) =>
+      console.warn("Couldn’t shrink the saved photo", cause),
+    );
+  }
   const restored: Layer = {
     ...(saved.crop ? cropLayerCanvases(layer, saved.crop) : layer),
     ...saved,
@@ -345,7 +352,6 @@ export function saveArtboardState(
       ),
     );
     for (const layer of changed) revisions.set(layer.id, layer.revision);
-    // Skipped once deleted, so a late save can't bring an artboard back.
     const artboard = await getArtboard(artboardId);
     if (!artboard) return;
     await putArtboard({

@@ -22,6 +22,7 @@ export function usePreview(
   // In resolution steps, so most zooms don't re-render the preview.
   const [scale, setScale] = useState<number | null>(null);
   const latestRequest = useRef(0);
+  const hasRendered = useRef(false);
 
   // Frees each preview's bitmap once a newer one (or none) replaces it.
   useEffect(() => () => preview?.image.close(), [preview]);
@@ -35,20 +36,25 @@ export function usePreview(
     }
     const region = { x: 0, y: 0, width, height };
     const request = ++latestRequest.current;
-    const timer = setTimeout(async () => {
-      try {
-        const image = await renderPreview(layers, region, scale, settings);
-        if (request !== latestRequest.current) {
-          image.close();
-          return;
+    const timer = setTimeout(
+      async () => {
+        try {
+          const image = await renderPreview(layers, region, scale, settings);
+          if (request !== latestRequest.current) {
+            image.close();
+            return;
+          }
+          hasRendered.current = true;
+          setPreview({ image, region });
+        } catch (cause) {
+          // The canvas keeps showing the photos themselves; the next change retries.
+          console.warn("Preview failed", cause);
+          if (request === latestRequest.current) setPreview(null);
         }
-        setPreview({ image, region });
-      } catch (cause) {
-        // The canvas keeps showing the photos themselves; the next change retries.
-        console.warn("Preview failed", cause);
-        if (request === latestRequest.current) setPreview(null);
-      }
-    }, PREVIEW_DELAY);
+      },
+      // The first preview isn't replacing anything on screen, so it needn't wait.
+      hasRendered.current ? PREVIEW_DELAY : 0,
+    );
     return () => clearTimeout(timer);
   }, [layers, settings, scale, width, height]);
 
