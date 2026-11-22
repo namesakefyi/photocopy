@@ -1,0 +1,15 @@
+@layer ui {
+  .tooltip {
+    display: flex;
+    gap: 8px;
+    padding: 4px 8px;
+    font-size: 12px;
+    background: var(--surface-raised);
+    border-radius: var(--radius-small);
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.5);
+  }
+
+  .shortcut {
+    color: var(--text-secondary);
+  }
+}

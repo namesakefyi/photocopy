@@ -1,0 +1,12 @@
+@layer ui {
+  .hint {
+    color: var(--text-secondary);
+  }
+
+  .error {
+    padding: 8px 10px;
+    font-size: 12px;
+    background: var(--fill);
+    border-radius: var(--radius);
+  }
+}

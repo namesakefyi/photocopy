@@ -5,6 +5,9 @@ import {
   Input,
   Label,
 } from "react-aria-components";
+import { cx } from "./cx";
+import inputStyles from "./input.module.css";
+import styles from "./NumberField.module.css";
 
 export interface NumberFieldProps extends AriaNumberFieldProps {
   /** Visible label; pass `aria-label` instead to hide it. */
@@ -15,15 +18,15 @@ export interface NumberFieldProps extends AriaNumberFieldProps {
 
 export function NumberField({ label, prefix, ...props }: NumberFieldProps) {
   return (
-    <AriaNumberField {...props} className="number-field">
-      {label && <Label>{label}</Label>}
-      <Group>
+    <AriaNumberField {...props} className={styles.numberField}>
+      {label && <Label className={styles.label}>{label}</Label>}
+      <Group className={styles.group}>
         {prefix && (
-          <span className="number-prefix" aria-hidden="true">
+          <span className={styles.prefix} aria-hidden="true">
             {prefix}
           </span>
         )}
-        <Input />
+        <Input className={cx(inputStyles.input, prefix && styles.prefixed)} />
       </Group>
     </AriaNumberField>
   );

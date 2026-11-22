@@ -1,0 +1,9 @@
+.box {
+  display: grid;
+  flex: none;
+  place-items: center;
+}
+
+.shape {
+  border: 1px solid currentColor;
+}

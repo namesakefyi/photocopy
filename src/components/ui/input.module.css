@@ -1,0 +1,38 @@
+@layer ui {
+  .input {
+    width: 100%;
+    min-width: 0;
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+    color: var(--text);
+    outline: none;
+    background: var(--fill-subtle);
+    border: none;
+    border-radius: var(--radius);
+
+    &::placeholder {
+      color: var(--text-secondary);
+    }
+
+    &[data-hovered] {
+      background: var(--fill);
+    }
+
+    &[data-focused] {
+      outline: 2px solid var(--highlight);
+      outline-offset: 2px;
+      background: var(--fill);
+    }
+
+    &[data-disabled] {
+      color: var(--text-secondary);
+      background: var(--fill-subtle);
+    }
+  }
+
+  .search .input {
+    height: 32px;
+    font-size: inherit;
+  }
+}

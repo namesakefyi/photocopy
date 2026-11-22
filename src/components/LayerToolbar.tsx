@@ -1,10 +1,12 @@
 import { memo } from "react";
-import { Button, Group, Separator, Toolbar } from "react-aria-components";
+import { Group, Separator, Toolbar } from "react-aria-components";
 import { SHORTCUTS } from "../core/shortcuts";
 import type { Tool } from "../core/types";
 import type { ValueStore } from "../core/valueStore";
 import { useEditor } from "../hooks/useEditor";
 import { BrushSizeMenu } from "./BrushSizeMenu";
+import styles from "./LayerToolbar.module.css";
+import { Button } from "./ui/Button";
 import {
   BringForwardIcon,
   EraserIcon,
@@ -57,12 +59,16 @@ export const LayerToolbar = memo(function LayerToolbar({
 }: LayerToolbarProps) {
   const editor = useEditor();
   return (
-    <div className="layer-toolbar">
+    <div className={styles.toolbar}>
       {start}
-      <Button className="toolbar-button brand" onPress={editor.openAbout}>
+      <Button
+        variant="toolbar"
+        className={styles.brand}
+        onPress={editor.openAbout}
+      >
         Photocopy
       </Button>
-      <Toolbar aria-label="History" className="layer-toolbar-actions">
+      <Toolbar aria-label="History" className={styles.actions}>
         <ToolButton
           label="Undo"
           shortcut={SHORTCUTS.undo}
@@ -82,7 +88,11 @@ export const LayerToolbar = memo(function LayerToolbar({
         <ZoomMenu zoom={zoom} onZoom={editor.zoom} />
       </Toolbar>
       {selectedId !== null && (
-        <div className="layer-toolbar-scroll" onWheel={scrollSideways}>
+        <div
+          className={styles.scroll}
+          data-layer-actions
+          onWheel={scrollSideways}
+        >
           <LayerActions selectedId={selectedId} {...actions} />
         </div>
       )}
@@ -103,25 +113,25 @@ function LayerActions({
 }: LayerActionsProps) {
   const { dispatch, ...editor } = useEditor();
   return (
-    <Toolbar aria-label="Layer" className="layer-toolbar-actions">
-      <Group aria-label="Cut out">
+    <Toolbar aria-label="Layer" className={styles.actions}>
+      <Group className={styles.group} aria-label="Cut out">
         <Button
-          className="toolbar-button"
+          variant="toolbar"
           isDisabled={!canRemoveBackground}
           onPress={() => editor.removeBackground(selectedId)}
         >
           Remove Background
         </Button>
         <Button
-          className="toolbar-button"
+          variant="toolbar"
           isDisabled={!canCrop}
           onPress={() => editor.cropToVisible(selectedId)}
         >
           Shrink to Fit
         </Button>
       </Group>
-      <Separator orientation="vertical" />
-      <Group aria-label="Mask">
+      <Separator className={styles.separator} orientation="vertical" />
+      <Group className={styles.group} aria-label="Mask">
         <ToolToggleButton
           label="Mask"
           shortcut={SHORTCUTS.erase}
@@ -158,8 +168,8 @@ function LayerActions({
           </>
         )}
       </Group>
-      <Separator orientation="vertical" />
-      <Group aria-label="Flip">
+      <Separator className={styles.separator} orientation="vertical" />
+      <Group className={styles.group} aria-label="Flip">
         <ToolButton
           label="Flip Horizontal"
           onPress={() => dispatch({ type: "flipSelected", axis: "flipX" })}
@@ -173,8 +183,8 @@ function LayerActions({
           <FlipVerticalIcon />
         </ToolButton>
       </Group>
-      <Separator orientation="vertical" />
-      <Group aria-label="Order">
+      <Separator className={styles.separator} orientation="vertical" />
+      <Group className={styles.group} aria-label="Order">
         <ToolButton
           label="Send Back"
           shortcut={SHORTCUTS.back}
@@ -192,7 +202,7 @@ function LayerActions({
           <BringForwardIcon />
         </ToolButton>
       </Group>
-      <Separator orientation="vertical" />
+      <Separator className={styles.separator} orientation="vertical" />
       <ToolButton
         label="Delete Layer"
         shortcut={SHORTCUTS.delete}

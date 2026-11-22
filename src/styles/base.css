@@ -1,0 +1,81 @@
+@layer base {
+  :root {
+    /* Theme */
+    --text: #e1e1e1;
+    --text-secondary: #ababab;
+    --text-disabled: #505050;
+    --surface: #1f1f1f;
+    --surface-raised: #262626;
+    --surface-inset: #161616;
+    --fill-subtle: rgb(225 225 225 / 0.05);
+    --fill: rgb(225 225 225 / 0.1);
+    --fill-strong: rgb(225 225 225 / 0.25);
+    --border: rgb(225 225 225 / 0.1);
+    --border-strong: rgb(225 225 225 / 0.25);
+    --highlight: #e1e1e1;
+    --progress: #3b82f6;
+
+    /* Shared sizes */
+    --bar-height: 44px;
+    --radius: 8px;
+    --radius-small: 4px;
+    --gap: 12px;
+    --row-gap: 6px;
+
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  html,
+  body {
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family:
+      ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial,
+      sans-serif;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.35;
+    color: var(--text);
+    background: var(--surface);
+  }
+
+  h2,
+  h3 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  kbd {
+    font-family: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--highlight);
+    outline-offset: 2px;
+  }
+}
+
+/* Hide keyboard shortcuts on touchscreens */
+@media (pointer: coarse) {
+  kbd {
+    display: none;
+  }
+}
+
+@media (width < 760px) and (pointer: coarse) {
+  input:not([type="checkbox"], [type="radio"], [type="range"]),
+  textarea {
+    font-size: 16px;
+  }
+}

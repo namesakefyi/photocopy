@@ -1,0 +1,30 @@
+.window {
+  width: 280px;
+}
+
+.about {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  padding: 24px;
+  font-size: 12px;
+  text-align: center;
+
+  p {
+    max-width: 30ch;
+    color: var(--text-secondary);
+  }
+
+  a {
+    color: var(--text);
+  }
+}
+
+.version {
+  margin-block-end: 8px;
+}
+
+.credit {
+  margin-block-start: 8px;
+}

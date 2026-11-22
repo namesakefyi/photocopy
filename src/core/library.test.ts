@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_CANVAS } from "./canvasFormat";
 import {
   artboardBeside,
   insertAfter,
@@ -7,7 +8,11 @@ import {
 } from "./library";
 
 const boards = (...ids: string[]) =>
-  ids.map((id) => ({ id, backgroundId: "" }));
+  ids.map((id) => ({
+    id,
+    backgroundId: "",
+    canvasFormat: DEFAULT_CANVAS,
+  }));
 const idsOf = (artboards: { id: string }[]) => artboards.map((a) => a.id);
 
 describe("library", () => {

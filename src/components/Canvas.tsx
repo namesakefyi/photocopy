@@ -23,6 +23,7 @@ import type { Layer, LayerChanges, Region, Tool } from "../core/types";
 import type { ZoomAction } from "../core/zoom";
 import { useEditor } from "../hooks/useEditor";
 import { useViewport } from "../hooks/useViewport";
+import styles from "./Canvas.module.css";
 
 // Set before any stage is created; Konva reads it for each canvas it makes.
 Konva.pixelRatio = screenPixelRatio();
@@ -275,7 +276,7 @@ export const Canvas = memo(function Canvas({
 
   return (
     <DropZone
-      className="canvas"
+      className={styles.canvas}
       aria-label="Canvas: drop photos here"
       getDropOperation={(types) =>
         IMAGE_TYPES.some((type) => types.has(type)) ? "copy" : "cancel"
@@ -292,7 +293,7 @@ export const Canvas = memo(function Canvas({
     >
       <div
         ref={containerRef}
-        className="stage"
+        className={styles.stage}
         // biome-ignore lint/a11y/noNoninteractiveTabindex: focus target for nudging the selected photo with arrow keys
         tabIndex={0}
         role="application"
@@ -413,14 +414,6 @@ export const Canvas = memo(function Canvas({
               width={far}
               height={artboard.height}
               fill={OFF_CANVAS}
-              listening={false}
-            />
-            <Rect
-              width={artboard.width}
-              height={artboard.height}
-              stroke="#555"
-              strokeWidth={1}
-              strokeScaleEnabled={false}
               listening={false}
             />
           </KonvaLayer>

@@ -32,7 +32,13 @@ import {
 } from "../core/persistence";
 import { shortcutFor } from "../core/shortcuts";
 import { saveBackground, savedBackground } from "../core/themes";
-import type { ArtboardState, Credit, Layer, Removal } from "../core/types";
+import type {
+  ArtboardState,
+  CanvasFormat,
+  Credit,
+  Layer,
+  Removal,
+} from "../core/types";
 import { createValueStore } from "../core/valueStore";
 import { useArtboardLock } from "../hooks/useArtboardLock";
 import { useAutosave } from "../hooks/useAutosave";
@@ -44,9 +50,10 @@ import { useHistory } from "../hooks/useHistory";
 import { usePreview } from "../hooks/usePreview";
 import { useThumbnail } from "../hooks/useThumbnail";
 import { AboutDialog } from "./AboutDialog";
+import styles from "./ArtboardEditor.module.css";
 import { Canvas, type CanvasHandle } from "./Canvas";
 import { ControlStrip } from "./ControlStrip";
-import { CopyResult } from "./CopyResult";
+import { ExportDialog } from "./ExportDialog";
 import { ImageSearch } from "./ImageSearch";
 import { LayerToolbar } from "./LayerToolbar";
 import { ProgressLine } from "./ProgressLine";
@@ -69,13 +76,14 @@ export interface ArtboardEditorProps {
   toolbarStart?: React.ReactNode;
   onRemoveBackground: (layer: Layer) => void;
   onThumbnail: (thumbnail: Blob) => void;
+  onSaved: (id: string, canvasFormat: CanvasFormat) => void;
   onSwitchArtboard: (direction: 1 | -1) => void;
   /** Asks to load the artboard again, once another tab has let it go. */
   onReload: () => void;
   ref?: React.Ref<ArtboardEditorHandle>;
 }
 
-/** Fields, dialogs, menus and the file viewer handle their own keys and paste. */
+/** Fields, dialogs, menus and the artboard list handle their own keys and paste. */
 function isOwnInputTarget(event: Event) {
   return (
     event.defaultPrevented ||
@@ -92,6 +100,7 @@ export function ArtboardEditor({
   toolbarStart,
   onRemoveBackground,
   onThumbnail,
+  onSaved,
   onSwitchArtboard,
   onReload,
   ref,
@@ -147,6 +156,7 @@ export function ArtboardEditor({
     isRestored,
     canSave: lock === "held",
     onError: reportSaveError,
+    onSaved: (saved) => onSaved(artboardId, saved.canvasFormat),
   });
   const undoTo = useCallback(
     (snapshot: ArtboardState) => dispatch({ type: "undoTo", state: snapshot }),
@@ -170,7 +180,7 @@ export function ArtboardEditor({
     preview,
     onThumbnail,
   });
-  const { photocopy, isCopying, runExport, closeExport } = useExport(
+  const { photocopy, isExporting, runExport, closeExport } = useExport(
     layers,
     settings,
     width,
@@ -354,7 +364,7 @@ export function ArtboardEditor({
           if (files.length > 0) addFiles(files);
         }}
       />
-      <main className="workspace">
+      <main className={styles.workspace}>
         <LayerToolbar
           start={toolbarStart}
           selectedId={selectedId}
@@ -367,7 +377,7 @@ export function ArtboardEditor({
           canRedo={canRedo}
           zoom={zoom}
         />
-        <div className="canvas-area">
+        <div className={styles.canvasArea}>
           {removalProgress !== null && (
             <ProgressLine
               label="Removing background"
@@ -386,7 +396,7 @@ export function ArtboardEditor({
             canvasFill={background.color}
             ref={canvasRef}
           />
-          <p className="canvas-toast" role="status">
+          <p className={styles.toast} role="status">
             {status}
           </p>
         </div>
@@ -397,13 +407,13 @@ export function ArtboardEditor({
         settings={settings}
         canvasFormat={canvasFormat}
         background={background}
-        isCopying={isCopying}
+        isExporting={isExporting}
         error={error}
         onExport={runExport}
       />
       <AboutDialog isOpen={isAboutOpen} onOpenChange={setIsAboutOpen} />
       <ImageSearch isOpen={isSearchOpen} onOpenChange={setIsSearchOpen} />
-      <CopyResult
+      <ExportDialog
         photocopy={photocopy}
         background={background.color}
         credits={credits}

@@ -26,13 +26,13 @@ export function reorderArtboards(
   return order.flatMap((id) => byId.get(id) ?? []);
 }
 
-export function withThumbnail(
+export function withChanges(
   artboards: ArtboardSummary[],
   id: string,
-  thumbnail: Blob,
+  changes: Partial<ArtboardSummary>,
 ) {
   return artboards.map((artboard) =>
-    artboard.id === id ? { ...artboard, thumbnail } : artboard,
+    artboard.id === id ? { ...artboard, ...changes } : artboard,
   );
 }
 

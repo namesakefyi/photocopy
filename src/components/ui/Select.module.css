@@ -1,0 +1,64 @@
+@layer ui {
+  .trigger {
+    font-size: 12px;
+
+    &.field {
+      display: flex;
+      gap: 8px;
+      justify-content: space-between;
+      width: 100%;
+      min-width: 0;
+      height: 28px;
+      min-height: 0;
+      padding: 0 10px;
+    }
+  }
+
+  .value {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .popover {
+    min-width: max(var(--trigger-width), 140px);
+  }
+
+  .listBox {
+    outline: none;
+  }
+
+  .item {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 5px 8px;
+    font-size: 13px;
+    cursor: default;
+    user-select: none;
+    outline: none;
+    border-radius: var(--radius-small);
+
+    &[data-focused],
+    &[data-hovered] {
+      background: var(--fill);
+    }
+
+    &[data-selected]::after {
+      margin-inline-start: auto;
+      content: "✓";
+    }
+
+    &[data-focus-visible] {
+      outline: 2px solid var(--highlight);
+      outline-offset: -2px;
+    }
+  }
+
+  .option {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+}

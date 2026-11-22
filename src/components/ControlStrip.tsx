@@ -1,22 +1,19 @@
 import { memo } from "react";
-import {
-  Keyboard,
-  Menu,
-  MenuItem,
-  MenuTrigger,
-  Popover,
-  Text,
-} from "react-aria-components";
+import { Keyboard, MenuTrigger, Text } from "react-aria-components";
 import type { PhotocopySettings } from "../core/photocopy";
 import { SHORTCUTS } from "../core/shortcuts";
 import type { Theme } from "../core/themes";
 import type { CanvasFormat, Layer } from "../core/types";
 import { useEditor } from "../hooks/useEditor";
 import { CanvasPanel, CanvasPresetPicker } from "./CanvasPanel";
+import styles from "./ControlStrip.module.css";
 import { LayerList } from "./LayerList";
 import { PresetPicker } from "./PresetPicker";
 import { Button } from "./ui/Button";
 import { ChevronIcon, PlusIcon } from "./ui/icons";
+import { Menu, MenuItem } from "./ui/Menu";
+import messageStyles from "./ui/message.module.css";
+import { Popover } from "./ui/Popover";
 import { Slider } from "./ui/Slider";
 
 export interface ControlStripProps {
@@ -25,7 +22,7 @@ export interface ControlStripProps {
   settings: PhotocopySettings;
   canvasFormat: CanvasFormat;
   background: Theme;
-  isCopying: boolean;
+  isExporting: boolean;
   error: string | null;
   onExport: () => void;
 }
@@ -36,7 +33,7 @@ export const ControlStrip = memo(function ControlStrip({
   settings,
   canvasFormat,
   background,
-  isCopying,
+  isExporting,
   error,
   onExport,
 }: ControlStripProps) {
@@ -44,8 +41,8 @@ export const ControlStrip = memo(function ControlStrip({
   const onSettings = (changes: Partial<PhotocopySettings>) =>
     dispatch({ type: "changeSettings", changes });
   return (
-    <aside className="strip" aria-label="Controls">
-      <div className="strip-scroll">
+    <aside className={styles.strip} aria-label="Controls">
+      <div className={styles.scroll}>
         <Section
           title="Layers"
           action={
@@ -54,7 +51,7 @@ export const ControlStrip = memo(function ControlStrip({
                 <Button variant="quiet" aria-label="Add layer">
                   <PlusIcon />
                 </Button>
-                <Popover className="menu-popover" placement="bottom end">
+                <Popover placement="bottom end">
                   <Menu
                     aria-label="Add layer"
                     onAction={(key) =>
@@ -76,7 +73,7 @@ export const ControlStrip = memo(function ControlStrip({
           {layers.length > 0 ? (
             <LayerList layers={layers} selectedId={selectedId} />
           ) : (
-            <div className="layers-empty">
+            <div className={styles.layersEmpty}>
               <Button onPress={openUpload}>Upload image…</Button>
               <Button onPress={openSearch}>Search for images…</Button>
             </div>
@@ -123,22 +120,20 @@ export const ControlStrip = memo(function ControlStrip({
         </Section>
       </div>
 
-      <div className="strip-footer">
+      <div className={styles.footer}>
         {error && (
-          <p role="alert" className="error">
+          <p role="alert" className={messageStyles.error}>
             {error}
           </p>
         )}
         <Button
           variant="primary"
-          className="copy-button"
+          size="large"
           onPress={onExport}
-          isDisabled={isCopying || !layers.some((layer) => layer.visible)}
+          isDisabled={isExporting || !layers.some((layer) => layer.visible)}
         >
-          {isCopying ? "Exporting…" : "Export"}
-          {!isCopying && (
-            <Keyboard className="shortcut">{SHORTCUTS.export}</Keyboard>
-          )}
+          {isExporting ? "Exporting…" : "Export"}
+          {!isExporting && <Keyboard>{SHORTCUTS.export}</Keyboard>}
         </Button>
       </div>
     </aside>
@@ -156,13 +151,13 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <details className="section" open>
-      <summary className="section-heading">
-        <h2 className="section-title">{title}</h2>
-        <ChevronIcon className="section-chevron" />
+    <details className={styles.section} open>
+      <summary className={styles.heading}>
+        <h2 className={styles.title}>{title}</h2>
+        <ChevronIcon className={styles.chevron} />
       </summary>
-      {action && <div className="section-action">{action}</div>}
-      <div className="section-body">{children}</div>
+      {action && <div className={styles.action}>{action}</div>}
+      <div className={styles.body}>{children}</div>
     </details>
   );
 }

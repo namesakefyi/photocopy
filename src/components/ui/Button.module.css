@@ -1,0 +1,136 @@
+@layer ui {
+  .base {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    user-select: none;
+    background: var(--fill-subtle);
+    border: none;
+    border-radius: var(--radius);
+
+    &[data-hovered] {
+      background: var(--fill);
+    }
+
+    &[data-pressed] {
+      background: var(--fill-strong);
+    }
+
+    &[data-focus-visible] {
+      outline: 2px solid var(--highlight);
+      outline-offset: 2px;
+    }
+
+    &[data-disabled] {
+      color: var(--text-disabled);
+      cursor: default;
+      background: var(--fill-subtle);
+    }
+  }
+
+  .quiet,
+  .toolbar,
+  .icon {
+    color: var(--text-secondary);
+    background: transparent;
+
+    &[data-hovered] {
+      color: var(--text);
+      background: var(--fill-subtle);
+    }
+
+    &[data-pressed] {
+      background: var(--fill);
+    }
+
+    &[data-disabled] {
+      background: transparent;
+    }
+  }
+
+  .default,
+  .primary {
+    min-height: 32px;
+    padding: 0 12px;
+  }
+
+  .quiet {
+    min-height: 24px;
+    padding: 0 6px;
+  }
+
+  .primary {
+    color: var(--surface);
+    background: var(--text);
+
+    &[data-hovered],
+    &:hover {
+      background: var(--text-secondary);
+    }
+
+    &[data-disabled] {
+      color: var(--text-secondary);
+      background: var(--fill);
+    }
+  }
+
+  .toolbar,
+  .icon {
+    height: 28px;
+    padding: 0 10px;
+
+    &[data-selected] {
+      color: var(--text);
+      background: var(--fill);
+    }
+
+    &[data-disabled] {
+      color: var(--text-disabled);
+    }
+
+    &[data-focus-visible] {
+      outline-offset: -2px;
+    }
+  }
+
+  .icon {
+    width: 28px;
+    padding: 0;
+  }
+
+  .large {
+    gap: 10px;
+    min-height: 40px;
+    font-size: 18px;
+    font-weight: 600;
+
+    kbd {
+      font-size: 13px;
+      font-weight: 400;
+      opacity: 0.55;
+    }
+  }
+
+  .overlay {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    color: var(--text);
+    background: rgb(0 0 0 / 0.55);
+    border-radius: var(--radius-small);
+
+    &[data-hovered],
+    &[data-pressed] {
+      background: rgb(0 0 0 / 0.75);
+    }
+  }
+
+  .chevron {
+    color: var(--text-secondary);
+  }
+}

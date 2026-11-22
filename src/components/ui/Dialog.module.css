@@ -1,0 +1,41 @@
+@layer ui {
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: grid;
+    place-items: center;
+    padding: max(16px, env(safe-area-inset-top, 0px))
+      max(16px, env(safe-area-inset-right, 0px))
+      max(16px, env(safe-area-inset-bottom, 0px))
+      max(16px, env(safe-area-inset-left, 0px));
+    background: rgb(0 0 0 / 0.5);
+  }
+
+  .modal {
+    max-width: min(960px, 100%);
+    max-height: 100%;
+    overflow: auto;
+    overscroll-behavior: contain;
+    background: var(--surface-raised);
+    border-radius: 12px;
+    box-shadow: 0 16px 48px rgb(0 0 0 / 0.6);
+  }
+
+  .dialog {
+    outline: none;
+  }
+
+  .heading {
+    font-size: 15px;
+    color: var(--text);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-block-start: auto;
+  }
+}

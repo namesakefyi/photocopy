@@ -1,0 +1,41 @@
+@layer ui {
+  .box {
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    background: var(--fill);
+    border-radius: 4px;
+
+    svg {
+      visibility: hidden;
+      width: 12px;
+      height: 12px;
+      fill: none;
+      stroke: var(--surface);
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  }
+
+  .checkbox {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 12px;
+
+    &[data-selected] .box {
+      background: var(--text);
+
+      svg {
+        visibility: visible;
+      }
+    }
+
+    &[data-focus-visible] .box {
+      outline: 2px solid var(--highlight);
+      outline-offset: 2px;
+    }
+  }
+}

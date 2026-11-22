@@ -1,10 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { Dialog, Modal, ModalOverlay } from "react-aria-components";
+import {
+  Dialog,
+  Modal,
+  ModalOverlay,
+  VisuallyHidden,
+} from "react-aria-components";
+import styles from "./App.module.css";
 import {
   ArtboardEditor,
   type ArtboardEditorHandle,
 } from "./components/ArtboardEditor";
-import { FileViewer } from "./components/FileViewer";
+import { ArtboardList } from "./components/ArtboardList";
+import { cx } from "./components/ui/cx";
+import dialogStyles from "./components/ui/Dialog.module.css";
 import { SidebarIcon } from "./components/ui/icons";
 import { ToolToggleButton } from "./components/ui/ToolButton";
 import { readSetting, writeSetting } from "./core/settings";
@@ -13,13 +21,13 @@ import { useArtboardLibrary } from "./hooks/useArtboardLibrary";
 import { useBackgroundRemovals } from "./hooks/useBackgroundRemovals";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 
-const FILE_VIEWER_KEY = "photocopy-file-viewer";
+const ARTBOARD_LIST_KEY = "photocopy-file-viewer";
 const NARROW = "(width < 760px)";
 
 export function App() {
   const isNarrow = useMediaQuery(NARROW);
-  const [isFileViewerOpen, setIsFileViewerOpen] = useState(
-    () => readSetting(FILE_VIEWER_KEY) !== "closed",
+  const [isArtboardListOpen, setIsArtboardListOpen] = useState(
+    () => readSetting(ARTBOARD_LIST_KEY) !== "closed",
   );
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const editorRef = useRef<ArtboardEditorHandle>(null);
@@ -28,13 +36,13 @@ export function App() {
   const removals = useBackgroundRemovals(editorRef, activeId, editorKey);
 
   useEffect(() => {
-    writeSetting(FILE_VIEWER_KEY, isFileViewerOpen ? "open" : "closed");
-  }, [isFileViewerOpen]);
+    writeSetting(ARTBOARD_LIST_KEY, isArtboardListOpen ? "open" : "closed");
+  }, [isArtboardListOpen]);
 
-  if (!artboards) return <div className="app" />;
+  if (!artboards) return <div className={styles.app} />;
 
-  const fileViewer = (
-    <FileViewer
+  const artboardList = (
+    <ArtboardList
       artboards={artboards}
       activeId={activeId}
       busyIds={removals.busyIds}
@@ -45,14 +53,17 @@ export function App() {
       onReorder={library.reorder}
     />
   );
-  const showsFileViewer = !isNarrow && isFileViewerOpen;
+  const showsArtboardList = !isNarrow && isArtboardListOpen;
 
   return (
-    <div className="app" data-file-viewer={showsFileViewer || undefined}>
-      <h1 className="visually-hidden">Photocopy</h1>
-      {showsFileViewer && (
-        <nav className="file-viewer-panel" aria-label="Artboards">
-          {fileViewer}
+    <div
+      className={styles.app}
+      data-artboard-list={showsArtboardList || undefined}
+    >
+      <VisuallyHidden elementType="h1">Photocopy</VisuallyHidden>
+      {showsArtboardList && (
+        <nav className={styles.filesPanel} aria-label="Artboards">
+          {artboardList}
         </nav>
       )}
       <ArtboardEditor
@@ -67,9 +78,9 @@ export function App() {
           <ToolToggleButton
             label="Show artboards"
             shortcut={`${SHORTCUTS.previousArtboard} ${SHORTCUTS.nextArtboard}`}
-            isSelected={isNarrow ? isDrawerOpen : isFileViewerOpen}
+            isSelected={isNarrow ? isDrawerOpen : isArtboardListOpen}
             onChange={(isOpen) =>
-              isNarrow ? setIsDrawerOpen(isOpen) : setIsFileViewerOpen(isOpen)
+              isNarrow ? setIsDrawerOpen(isOpen) : setIsArtboardListOpen(isOpen)
             }
           >
             <SidebarIcon />
@@ -77,19 +88,20 @@ export function App() {
         }
         onRemoveBackground={removals.start}
         onThumbnail={library.setThumbnail}
+        onSaved={library.setSaved}
         onSwitchArtboard={library.switchBy}
         onReload={library.reload}
       />
       {isNarrow && (
         <ModalOverlay
-          className="modal-overlay drawer-overlay"
+          className={cx(dialogStyles.overlay, styles.drawerOverlay)}
           isDismissable
           isOpen={isDrawerOpen}
           onOpenChange={setIsDrawerOpen}
         >
-          <Modal className="drawer">
-            <Dialog aria-label="Artboards" className="drawer-dialog">
-              {fileViewer}
+          <Modal className={styles.drawer}>
+            <Dialog aria-label="Artboards" className={styles.drawerDialog}>
+              {artboardList}
             </Dialog>
           </Modal>
         </ModalOverlay>

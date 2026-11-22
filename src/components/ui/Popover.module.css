@@ -1,0 +1,10 @@
+@layer ui {
+  .popover {
+    --inset: 4px;
+    width: max-content;
+    padding: var(--inset);
+    background: var(--surface-raised);
+    border-radius: calc(var(--radius-small) + var(--inset));
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+  }
+}

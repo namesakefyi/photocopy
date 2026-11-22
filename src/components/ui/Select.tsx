@@ -1,12 +1,15 @@
 import {
   Select as AriaSelect,
-  Button,
   Label,
   ListBox,
   ListBoxItem,
-  Popover,
   SelectValue,
 } from "react-aria-components";
+import { Button, Chevron } from "./Button";
+import { cx } from "./cx";
+import fieldStyles from "./field.module.css";
+import { Popover } from "./Popover";
+import styles from "./Select.module.css";
 
 export interface SelectProps<Item extends { id: string }> {
   /** `compact` for section headings (text only); `field` is full-width with icons. */
@@ -35,33 +38,36 @@ export function Select<Item extends { id: string }>({
   return (
     <AriaSelect
       aria-label={isCompact ? label : undefined}
-      className={isCompact ? "compact-select" : "panel-select"}
+      className={isCompact ? undefined : fieldStyles.field}
       selectedKey={selectedKey}
       onSelectionChange={(key) => {
         if (key !== null) onSelectionChange(String(key));
       }}
     >
-      {!isCompact && <Label className="field-label">{label}</Label>}
+      {!isCompact && <Label className={fieldStyles.label}>{label}</Label>}
       <Button
-        className={isCompact ? "compact-select-button" : "field-select-button"}
+        variant={isCompact ? "quiet" : "default"}
+        className={cx(styles.trigger, !isCompact && styles.field)}
       >
         {isCompact ? (
           <SelectValue>{({ selectedText }) => selectedText}</SelectValue>
         ) : (
-          <SelectValue />
+          <SelectValue className={styles.value} />
         )}
-        <span className="chevron" aria-hidden="true">
-          ▾
-        </span>
+        <Chevron />
       </Button>
       <Popover
-        className={isCompact ? "select-popover compact" : "select-popover"}
+        className={styles.popover}
         placement={isCompact ? "bottom end" : "bottom start"}
       >
-        <ListBox items={items}>
+        <ListBox className={styles.listBox} items={items}>
           {(item) => (
-            <ListBoxItem id={item.id} textValue={textOf(item)}>
-              <span className="select-option">
+            <ListBoxItem
+              className={styles.item}
+              id={item.id}
+              textValue={textOf(item)}
+            >
+              <span className={styles.option}>
                 {iconOf?.(item)}
                 {textOf(item)}
               </span>

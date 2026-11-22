@@ -1,0 +1,69 @@
+@layer ui {
+  .slider {
+    font-size: 12px;
+
+    & + & {
+      margin-block-start: calc(var(--row-gap) - var(--gap));
+    }
+  }
+
+  .fill {
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    background: var(--fill);
+    box-shadow: inset -2px 0 0 var(--border-strong);
+  }
+
+  .track {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 28px;
+    padding: 0 10px;
+    overflow: hidden;
+    cursor: ew-resize;
+    user-select: none;
+    background: var(--fill-subtle);
+    border-radius: var(--radius);
+
+    /* Stays active for the whole drag, even if the pointer leaves the box. */
+    &[data-hovered],
+    &:has([data-dragging]) {
+      background: var(--fill);
+
+      .fill {
+        background: var(--fill-strong);
+      }
+    }
+
+    &:has([data-dragging]) .fill {
+      box-shadow: inset -2px 0 0 var(--highlight);
+    }
+
+    /* Focus shows on the whole box, since the thumb is just a marker. */
+    &:has([data-focus-visible]) {
+      outline: 2px solid var(--highlight);
+      outline-offset: 2px;
+    }
+  }
+
+  .label,
+  .output {
+    position: relative;
+    pointer-events: none;
+  }
+
+  .output {
+    color: var(--text-secondary);
+  }
+
+  /* Invisible, but still the focus target for keyboard and screen readers. */
+  .thumb {
+    top: 50%;
+    width: 2px;
+    height: 100%;
+    outline: none;
+  }
+}
