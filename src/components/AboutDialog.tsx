@@ -1,6 +1,5 @@
 import { version } from "../../package.json";
 import styles from "./AboutDialog.module.css";
-import { Button } from "./ui/Button";
 import { Dialog, DialogHeading } from "./ui/Dialog";
 
 export interface AboutDialogProps {
