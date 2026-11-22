@@ -1,5 +1,11 @@
 # photocopy
 
+## 0.2.0
+
+### Minor Changes
+
+- [#17](https://github.com/namesakefyi/photocopy/pull/17) [`159d0ac`](https://github.com/namesakefyi/photocopy/commit/159d0ac374b178305756163b6f9595661a4d6274) - Add the ability to copy, cut and paste layers within and between artboards via menu item or keyboard shortcut.
+
 ## 0.1.3
 
 ### Patch Changes
