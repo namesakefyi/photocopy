@@ -15,8 +15,7 @@ export function AboutDialog({ isOpen, onOpenChange }: AboutDialogProps) {
       className={styles.window}
       contentClassName={styles.about}
     >
-      <DialogHeading>Photocopy</DialogHeading>
-      <p className={styles.version}>Version {version}</p>
+      <DialogHeading>Photocopy v{version}</DialogHeading>
       <p>Create photocopy-style collages.</p>
       <p className={styles.credit}>
         By{" "}
@@ -33,6 +32,9 @@ export function AboutDialog({ isOpen, onOpenChange }: AboutDialogProps) {
         </a>
         .
       </p>
+      <a className={styles.credit} href="https://namesake.fyi/donate">
+        Donate to support Namesake
+      </a>
     </Dialog>
   );
 }

@@ -8,8 +8,6 @@
   gap: 6px;
   align-items: center;
   padding: 24px;
-  font-size: 12px;
-  text-align: center;
 
   p {
     max-width: 30ch;
@@ -19,10 +17,6 @@
   a {
     color: var(--text);
   }
-}
-
-.version {
-  margin-block-end: 8px;
 }
 
 .credit {

@@ -35,6 +35,10 @@
 
     &[data-disabled] {
       color: var(--text-disabled);
+
+      kbd {
+        color: var(--text-disabled);
+      }
     }
   }
 
