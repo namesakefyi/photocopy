@@ -1,4 +1,3 @@
-// The global styles come first, so their layer order holds for every module.
 import "./styles/reset.css";
 import "./styles/base.css";
 import { StrictMode } from "react";
