@@ -4,7 +4,6 @@ import { canvasSize } from "../core/canvasFormat";
 import type { ArtboardSummary } from "../core/persistence";
 import { reorder } from "../core/reorder";
 import { themeById } from "../core/themes";
-import type { CanvasFormat } from "../core/types";
 import { useEventListener } from "../hooks/useEventListener";
 import styles from "./ArtboardList.module.css";
 import { Button } from "./ui/Button";
@@ -26,12 +25,8 @@ export interface ArtboardListProps {
   onReorder: (order: string[]) => void;
 }
 
-function aspectRatio(format: CanvasFormat) {
-  const { width, height } = canvasSize(format);
-  return `${width} / ${height}`;
-}
-
 function Thumbnail({ artboard }: { artboard: ArtboardSummary }) {
+  const { width, height } = canvasSize(artboard.canvasFormat);
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!artboard.thumbnail) return;
@@ -48,7 +43,7 @@ function Thumbnail({ artboard }: { artboard: ArtboardSummary }) {
     <span
       className={styles.thumb}
       style={{
-        aspectRatio: aspectRatio(artboard.canvasFormat),
+        aspectRatio: `${width} / ${height}`,
         background: themeById(artboard.backgroundId).color,
       }}
     />

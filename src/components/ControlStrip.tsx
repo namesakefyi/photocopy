@@ -27,6 +27,12 @@ export interface ControlStripProps {
   onExport: () => void;
 }
 
+const SLIDERS = [
+  ["Ink", "darkness"],
+  ["Grain", "grain"],
+  ["Edge contrast", "contrast"],
+] as const;
+
 export const ControlStrip = memo(function ControlStrip({
   layers,
   selectedId,
@@ -82,34 +88,16 @@ export const ControlStrip = memo(function ControlStrip({
 
         <Section
           title="Appearance"
-          action={
-            <PresetPicker
-              settings={settings}
-              onChange={(look) => onSettings(look)}
-            />
-          }
+          action={<PresetPicker settings={settings} onChange={onSettings} />}
         >
-          <Slider
-            label="Ink"
-            minValue={0}
-            maxValue={100}
-            value={settings.darkness}
-            onChange={(darkness) => onSettings({ darkness })}
-          />
-          <Slider
-            label="Grain"
-            minValue={0}
-            maxValue={100}
-            value={settings.grain}
-            onChange={(grain) => onSettings({ grain })}
-          />
-          <Slider
-            label="Edge contrast"
-            minValue={0}
-            maxValue={100}
-            value={settings.contrast}
-            onChange={(contrast) => onSettings({ contrast })}
-          />
+          {SLIDERS.map(([label, key]) => (
+            <Slider
+              key={key}
+              label={label}
+              value={settings[key]}
+              onChange={(value) => onSettings({ [key]: value })}
+            />
+          ))}
         </Section>
 
         <Section

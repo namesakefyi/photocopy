@@ -86,7 +86,6 @@ async function download(title: string) {
 /** Commons only hosts freely licensed files, so no license filter is needed. */
 export const commons: ImageSource = {
   id: "commons",
-  label: "Wikimedia Commons",
   name: NAME,
   async search(search, page, signal) {
     const data = await query(

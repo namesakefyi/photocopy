@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { renderThumbnail } from "../core/thumbnail";
 import { type ArtboardState, sameArtboardState } from "../core/types";
-import { useEventListener } from "./useEventListener";
 import type { Preview } from "./usePreview";
 
 const THUMBNAIL_DELAY = 1000;
@@ -55,11 +54,6 @@ export function useThumbnail({
     const timer = setTimeout(save, THUMBNAIL_DELAY);
     return () => clearTimeout(timer);
   }, [isLoaded, save]);
-
-  // Leaving the page (or switching apps on a phone) may be the last chance.
-  useEventListener(document, "visibilitychange", () => {
-    if (document.visibilityState === "hidden") save();
-  });
 
   return save;
 }

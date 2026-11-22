@@ -16,12 +16,21 @@ interface ToolTipProps {
   shortcut?: string;
 }
 
-function ToolTip({ label, shortcut }: ToolTipProps) {
+function WithTooltip({
+  label,
+  shortcut,
+  children,
+}: ToolTipProps & { children: React.ReactNode }) {
   return (
-    <Tooltip className={styles.tooltip} offset={6}>
-      {label}
-      {shortcut && <Keyboard className={styles.shortcut}>{shortcut}</Keyboard>}
-    </Tooltip>
+    <TooltipTrigger delay={400} closeDelay={0}>
+      {children}
+      <Tooltip className={styles.tooltip} offset={6}>
+        {label}
+        {shortcut && (
+          <Keyboard className={styles.shortcut}>{shortcut}</Keyboard>
+        )}
+      </Tooltip>
+    </TooltipTrigger>
   );
 }
 
@@ -29,20 +38,16 @@ export function ToolButton({
   label,
   shortcut,
   className,
-  children,
   ...props
 }: Omit<ButtonProps, "className"> & ToolTipProps & { className?: string }) {
   return (
-    <TooltipTrigger delay={400} closeDelay={0}>
+    <WithTooltip label={label} shortcut={shortcut}>
       <Button
         {...props}
         aria-label={label}
         className={buttonClassName("icon", className)}
-      >
-        {children}
-      </Button>
-      <ToolTip label={label} shortcut={shortcut} />
-    </TooltipTrigger>
+      />
+    </WithTooltip>
   );
 }
 
@@ -50,20 +55,16 @@ export function ToolToggleButton({
   label,
   shortcut,
   hasText = false,
-  children,
   ...props
 }: Omit<ToggleButtonProps, "className"> &
   ToolTipProps & { hasText?: boolean }) {
   return (
-    <TooltipTrigger delay={400} closeDelay={0}>
+    <WithTooltip label={label} shortcut={shortcut}>
       <ToggleButton
         {...props}
         aria-label={label}
         className={buttonClassName(hasText ? "toolbar" : "icon")}
-      >
-        {children}
-      </ToggleButton>
-      <ToolTip label={label} shortcut={shortcut} />
-    </TooltipTrigger>
+      />
+    </WithTooltip>
   );
 }

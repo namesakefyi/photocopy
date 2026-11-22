@@ -264,20 +264,6 @@ export function duplicateArtboard(id: string) {
   });
 }
 
-/** Skipped once deleted, so a late save can't bring an artboard back. */
-async function updateArtboard(
-  id: string,
-  change: (artboard: SavedArtboard) => Partial<SavedArtboard>,
-) {
-  const artboard = await getArtboard(id);
-  if (!artboard) return;
-  await putArtboard({
-    ...artboard,
-    ...change(artboard),
-    updatedAt: Date.now(),
-  });
-}
-
 export function saveThumbnail(id: string, thumbnail: Blob) {
   return exclusive(async () => {
     if (await getArtboard(id)) {
@@ -295,11 +281,13 @@ export function applyStoredCutout(
     const artboard = await getArtboard(artboardId);
     if (!artboard?.layers.some((layer) => layer.id === layerId)) return;
     await storage.put(storage.BLOB_STORE, blobKey(layerId, "mask"), mask);
-    await updateArtboard(artboardId, ({ layers }) => ({
-      layers: layers.map((layer) =>
+    await putArtboard({
+      ...artboard,
+      layers: artboard.layers.map((layer) =>
         layer.id === layerId ? { ...layer, backgroundRemoved: true } : layer,
       ),
-    }));
+      updatedAt: Date.now(),
+    });
   });
 }
 
@@ -347,24 +335,26 @@ export function saveArtboardState(
     const changed = layers.filter(
       (layer) => revisions.get(layer.id) !== layer.revision,
     );
-    const masks = await Promise.all(
-      changed.map((layer) => canvasToBlob(layer.mask)),
-    );
     await Promise.all(
-      changed.map((layer, index) =>
+      changed.map(async (layer) =>
         storage.put(
           storage.BLOB_STORE,
           blobKey(layer.id, "mask"),
-          masks[index],
+          await canvasToBlob(layer.mask),
         ),
       ),
     );
     for (const layer of changed) revisions.set(layer.id, layer.revision);
-    await updateArtboard(artboardId, () => ({
+    // Skipped once deleted, so a late save can't bring an artboard back.
+    const artboard = await getArtboard(artboardId);
+    if (!artboard) return;
+    await putArtboard({
+      ...artboard,
       layers: layers.map(toSaved),
       settings,
       canvasFormat,
       backgroundId: background.id,
-    }));
+      updatedAt: Date.now(),
+    });
   });
 }

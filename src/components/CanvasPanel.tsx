@@ -26,9 +26,7 @@ export const CanvasPresetPicker = memo(function CanvasPresetPicker({
     ...CANVAS_PRESETS.map((preset) => ({
       id: preset.id,
       label: `${preset.name} (${preset.ratio})`,
-      shape: (
-        <CanvasShape width={preset.width} height={preset.height} size={14} />
-      ),
+      shape: <CanvasShape width={preset.width} height={preset.height} />,
     })),
     {
       id: "custom" as const,
@@ -37,7 +35,6 @@ export const CanvasPresetPicker = memo(function CanvasPresetPicker({
         <CanvasShape
           width={canvasFormat.customWidth}
           height={canvasFormat.customHeight}
-          size={14}
         />
       ),
     },

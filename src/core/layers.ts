@@ -112,11 +112,10 @@ export function maskBlob(
   return canvasToBlob(canvas);
 }
 
-export function canvasToBlob(canvas: HTMLCanvasElement, type = "image/png") {
+export function canvasToBlob(canvas: HTMLCanvasElement) {
   return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error("Export failed"))),
-      type,
+    canvas.toBlob((blob) =>
+      blob ? resolve(blob) : reject(new Error("Export failed")),
     );
   });
 }

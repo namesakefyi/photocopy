@@ -1,21 +1,13 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import type { ArtboardEditorHandle } from "../components/ArtboardEditor";
 import { maskBlob } from "../core/layers";
 import { applyStoredCutout } from "../core/persistence";
 import { removeBackground } from "../core/removeBackground";
 import type { Layer, Removal } from "../core/types";
 
-interface Editor {
-  applyCutout: (
-    layerId: string,
-    revision: number | null,
-    cutout: ImageBitmap,
-  ) => void;
-  showError: (message: string) => void;
-}
-
 /** Runs above the editor, so a removal finishes even if its artboard closes. */
 export function useBackgroundRemovals(
-  editorRef: React.RefObject<Editor | null>,
+  editorRef: React.RefObject<ArtboardEditorHandle | null>,
   activeId: string,
   editorKey: string,
 ) {
@@ -69,18 +61,13 @@ export function useBackgroundRemovals(
     [editorRef, activeId, editorKey],
   );
 
-  const busyIds = useMemo(
-    () => new Set(Object.values(removals).map((removal) => removal.artboardId)),
-    [removals],
+  const busyIds = new Set(
+    Object.values(removals).map((removal) => removal.artboardId),
   );
-  const activeRemovals = useMemo(
-    () =>
-      Object.fromEntries(
-        Object.entries(removals).filter(
-          ([, removal]) => removal.artboardId === activeId,
-        ),
-      ),
-    [removals, activeId],
+  const activeRemovals = Object.fromEntries(
+    Object.entries(removals).filter(
+      ([, removal]) => removal.artboardId === activeId,
+    ),
   );
 
   return { start, busyIds, activeRemovals };

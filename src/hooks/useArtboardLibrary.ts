@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ArtboardEditorHandle } from "../components/ArtboardEditor";
 import { DEFAULT_CANVAS } from "../core/canvasFormat";
 import {
   artboardBeside,
@@ -22,11 +23,6 @@ import {
 import { savedBackground } from "../core/themes";
 import type { CanvasFormat } from "../core/types";
 
-interface Editor {
-  flush: () => Promise<void>;
-  showError: (message: string) => void;
-}
-
 /** Asks the browser not to evict saved work under storage pressure. */
 function persistStorage() {
   navigator.storage?.persist?.().catch(() => {});
@@ -34,7 +30,7 @@ function persistStorage() {
 
 /** Switching waits for the editor to save; `onOpen` runs on every open request. */
 export function useArtboardLibrary(
-  editorRef: React.RefObject<Editor | null>,
+  editorRef: React.RefObject<ArtboardEditorHandle | null>,
   onOpen: () => void,
 ) {
   const [artboards, setArtboards] = useState<ArtboardSummary[] | null>(null);
@@ -150,12 +146,6 @@ export function useArtboardLibrary(
     [activeId],
   );
 
-  const setSaved = useCallback((id: string, canvasFormat: CanvasFormat) => {
-    setArtboards((current) =>
-      current ? withChanges(current, id, { canvasFormat }) : current,
-    );
-  }, []);
-
   return {
     artboards,
     activeId,
@@ -172,6 +162,10 @@ export function useArtboardLibrary(
       if (id) open(id);
     },
     setThumbnail,
-    setSaved,
+    setSaved(id: string, canvasFormat: CanvasFormat) {
+      setArtboards((current) =>
+        current ? withChanges(current, id, { canvasFormat }) : current,
+      );
+    },
   };
 }

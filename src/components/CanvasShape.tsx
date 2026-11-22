@@ -1,13 +1,13 @@
 import styles from "./CanvasShape.module.css";
 
+const size = 14;
+
 export function CanvasShape({
   width,
   height,
-  size = 16,
 }: {
   width: number;
   height: number;
-  size?: number;
 }) {
   const fit = size / Math.max(width, height);
   return (

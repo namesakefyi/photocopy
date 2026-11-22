@@ -37,8 +37,6 @@ export const LayerList = memo(function LayerList({
     },
   });
 
-  if (layers.length === 0) return null;
-
   return (
     <GridList
       aria-label="Layers"

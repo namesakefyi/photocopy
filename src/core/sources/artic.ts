@@ -30,7 +30,6 @@ const image = (id: string, width: number) =>
 /** Public domain works, which the Art Institute releases under CC0. */
 export const artic: ImageSource = {
   id: "artic",
-  label: "Art Institute of Chicago",
   name: NAME,
   async search(search, page, signal) {
     const data = await fetchJson<ApiResponse>(

@@ -42,7 +42,6 @@ function licenseName(license: Location["license"]) {
 
 export const wellcome: ImageSource = {
   id: "wellcome",
-  label: "Wellcome Collection",
   name: NAME,
   async search(search, page, signal) {
     const data = await fetchJson<ApiResponse>(

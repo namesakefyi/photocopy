@@ -11,7 +11,7 @@
 
   /* On narrow screens, the selected layer's actions float over the canvas. */
   @media (width < 760px) {
-    &:has([data-layer-actions]) {
+    &[data-has-selection] {
       --canvas-inset-top: calc(var(--bar-height) + 1px);
     }
   }
@@ -24,6 +24,21 @@
   flex-direction: column;
   grid-area: canvas;
   min-height: 0;
+}
+
+.progress {
+  position: absolute;
+  inset-block-start: var(--canvas-inset-top, 0px);
+  inset-inline: 0;
+  z-index: 2;
+  height: 2px;
+  pointer-events: none;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--progress);
+  transition: width 200ms ease-out;
 }
 
 /* Hidden while empty, but kept in the page so screen readers hear each message. */
