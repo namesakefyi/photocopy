@@ -1,5 +1,11 @@
 # photocopy
 
+## 0.1.3
+
+### Patch Changes
+
+- [#15](https://github.com/namesakefyi/photocopy/pull/15) [`b3bca9a`](https://github.com/namesakefyi/photocopy/commit/b3bca9aba9663db2c29d33d43c295fc8487cba51) - Cache recently opened artboards for quicker reloading of data when switching
+
 ## 0.1.2
 
 ### Patch Changes
