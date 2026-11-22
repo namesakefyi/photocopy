@@ -87,24 +87,6 @@ export function TrashIcon() {
   );
 }
 
-export function UndoIcon() {
-  return (
-    <svg {...sharpIconProps}>
-      <path d="M8 5 4 9l4 4" />
-      <path d="M4 9h11a5 5 0 0 1 0 10H9" />
-    </svg>
-  );
-}
-
-export function RedoIcon() {
-  return (
-    <svg {...sharpIconProps}>
-      <path d="m16 5 4 4-4 4" />
-      <path d="M20 9H9a5 5 0 0 0 0 10h6" />
-    </svg>
-  );
-}
-
 export function ChevronIcon({ className }: { className?: string }) {
   return (
     <svg {...sharpIconProps} width={12} height={12} className={className}>

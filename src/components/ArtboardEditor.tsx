@@ -20,6 +20,12 @@ import {
   statusMessage,
 } from "../core/editor";
 import {
+  copyLayer,
+  isCopiedLayer,
+  LAYER_CLIPBOARD_TYPE,
+  pasteLayer,
+} from "../core/layerClipboard";
+import {
   croppableBounds,
   cropToVisible,
   loadPhoto,
@@ -76,16 +82,17 @@ export interface ArtboardEditorProps {
   removals: Record<string, Removal>;
   needsThumbnail: boolean;
   toolbarStart?: React.ReactNode;
+  isArtboardListShown: boolean;
+  onArtboardListShownChange: (isShown: boolean) => void;
   onRemoveBackground: (layer: Layer) => void;
   onThumbnail: (thumbnail: Blob) => void;
   onSaved: (id: string, canvasFormat: CanvasFormat) => void;
   onSwitchArtboard: (direction: 1 | -1) => void;
-  /** Asks to load the artboard again, once another tab has let it go. */
   onReload: () => void;
   ref?: React.Ref<ArtboardEditorHandle>;
 }
 
-/** Fields, dialogs, menus and the artboard list handle their own keys and paste. */
+/** Fields, dialogs, menus and the artboard list handle their own keys and clipboard. */
 function isOwnInputTarget(event: Event) {
   return (
     event.defaultPrevented ||
@@ -95,11 +102,16 @@ function isOwnInputTarget(event: Event) {
   );
 }
 
+/** Selected text on the page is the browser's to copy. */
+const hasNoTextSelected = () => window.getSelection()?.isCollapsed ?? true;
+
 export function ArtboardEditor({
   artboardId,
   removals,
   needsThumbnail,
   toolbarStart,
+  isArtboardListShown,
+  onArtboardListShownChange,
   onRemoveBackground,
   onThumbnail,
   onSaved,
@@ -135,6 +147,7 @@ export function ArtboardEditor({
   // For work that finishes later, like background removal, and for commands.
   const latestLayers = useRef(layers);
   latestLayers.current = layers;
+  const latestSelected = useRef<Layer | null>(null);
   const lock = useArtboardLock(artboardId, onReload);
 
   useEffect(() => {
@@ -243,6 +256,58 @@ export function ArtboardEditor({
     [width, height],
   );
 
+  // While a copy or cut runs, whether its event came, so as not to copy twice.
+  const copying = useRef<{ isHandled: boolean } | null>(null);
+  const clipboard = useMemo(() => {
+    const copySelected = (isCut: boolean, token: string | null) => {
+      const layer = latestSelected.current;
+      if (!layer) return;
+      copyLayer(layer, artboard, token);
+      if (isCut) dispatch({ type: "deleteSelected" });
+    };
+    return {
+      copySelected,
+      /** Through the browser's copy or cut event, to reach the system clipboard where it fires one. */
+      copy(isCut: boolean) {
+        const run = { isHandled: false };
+        copying.current = run;
+        try {
+          document.execCommand(isCut ? "cut" : "copy");
+        } finally {
+          copying.current = null;
+        }
+        // Safari fires no event with nothing selected on the page.
+        if (!run.isHandled) copySelected(isCut, null);
+      },
+      async paste() {
+        const layer = pasteLayer(artboard, latestLayers.current);
+        if (!layer) return;
+        setError(null);
+        // Stored before the layer exists, so autosave never sees it unsaved.
+        try {
+          await saveSource(layer);
+        } catch (cause) {
+          console.warn("Couldn’t save photo locally", cause);
+          if (isQuotaError(cause)) setError(QUOTA_MESSAGE);
+        }
+        dispatch({ type: "addLayers", layers: [layer] });
+      },
+    };
+  }, [artboard]);
+
+  /** Also the browser's own Edit menu, which needs no keydown. */
+  const copyByEvent = (event: ClipboardEvent, isCut: boolean) => {
+    const run = copying.current;
+    const isOurs = run !== null;
+    if (!isOurs && (isOwnInputTarget(event) || !hasNoTextSelected())) return;
+    if (!latestSelected.current || !event.clipboardData) return;
+    event.preventDefault();
+    if (run) run.isHandled = true;
+    const token = crypto.randomUUID();
+    event.clipboardData.setData(LAYER_CLIPBOARD_TYPE, token);
+    clipboard.copySelected(isCut, token);
+  };
+
   const commands = useMemo<EditorCommands>(() => {
     const find = (id: string) =>
       latestLayers.current.find((layer) => layer.id === id);
@@ -250,6 +315,9 @@ export function ArtboardEditor({
       dispatch,
       undo,
       redo,
+      copy: () => clipboard.copy(false),
+      cut: () => clipboard.copy(true),
+      paste: clipboard.paste,
       addFiles,
       removeBackground(layerId) {
         const layer = find(layerId);
@@ -276,6 +344,7 @@ export function ArtboardEditor({
   }, [
     undo,
     redo,
+    clipboard,
     addFiles,
     onRemoveBackground,
     showBrushSize,
@@ -320,6 +389,7 @@ export function ArtboardEditor({
   );
 
   const { selected, removal, ...selection } = selectionState(state, removals);
+  latestSelected.current = selected;
   // Reads the selected photo's pixels, so only when its mask or crop changes.
   // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the canvas and revision, not the layer object
   const canCropSelected = useMemo(
@@ -340,6 +410,12 @@ export function ArtboardEditor({
     if (isOwnInputTarget(event)) return;
     const command = shortcutFor(event);
     if (!command) return;
+    if (command === "copy" || command === "cut") {
+      if (!selected || !hasNoTextSelected()) return;
+      event.preventDefault();
+      clipboard.copy(command === "cut");
+      return;
+    }
     const isBrushSize = command === "brushLarger" || command === "brushSmaller";
     if ((command === "delete" || isBrushSize) && !selected) return;
     if (
@@ -375,14 +451,25 @@ export function ArtboardEditor({
     }
   });
 
+  useEventListener(window, "copy", (event) => copyByEvent(event, false));
+  useEventListener(window, "cut", (event) => copyByEvent(event, true));
+
   useEventListener(window, "paste", (event) => {
     if (isOwnInputTarget(event)) return;
     const files = [...(event.clipboardData?.files ?? [])].filter((file) =>
       file.type.startsWith("image/"),
     );
-    if (files.length === 0) return;
-    event.preventDefault();
-    addFiles(files);
+    if (files.length > 0) {
+      event.preventDefault();
+      addFiles(files);
+      return;
+    }
+    // Only if nothing else was copied since, here or in another app.
+    const token = event.clipboardData?.getData(LAYER_CLIPBOARD_TYPE) || null;
+    if (isCopiedLayer(token)) {
+      event.preventDefault();
+      clipboard.paste();
+    }
   });
 
   return (
@@ -413,7 +500,8 @@ export function ArtboardEditor({
           brushSize={state.brushSize}
           canUndo={canUndo}
           canRedo={canRedo}
-          zoom={zoom}
+          isArtboardListShown={isArtboardListShown}
+          onArtboardListShownChange={onArtboardListShownChange}
         />
         <div className={styles.canvasArea}>
           {removalProgress !== null && (

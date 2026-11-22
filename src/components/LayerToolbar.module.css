@@ -2,7 +2,7 @@
   display: flex;
   flex-shrink: 0;
   grid-area: toolbar;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   height: var(--bar-height);
   padding: 0 8px;
@@ -28,12 +28,16 @@
   }
 }
 
-.brand {
+.brand,
+.menuTitle {
   flex-shrink: 0;
   padding: 0 8px;
   font-size: 13px;
-  font-weight: 700;
   color: var(--text);
+}
+
+.brand {
+  font-weight: 700;
 }
 
 .scroll {

@@ -2,9 +2,9 @@ import { memo } from "react";
 import { Group, Separator, Toolbar } from "react-aria-components";
 import { SHORTCUTS } from "../core/shortcuts";
 import type { Tool } from "../core/types";
-import type { ValueStore } from "../core/valueStore";
 import { useEditor } from "../hooks/useEditor";
 import { BrushSizeMenu } from "./BrushSizeMenu";
+import { EditMenu } from "./EditMenu";
 import styles from "./LayerToolbar.module.css";
 import { Button } from "./ui/Button";
 import {
@@ -12,21 +12,19 @@ import {
   EraserIcon,
   FlipHorizontalIcon,
   FlipVerticalIcon,
-  RedoIcon,
   SendBackIcon,
   TrashIcon,
-  UndoIcon,
 } from "./ui/icons";
 import { ToolButton, ToolToggleButton } from "./ui/ToolButton";
-import { ZoomMenu } from "./ZoomMenu";
+import { ViewMenu } from "./ViewMenu";
 
 export interface LayerToolbarProps {
   selectedId: string | null;
   canUndo: boolean;
   canRedo: boolean;
   start?: React.ReactNode;
-  zoom: ValueStore<number>;
-  /** False while the background is being removed, which replaces the mask. */
+  isArtboardListShown: boolean;
+  onArtboardListShownChange: (isShown: boolean) => void;
   canEditMask: boolean;
   canRemoveBackground: boolean;
   canCrop: boolean;
@@ -34,7 +32,6 @@ export interface LayerToolbarProps {
   canSendBack: boolean;
   isRefining: boolean;
   tool: Tool;
-  /** The mask brush's diameter in pixels, shown while the mask is. */
   brushSize: number;
 }
 
@@ -49,7 +46,8 @@ export const LayerToolbar = memo(function LayerToolbar({
   canUndo,
   canRedo,
   start,
-  zoom,
+  isArtboardListShown,
+  onArtboardListShownChange,
   canEditMask,
   canRemoveBackground,
   canCrop,
@@ -70,25 +68,18 @@ export const LayerToolbar = memo(function LayerToolbar({
       >
         Photocopy
       </Button>
-      <Toolbar aria-label="History" className={styles.actions}>
-        <ToolButton
-          label="Undo"
-          shortcut={SHORTCUTS.undo}
-          isDisabled={!canUndo}
-          onPress={editor.undo}
-        >
-          <UndoIcon />
-        </ToolButton>
-        <ToolButton
-          label="Redo"
-          shortcut={SHORTCUTS.redo}
-          isDisabled={!canRedo}
-          onPress={editor.redo}
-        >
-          <RedoIcon />
-        </ToolButton>
-        <ZoomMenu zoom={zoom} onZoom={editor.zoom} />
-      </Toolbar>
+      <EditMenu
+        className={styles.menuTitle}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        canCopy={selectedId !== null}
+      />
+      <ViewMenu
+        className={styles.menuTitle}
+        onZoom={editor.zoom}
+        isArtboardListShown={isArtboardListShown}
+        onArtboardListShownChange={onArtboardListShownChange}
+      />
       {selectedId !== null && (
         <div className={styles.scroll} onWheel={scrollSideways}>
           <Toolbar aria-label="Layer" className={styles.actions}>
@@ -127,7 +118,6 @@ export const LayerToolbar = memo(function LayerToolbar({
               </ToolToggleButton>
               {isRefining && (
                 <>
-                  {/* Off, the brush masks; on, it erases the mask, bringing the photo back. */}
                   <ToolToggleButton
                     label="Erase"
                     shortcut={SHORTCUTS.restore}
