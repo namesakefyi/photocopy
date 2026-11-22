@@ -32,6 +32,7 @@ interface SavedIndex {
 export interface ArtboardSummary {
   id: string;
   backgroundId: string;
+  canvasFormat: CanvasFormat;
   thumbnail?: Blob;
 }
 
@@ -125,7 +126,8 @@ function putArtboard(artboard: SavedArtboard) {
 }
 
 function summarize(artboard: SavedArtboard, thumbnail?: Blob): ArtboardSummary {
-  return { id: artboard.id, backgroundId: artboard.backgroundId, thumbnail };
+  const { id, backgroundId, canvasFormat } = artboard;
+  return { id, backgroundId, canvasFormat, thumbnail };
 }
 
 /** Runs at start-up, not on delete, so undoing a layer's deletion keeps its photo. */

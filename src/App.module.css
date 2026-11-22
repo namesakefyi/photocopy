@@ -1,6 +1,6 @@
 .app {
   --strip-width: 260px;
-  --file-viewer-width: 132px;
+  --artboard-list-width: 132px;
 
   display: grid;
   grid-template-areas: "workspace strip";
@@ -18,12 +18,12 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  &[data-file-viewer] {
+  &[data-artboard-list] {
     grid-template-areas:
       "toolbar toolbar strip"
       "files canvas strip";
     grid-template-rows: auto minmax(0, 1fr);
-    grid-template-columns: var(--file-viewer-width) minmax(0, 1fr) var(
+    grid-template-columns: var(--artboard-list-width) minmax(0, 1fr) var(
         --strip-width
       );
   }

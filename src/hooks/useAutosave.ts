@@ -11,6 +11,7 @@ interface AutosaveOptions {
   /** False while another tab has the artboard open. */
   canSave: boolean;
   onError?: (cause: unknown) => void;
+  onSaved?: (state: ArtboardState) => void;
   /** How long changes settle before saving; tests shorten it. */
   delay?: number;
 }
@@ -19,7 +20,13 @@ interface AutosaveOptions {
 export function useAutosave(
   artboardId: string,
   state: ArtboardState,
-  { isRestored, canSave, onError, delay = SAVE_DELAY }: AutosaveOptions,
+  {
+    isRestored,
+    canSave,
+    onError,
+    onSaved,
+    delay = SAVE_DELAY,
+  }: AutosaveOptions,
 ) {
   const savedRevisions = useRef<Map<string, number> | null>(null);
   const restoredState = useRef<ArtboardState | null>(null);
@@ -28,6 +35,8 @@ export function useAutosave(
   const lastSave = useRef<Promise<void>>(Promise.resolve());
   const latestError = useRef(onError);
   latestError.current = onError;
+  const latestSaved = useRef(onSaved);
+  latestSaved.current = onSaved;
   const { layers, settings, canvasFormat, background } = state;
 
   // What was just restored is already saved; only later changes need saving.
@@ -54,10 +63,12 @@ export function useAutosave(
     if (restored && sameArtboardState(restored, current)) return;
     restoredState.current = null;
     pending.current = () =>
-      saveArtboardState(artboardId, current, revisions).catch((cause) => {
-        console.warn("Couldn’t save the artboard locally", cause);
-        latestError.current?.(cause);
-      });
+      saveArtboardState(artboardId, current, revisions)
+        .then(() => latestSaved.current?.(current))
+        .catch((cause) => {
+          console.warn("Couldn’t save the artboard locally", cause);
+          latestError.current?.(cause);
+        });
     clearTimeout(timer.current);
     timer.current = setTimeout(runPending, delay);
   }, [

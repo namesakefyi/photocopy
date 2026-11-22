@@ -16,34 +16,14 @@
   width: 100%;
   max-height: var(--file-thumb-max, 140px);
   object-fit: contain;
-  border-radius: var(--radius-small);
+  border-radius: var(--thumb-radius, var(--radius-small));
 }
 
-.placeholder {
-  aspect-ratio: 1;
-}
-
-.corner {
-  position: absolute;
+.corner,
+.drag {
   opacity: 0;
 
-  &[data-focus-visible] {
-    opacity: 1;
-  }
-}
-
-.drag {
-  inset-block-end: 8px;
-  inset-inline-start: 8px;
-  pointer-events: none;
-}
-
-.more {
-  inset-block-start: 8px;
-  inset-inline-end: 8px;
-
-  &[data-pressed],
-  &[aria-expanded="true"] {
+  &:is([data-focus-visible], [data-pressed], [aria-expanded="true"]) {
     opacity: 1;
   }
 
@@ -52,7 +32,28 @@
   }
 }
 
+.corner {
+  position: absolute;
+  inset-block-start: calc(4px + var(--inset));
+}
+
+.drag {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 100%;
+  width: 10px;
+  min-height: 0;
+  padding: 0;
+}
+
+.more {
+  inset-inline-end: calc(4px + var(--inset));
+  border-radius: var(--radius-small);
+}
+
 .list {
+  --inset: 2px;
+  --thumb-radius: calc(var(--radius-small) + var(--inset));
   gap: 2px;
 }
 
@@ -60,9 +61,24 @@
   position: relative;
   flex-direction: column;
   padding: 4px;
+  user-select: none;
+  border-radius: calc(var(--thumb-radius) + 4px);
 
-  &:is([data-hovered], [data-selected], [data-focus-visible]) .more {
+  &::before {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 100%;
+    width: 10px;
+    content: "";
+  }
+
+  &:is([data-hovered], [data-selected], [data-focus-visible])
+    :is(.corner, .drag) {
     opacity: 1;
+  }
+
+  &[data-focus-visible] {
+    outline: none;
   }
 
   &[data-selected] {
@@ -77,15 +93,7 @@
 
 .new {
   flex-shrink: 0;
-  width: calc(100% - 8px);
-  aspect-ratio: 4 / 3;
-  margin: 0 4px;
-  color: var(--text-secondary);
-  border-radius: var(--radius-small);
-
-  &[data-hovered] {
-    color: var(--text);
-  }
+  margin-inline: 4px;
 }
 
 .spinner {

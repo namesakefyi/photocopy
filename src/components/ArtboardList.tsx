@@ -1,19 +1,20 @@
 import { useEffect, useState } from "react";
 import { MenuTrigger, useDragAndDrop } from "react-aria-components";
+import { canvasSize } from "../core/canvasFormat";
 import type { ArtboardSummary } from "../core/persistence";
 import { reorder } from "../core/reorder";
 import { themeById } from "../core/themes";
-import styles from "./FileViewer.module.css";
+import type { CanvasFormat } from "../core/types";
+import styles from "./ArtboardList.module.css";
 import { Button } from "./ui/Button";
 import { cx } from "./ui/cx";
 import { Dialog, DialogActions, DialogHeading } from "./ui/Dialog";
-import { DragHandle } from "./ui/DragHandle";
 import { GridList, GridListItem } from "./ui/GridList";
 import { MoreIcon, PlusIcon } from "./ui/icons";
 import { Menu, MenuItem } from "./ui/Menu";
 import { Popover } from "./ui/Popover";
 
-export interface FileViewerProps {
+export interface ArtboardListProps {
   artboards: ArtboardSummary[];
   activeId: string;
   busyIds: Set<string>;
@@ -22,6 +23,11 @@ export interface FileViewerProps {
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
   onReorder: (order: string[]) => void;
+}
+
+function aspectRatio(format: CanvasFormat) {
+  const { width, height } = canvasSize(format);
+  return `${width} / ${height}`;
 }
 
 function Thumbnail({ artboard }: { artboard: ArtboardSummary }) {
@@ -39,13 +45,16 @@ function Thumbnail({ artboard }: { artboard: ArtboardSummary }) {
     <img className={styles.thumb} src={url} alt="" draggable={false} />
   ) : (
     <span
-      className={cx(styles.thumb, styles.placeholder)}
-      style={{ background: themeById(artboard.backgroundId).color }}
+      className={styles.thumb}
+      style={{
+        aspectRatio: aspectRatio(artboard.canvasFormat),
+        background: themeById(artboard.backgroundId).color,
+      }}
     />
   );
 }
 
-export function FileViewer({
+export function ArtboardList({
   artboards,
   activeId,
   busyIds,
@@ -54,7 +63,7 @@ export function FileViewer({
   onDuplicate,
   onDelete,
   onReorder,
-}: FileViewerProps) {
+}: ArtboardListProps) {
   const [deleting, setDeleting] = useState<ArtboardSummary | null>(null);
   const labels = new Map(
     artboards.map((artboard, index) => [artboard.id, `Artboard ${index + 1}`]),
@@ -96,6 +105,7 @@ export function FileViewer({
         className={styles.list}
         items={artboards}
         selectionMode="single"
+        selectionBehavior="replace"
         disallowEmptySelection
         selectedKeys={[activeId]}
         onSelectionChange={(keys) => {
@@ -113,11 +123,14 @@ export function FileViewer({
               textValue={label}
             >
               <Thumbnail artboard={artboard} />
-              <DragHandle
-                variant="overlay"
-                className={cx(styles.corner, styles.drag)}
+              <Button
+                slot="drag"
+                variant="quiet"
+                className={styles.drag}
                 aria-label={`Reorder ${label}`}
-              />
+              >
+                ⋮⋮
+              </Button>
               {busyIds.has(artboard.id) && (
                 <span
                   className={styles.spinner}
@@ -133,7 +146,7 @@ export function FileViewer({
                 >
                   <MoreIcon />
                 </Button>
-                <Popover placement="bottom start">
+                <Popover placement="end top">
                   <Menu
                     aria-label={label}
                     onAction={(action) => {
@@ -150,8 +163,9 @@ export function FileViewer({
           );
         }}
       </GridList>
-      <Button className={styles.new} aria-label="New artboard" onPress={onNew}>
+      <Button className={styles.new} onPress={onNew}>
         <PlusIcon />
+        New
       </Button>
       <DeleteDialog
         artboard={deleting}

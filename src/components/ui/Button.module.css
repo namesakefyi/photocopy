@@ -105,7 +105,7 @@
 
   .large {
     gap: 10px;
-    min-height: 48px;
+    min-height: 40px;
     font-size: 18px;
     font-weight: 600;
 
@@ -122,15 +122,12 @@
     padding: 0;
     color: var(--text);
     background: rgb(0 0 0 / 0.55);
+    border-radius: var(--radius-small);
 
     &[data-hovered],
     &[data-pressed] {
       background: rgb(0 0 0 / 0.75);
     }
-  }
-
-  .dragHandle {
-    letter-spacing: -0.2em;
   }
 
   .chevron {

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { DEFAULT_CANVAS } from "../core/canvasFormat";
 import {
   artboardBeside,
   indexKey,
   insertAfter,
   reorderArtboards,
+  withChanges,
   withoutArtboard,
-  withThumbnail,
 } from "../core/library";
 import {
   type ArtboardSummary,
@@ -19,6 +20,7 @@ import {
   saveThumbnail,
 } from "../core/persistence";
 import { savedBackground } from "../core/themes";
+import type { CanvasFormat } from "../core/types";
 
 interface Editor {
   flush: () => Promise<void>;
@@ -58,7 +60,7 @@ export function useArtboardLibrary(
         console.warn("Couldn’t load saved artboards", cause);
         if (!isCurrent) return;
         const id = crypto.randomUUID();
-        setArtboards([{ id, backgroundId: "" }]);
+        setArtboards([{ id, backgroundId: "", canvasFormat: DEFAULT_CANVAS }]);
         setActiveId(id);
       });
     return () => {
@@ -139,7 +141,7 @@ export function useArtboardLibrary(
   const setThumbnail = useCallback(
     (thumbnail: Blob) => {
       setArtboards((current) =>
-        current ? withThumbnail(current, activeId, thumbnail) : current,
+        current ? withChanges(current, activeId, { thumbnail }) : current,
       );
       saveThumbnail(activeId, thumbnail).catch((cause) =>
         console.warn("Couldn’t save the thumbnail", cause),
@@ -147,6 +149,12 @@ export function useArtboardLibrary(
     },
     [activeId],
   );
+
+  const setSaved = useCallback((id: string, canvasFormat: CanvasFormat) => {
+    setArtboards((current) =>
+      current ? withChanges(current, id, { canvasFormat }) : current,
+    );
+  }, []);
 
   return {
     artboards,
@@ -164,5 +172,6 @@ export function useArtboardLibrary(
       if (id) open(id);
     },
     setThumbnail,
+    setSaved,
   };
 }

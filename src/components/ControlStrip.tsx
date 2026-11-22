@@ -22,7 +22,7 @@ export interface ControlStripProps {
   settings: PhotocopySettings;
   canvasFormat: CanvasFormat;
   background: Theme;
-  isCopying: boolean;
+  isExporting: boolean;
   error: string | null;
   onExport: () => void;
 }
@@ -33,7 +33,7 @@ export const ControlStrip = memo(function ControlStrip({
   settings,
   canvasFormat,
   background,
-  isCopying,
+  isExporting,
   error,
   onExport,
 }: ControlStripProps) {
@@ -130,10 +130,10 @@ export const ControlStrip = memo(function ControlStrip({
           variant="primary"
           size="large"
           onPress={onExport}
-          isDisabled={isCopying || !layers.some((layer) => layer.visible)}
+          isDisabled={isExporting || !layers.some((layer) => layer.visible)}
         >
-          {isCopying ? "Exporting…" : "Export"}
-          {!isCopying && <Keyboard>{SHORTCUTS.export}</Keyboard>}
+          {isExporting ? "Exporting…" : "Export"}
+          {!isExporting && <Keyboard>{SHORTCUTS.export}</Keyboard>}
         </Button>
       </div>
     </aside>

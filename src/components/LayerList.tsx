@@ -5,7 +5,6 @@ import type { Layer } from "../core/types";
 import { useEditor } from "../hooks/useEditor";
 import styles from "./LayerList.module.css";
 import { Button } from "./ui/Button";
-import { DragHandle } from "./ui/DragHandle";
 import { GridList, GridListItem } from "./ui/GridList";
 import { EyeClosedIcon, EyeIcon } from "./ui/icons";
 
@@ -62,7 +61,9 @@ export const LayerList = memo(function LayerList({
           id={layer.id}
           textValue={layer.name}
         >
-          <DragHandle aria-label="Reorder" />
+          <Button slot="drag" variant="quiet" aria-label="Reorder">
+            ⋮⋮
+          </Button>
           <span
             className={styles.name}
             data-hidden={!layer.visible || undefined}
