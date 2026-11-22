@@ -20,7 +20,6 @@ const LABELS: Record<EditAction, string> = {
 export interface EditMenuProps {
   canUndo: boolean;
   canRedo: boolean;
-  /** Copy and cut need a selected layer. */
   canCopy: boolean;
   className?: string;
 }

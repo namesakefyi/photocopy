@@ -28,7 +28,6 @@
   }
 }
 
-/* Beside the app name, like a macOS menu bar. */
 .brand,
 .menuTitle {
   flex-shrink: 0;

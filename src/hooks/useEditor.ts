@@ -7,7 +7,6 @@ export interface EditorCommands {
   dispatch: Dispatch<EditorAction>;
   undo: () => void;
   redo: () => void;
-  /** Copy and cut act on the selected layer. */
   copy: () => void;
   cut: () => void;
   paste: () => void;
