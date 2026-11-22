@@ -1,3 +1,4 @@
+import { announceArtboardChange, forgetCachedArtboard } from "./artboardCache";
 import { DEFAULT_CANVAS } from "./canvasFormat";
 import { canvasToBlob, cropLayerCanvases, loadPhoto, setMask } from "./layers";
 import { DEFAULT_SETTINGS, type PhotocopySettings } from "./photocopy";
@@ -233,6 +234,7 @@ export function deleteArtboard(id: string) {
         storage.remove(storage.BLOB_STORE, key),
       ),
     ]);
+    forgetCachedArtboard(id);
   });
 }
 
@@ -295,6 +297,7 @@ export function applyStoredCutout(
       ),
       updatedAt: Date.now(),
     });
+    forgetCachedArtboard(artboardId);
   });
 }
 
@@ -362,5 +365,6 @@ export function saveArtboardState(
       backgroundId: background.id,
       updatedAt: Date.now(),
     });
+    announceArtboardChange(artboardId);
   });
 }
