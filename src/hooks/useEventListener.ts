@@ -1,9 +1,9 @@
-import { useEffect, useEffectEvent } from "react";
+import { type RefObject, useEffect, useEffectEvent } from "react";
 
 type EventMap = WindowEventMap & DocumentEventMap;
 
 export function useEventListener<K extends keyof EventMap>(
-  target: Window | Document,
+  target: Window | Document | RefObject<HTMLElement | null>,
   type: K,
   handler: (event: EventMap[K]) => void,
 ) {
@@ -11,7 +11,8 @@ export function useEventListener<K extends keyof EventMap>(
     handler(event as EventMap[K]),
   );
   useEffect(() => {
-    target.addEventListener(type, onEvent);
-    return () => target.removeEventListener(type, onEvent);
+    const element = "current" in target ? target.current : target;
+    element?.addEventListener(type, onEvent);
+    return () => element?.removeEventListener(type, onEvent);
   }, [target, type]);
 }

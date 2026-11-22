@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MenuTrigger, useDragAndDrop } from "react-aria-components";
 import { canvasSize } from "../core/canvasFormat";
 import type { ArtboardSummary } from "../core/persistence";
 import { reorder } from "../core/reorder";
 import { themeById } from "../core/themes";
 import type { CanvasFormat } from "../core/types";
+import { useEventListener } from "../hooks/useEventListener";
 import styles from "./ArtboardList.module.css";
 import { Button } from "./ui/Button";
 import { cx } from "./ui/cx";
@@ -65,6 +66,7 @@ export function ArtboardList({
   onReorder,
 }: ArtboardListProps) {
   const [deleting, setDeleting] = useState<ArtboardSummary | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const labels = new Map(
     artboards.map((artboard, index) => [artboard.id, `Artboard ${index + 1}`]),
   );
@@ -83,26 +85,25 @@ export function ArtboardList({
       ),
   });
 
+  useEventListener(listRef, "keydown", (event) => {
+    if (event.key !== "Backspace" && event.key !== "Delete") return;
+    const row = (event.target as HTMLElement).closest("[data-key]");
+    // Only from the row itself, not its More button.
+    if (!row || row !== event.target) return;
+    const artboard = artboards.find(
+      (other) => other.id === row.getAttribute("data-key"),
+    );
+    if (artboard) setDeleting(artboard);
+  });
+
   return (
-    // The editor leaves keys pressed here alone.
-    // biome-ignore lint/a11y/noStaticElementInteractions: keys bubble up from the list's rows
-    <div
-      className={styles.scroll}
-      data-own-keys
-      onKeyDown={(event) => {
-        if (event.key !== "Backspace" && event.key !== "Delete") return;
-        const row = (event.target as HTMLElement).closest("[data-key]");
-        // Only from the row itself, not its More button.
-        if (!row || row !== event.target) return;
-        const artboard = artboards.find(
-          (other) => other.id === row.getAttribute("data-key"),
-        );
-        if (artboard) setDeleting(artboard);
-      }}
-    >
+    <>
       <GridList
+        ref={listRef}
         aria-label="Artboards"
         className={styles.list}
+        // The editor leaves keys pressed here alone.
+        data-own-keys
         items={artboards}
         selectionMode="single"
         selectionBehavior="replace"
@@ -172,7 +173,7 @@ export function ArtboardList({
         onClose={() => setDeleting(null)}
         onDelete={onDelete}
       />
-    </div>
+    </>
   );
 }
 
