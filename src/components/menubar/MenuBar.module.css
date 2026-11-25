@@ -1,0 +1,18 @@
+.brand,
+.menuBar {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-items: center;
+}
+
+.menuTitle {
+  flex-shrink: 0;
+  padding: 0 8px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.brand {
+  font-weight: 700;
+}

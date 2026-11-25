@@ -1,0 +1,31 @@
+.progress {
+  position: absolute;
+  inset-block-start: var(--canvas-inset-top, 0px);
+  inset-inline: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.track {
+  height: 2px;
+}
+
+.fill {
+  height: 100%;
+  background: var(--progress);
+  transition: width 200ms ease-out;
+}
+
+.message {
+  width: fit-content;
+  max-width: calc(50% - 18px);
+  padding: 6px 10px;
+  margin: 10px 12px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  white-space: nowrap;
+  background: var(--surface-raised);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.4);
+}

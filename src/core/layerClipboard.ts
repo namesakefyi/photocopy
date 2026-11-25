@@ -43,10 +43,11 @@ export function hasCopiedLayer() {
 /**
  * Whether a paste carrying `token` (null for none) is the copied layer. A
  * layer that went onto the system clipboard needs its token back; without
- * one, something else was copied since.
+ * one, something else was copied since. A layer copied without a token
+ * (from a menu) never reached it, so any paste may take it.
  */
 export function isCopiedLayer(token: string | null) {
-  return copied !== null && copied.token === token;
+  return copied !== null && (copied.token === null || copied.token === token);
 }
 
 /**

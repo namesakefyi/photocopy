@@ -1,0 +1,26 @@
+.size {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.times {
+  font-size: var(--control-font-size);
+  color: var(--text-secondary);
+}
+
+.swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.shapeBox {
+  display: grid;
+  flex: none;
+  place-items: center;
+}
+
+.shape {
+  border: 1px solid currentColor;
+}

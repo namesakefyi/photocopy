@@ -208,16 +208,10 @@ export function selectionState(
 
 const BRUSH_LABELS = { restore: "Erasing mask", erase: "Masking" };
 
-export function statusMessage(
-  isLockedElsewhere: boolean,
-  removal: Removal | undefined,
-  tool: Tool,
-) {
-  if (isLockedElsewhere) {
-    return "Open in another tab · Changes here won’t be saved";
-  }
-  if (removal) return `${removal.label}…`;
-  return tool === "move" ? null : `${BRUSH_LABELS[tool]} · Esc to stop`;
+export function statusMessage(tool: Tool) {
+  return tool === "move"
+    ? null
+    : { label: BRUSH_LABELS[tool], hint: "Esc to stop" };
 }
 
 export function shortcutAction(command: ShortcutCommand): EditorAction | null {

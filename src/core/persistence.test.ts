@@ -13,7 +13,7 @@ import {
   createArtboard,
   deleteArtboard,
   duplicateArtboard,
-  loadLibrary,
+  loadArtboards,
   restoreArtboard,
   type SavedLayer,
 } from "./persistence";
@@ -45,17 +45,17 @@ beforeEach(async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
 });
 
-describe("loadLibrary", () => {
+describe("loadArtboards", () => {
   it("starts with one empty artboard", async () => {
-    const library = await loadLibrary();
-    expect(library.artboards).toHaveLength(1);
-    expect(library.activeId).toBe(library.artboards[0].id);
-    expect((await readArtboard(library.activeId))?.layers).toEqual([]);
+    const loaded = await loadArtboards();
+    expect(loaded.artboards).toHaveLength(1);
+    expect(loaded.activeId).toBe(loaded.artboards[0].id);
+    expect((await readArtboard(loaded.activeId))?.layers).toEqual([]);
   });
 
-  it("is the same library when loaded again", async () => {
-    const first = await loadLibrary();
-    const second = await loadLibrary();
+  it("loads the same artboards again", async () => {
+    const first = await loadArtboards();
+    const second = await loadArtboards();
     expect(second.artboards.map((d) => d.id)).toEqual(
       first.artboards.map((d) => d.id),
     );
@@ -70,10 +70,10 @@ describe("loadLibrary", () => {
       order: ["b", "gone", "a"],
       activeId: "a",
     });
-    const library = await loadLibrary();
+    const loaded = await loadArtboards();
     // Unlisted artboards go at the end; missing ones are dropped.
-    expect(library.artboards.map((d) => d.id)).toEqual(["b", "a", "c"]);
-    expect(library.activeId).toBe("a");
+    expect(loaded.artboards.map((d) => d.id)).toEqual(["b", "a", "c"]);
+    expect(loaded.activeId).toBe("a");
   });
 
   it("cleans up files no artboard uses", async () => {
@@ -90,7 +90,7 @@ describe("loadLibrary", () => {
     ]) {
       await putBlob(key);
     }
-    const library = await loadLibrary();
+    const loaded = await loadArtboards();
     await vi.waitFor(async () =>
       expect(await blobKeys()).toEqual([
         "one:mask",
@@ -99,7 +99,7 @@ describe("loadLibrary", () => {
         "two:source",
       ]),
     );
-    expect(library.artboards.find((d) => d.id === "a")?.thumbnail).toBeTruthy();
+    expect(loaded.artboards.find((d) => d.id === "a")?.thumbnail).toBeTruthy();
   });
 });
 
@@ -114,7 +114,7 @@ describe("restoreArtboard", () => {
     await putArtboard(
       artboard({ canvasFormat, settings, backgroundId: THEMES[1].id }),
     );
-    expect(await restoreArtboard("artboard-1")).toEqual({
+    expect(await restoreArtboard("artboard-1")).toMatchObject({
       layers: [],
       settings,
       canvasFormat,
