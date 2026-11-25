@@ -18,7 +18,6 @@ import {
   shortcutAction,
   statusMessage,
 } from "../core/editor";
-import { newId } from "../core/id";
 import {
   copyLayer,
   isCopiedLayer,
@@ -277,7 +276,7 @@ export function ArtboardEditor({
     if (!latestSelected.current || !event.clipboardData) return;
     event.preventDefault();
     if (run) run.isHandled = true;
-    const token = newId();
+    const token = crypto.randomUUID();
     event.clipboardData.setData(LAYER_CLIPBOARD_TYPE, token);
     clipboard.copySelected(isCut, token);
   };

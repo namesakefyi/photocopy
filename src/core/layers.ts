@@ -1,4 +1,3 @@
-import { newId } from "./id";
 import { contentBounds } from "./photocopy";
 import { context2d, createCanvas } from "./render";
 import type { Credit, Layer, Region, Tool } from "./types";
@@ -31,7 +30,7 @@ export async function loadPhoto(
   bitmap.close();
 
   const layer: Layer = {
-    id: newId(),
+    id: crypto.randomUUID(),
     name: file.name.replace(/\.[^.]+$/, ""),
     width,
     height,

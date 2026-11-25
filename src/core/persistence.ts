@@ -1,5 +1,4 @@
 import { DEFAULT_CANVAS } from "./canvasFormat";
-import { newId } from "./id";
 import { canvasToBlob, cropLayerCanvases, loadPhoto, setMask } from "./layers";
 import { DEFAULT_SETTINGS, type PhotocopySettings } from "./photocopy";
 import * as storage from "./storage";
@@ -121,7 +120,7 @@ async function allArtboards() {
 function newArtboard(changes: Partial<SavedArtboard> = {}): SavedArtboard {
   return {
     version: 2,
-    id: newId(),
+    id: crypto.randomUUID(),
     updatedAt: Date.now(),
     layers: [],
     settings: DEFAULT_SETTINGS,
@@ -257,11 +256,11 @@ export function duplicateArtboard(id: string) {
     if (!artboard) return null;
     const copy: SavedArtboard = {
       ...artboard,
-      id: newId(),
+      id: crypto.randomUUID(),
       updatedAt: Date.now(),
       layers: artboard.layers.map((layer) => ({
         ...layer,
-        id: newId(),
+        id: crypto.randomUUID(),
       })),
     };
     const copyBlob = async (from: string, to: string) => {

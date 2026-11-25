@@ -3,7 +3,6 @@ import type {
   RemovalRequest,
   RemovalResponse,
 } from "./removeBackground.worker";
-import { createWorkerClient } from "./workerClient";
 
 export type RemovalProgress = (label: string, fraction: number) => void;
 
@@ -50,13 +49,44 @@ export function overallProgress(onProgress: RemovalProgress) {
   };
 }
 
-const client = createWorkerClient<RemovalRequest, RemovalResponse>(
-  () =>
-    new Worker(new URL("./removeBackground.worker.ts", import.meta.url), {
-      type: "module",
-    }),
-  "Background removal",
-);
+interface Pending {
+  resolve: (result: Blob) => void;
+  reject: (error: Error) => void;
+  progress: (key: string, current: number, total: number) => void;
+}
+
+let worker: Worker | null = null;
+let nextId = 0;
+const pending = new Map<number, Pending>();
+
+function failAll(error: Error) {
+  for (const request of pending.values()) request.reject(error);
+  pending.clear();
+  worker?.terminate();
+  worker = null;
+}
+
+function getWorker() {
+  if (!worker) {
+    worker = new Worker(
+      new URL("./removeBackground.worker.ts", import.meta.url),
+      { type: "module" },
+    );
+    worker.onmessage = ({ data }: MessageEvent<RemovalResponse>) => {
+      const request = pending.get(data.id);
+      if (!request) return;
+      if ("progress" in data) return request.progress(...data.progress);
+      pending.delete(data.id);
+      if ("error" in data) request.reject(new Error(data.error));
+      else request.resolve(data.result);
+    };
+    worker.onerror = (event) => {
+      event.preventDefault();
+      failAll(new Error(event.message || "Background removal failed"));
+    };
+  }
+  return worker;
+}
 
 /** Cuts out the subject on-device, loading the model (tens of MB) on first use. */
 export async function removeBackground(
@@ -66,11 +96,10 @@ export async function removeBackground(
   const progress = overallProgress(onProgress);
   progress.loading();
   const image = await canvasToBlob(source);
-  const response = await client.send(
-    { id: client.nextId(), image },
-    {
-      onProgress: (response) => progress.library(...response.progress),
-    },
-  );
-  return createImageBitmap(response.result);
+  const result = await new Promise<Blob>((resolve, reject) => {
+    const request: RemovalRequest = { id: nextId++, image };
+    pending.set(request.id, { resolve, reject, progress: progress.library });
+    getWorker().postMessage(request);
+  });
+  return createImageBitmap(result);
 }

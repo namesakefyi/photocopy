@@ -42,17 +42,6 @@ export function find<T extends HTMLElement = HTMLElement>(
   return element;
 }
 
-export function press(element: Element) {
-  const init = { bubbles: true, pointerId: 1, pointerType: "mouse", button: 0 };
-  act(() => {
-    element.dispatchEvent(new PointerEvent("pointerdown", init));
-    element.dispatchEvent(new PointerEvent("pointerup", init));
-    element.dispatchEvent(
-      new MouseEvent("click", { bubbles: true, detail: 1 }),
-    );
-  });
-}
-
 export function pressKey(element: Element, key: string) {
   act(() => {
     element.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));

@@ -7,30 +7,59 @@ import type {
 } from "./photocopy.worker";
 import { context2d, scaledSize } from "./render";
 import type { Layer, Region } from "./types";
-import { createWorkerClient } from "./workerClient";
 import { resolutionStep } from "./zoom";
 
+interface Pending {
+  resolve: (result: ArrayBuffer | ImageBitmap) => void;
+  reject: (error: Error) => void;
+}
+
+let worker: Worker | null = null;
+let nextId = 0;
+const pending = new Map<number, Pending>();
 /** Which bitmap (by key) the worker holds for each layer, for the preview. */
 const sentImages = new Map<string, string>();
 
-const client = createWorkerClient<
-  PhotocopyRequest | PreviewRequest,
-  PhotocopyResponse
->(
-  () =>
-    new Worker(new URL("./photocopy.worker.ts", import.meta.url), {
-      type: "module",
-    }),
-  "The photocopy worker",
-  () => sentImages.clear(),
-);
+/** Rejects waiting requests and discards a crashed worker, so the next request starts fresh. */
+function failAll(error: Error) {
+  for (const request of pending.values()) request.reject(error);
+  pending.clear();
+  sentImages.clear();
+  worker?.terminate();
+  worker = null;
+}
 
-async function send(
+function getWorker() {
+  if (!worker) {
+    worker = new Worker(new URL("./photocopy.worker.ts", import.meta.url), {
+      type: "module",
+    });
+    worker.onmessage = ({ data }: MessageEvent<PhotocopyResponse>) => {
+      const request = pending.get(data.id);
+      pending.delete(data.id);
+      if (!request) return;
+      if ("error" in data) request.reject(new Error(data.error));
+      else request.resolve("bitmap" in data ? data.bitmap : data.buffer);
+    };
+    worker.onerror = (event) => {
+      event.preventDefault();
+      failAll(new Error(event.message || "The photocopy worker failed"));
+    };
+    worker.onmessageerror = () => {
+      failAll(new Error("The photocopy worker sent an unreadable message"));
+    };
+  }
+  return worker;
+}
+
+function send(
   request: PhotocopyRequest | PreviewRequest,
   transfer: Transferable[],
 ) {
-  const response = await client.send(request, { transfer });
-  return "bitmap" in response ? response.bitmap : response.buffer;
+  return new Promise<ArrayBuffer | ImageBitmap>((resolve, reject) => {
+    pending.set(request.id, { resolve, reject });
+    getWorker().postMessage(request, transfer);
+  });
 }
 
 export async function photocopyImageData(
@@ -42,7 +71,7 @@ export async function photocopyImageData(
   const result = await send(
     {
       kind: "photocopy",
-      id: client.nextId(),
+      id: nextId++,
       buffer,
       width: image.width,
       height: image.height,
@@ -109,7 +138,7 @@ export async function renderPreview(
   const result = await send(
     {
       kind: "preview",
-      id: client.nextId(),
+      id: nextId++,
       layers: placed,
       images,
       region,
