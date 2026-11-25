@@ -7,7 +7,6 @@ export interface ProgressProps {
   message: string;
 }
 
-/** A process running in the background, shown across the top of the canvas. */
 export function Progress({ value, message }: ProgressProps) {
   return (
     <ProgressBar className={styles.progress} aria-label={message} value={value}>

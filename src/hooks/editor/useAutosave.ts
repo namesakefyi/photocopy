@@ -9,6 +9,10 @@ interface AutosaveOptions {
   isRestored: boolean;
   onError?: (cause: unknown) => void;
   onSaved?: (state: ArtboardState) => void;
+  /** Another tab saved this artboard since it was loaded, so nothing was written. */
+  onStale?: () => void;
+  /** The stored version this tab has, to notice another tab saving since. */
+  version?: { current: number | undefined };
   /** How long changes settle before saving; tests shorten it. */
   delay?: number;
 }
@@ -17,7 +21,14 @@ interface AutosaveOptions {
 export function useAutosave(
   artboardId: string,
   state: ArtboardState,
-  { isRestored, onError, onSaved, delay = SAVE_DELAY }: AutosaveOptions,
+  {
+    isRestored,
+    onError,
+    onSaved,
+    onStale,
+    version,
+    delay = SAVE_DELAY,
+  }: AutosaveOptions,
 ) {
   const savedRevisions = useRef<Map<string, number> | null>(null);
   const restoredState = useRef<ArtboardState | null>(null);
@@ -25,6 +36,7 @@ export function useAutosave(
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastSave = useRef<Promise<void>>(Promise.resolve());
   const reportError = useEffectEvent((cause: unknown) => onError?.(cause));
+  const reportStale = useEffectEvent(() => onStale?.());
   const reportSaved = useEffectEvent((saved: ArtboardState) =>
     onSaved?.(saved),
   );
@@ -54,8 +66,10 @@ export function useAutosave(
     if (restored && sameArtboardState(restored, current)) return;
     restoredState.current = null;
     pending.current = () =>
-      saveArtboardState(artboardId, current, revisions)
-        .then(() => reportSaved(current))
+      saveArtboardState(artboardId, current, revisions, version)
+        .then((result) =>
+          result === "stale" ? reportStale() : reportSaved(current),
+        )
         .catch((cause) => {
           console.warn("Couldn’t save the artboard locally", cause);
           reportError(cause);
@@ -69,6 +83,7 @@ export function useAutosave(
     canvasFormat,
     background,
     delay,
+    version,
     runPending,
   ]);
 

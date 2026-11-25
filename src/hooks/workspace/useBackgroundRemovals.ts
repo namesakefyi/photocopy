@@ -21,6 +21,7 @@ export function useBackgroundRemovals(
       const artboardId = activeId;
       // Only what's needed later, so a closed artboard's layers can be freed.
       const { id, revision, width, height, source } = layer;
+      const startedIn = editorRef.current?.instanceId;
       const setProgress = (removal: Removal | null) =>
         setRemovals(({ [id]: _, ...rest }) =>
           removal ? { ...rest, [id]: { ...removal, artboardId } } : rest,
@@ -35,7 +36,9 @@ export function useBackgroundRemovals(
         try {
           const editor = editorRef.current;
           if (editor && latest.current.activeId === artboardId) {
-            editor.applyCutout(id, revision, cutout);
+            // A reopened editor rebuilt its photos' versions, so they can't be compared.
+            const isSameEditor = editor.instanceId === startedIn;
+            editor.applyCutout(id, isSameEditor ? revision : null, cutout);
           } else {
             const mask = await maskBlob({ width, height }, cutout);
             await applyStoredCutout(artboardId, id, mask);

@@ -10,7 +10,10 @@ export interface WorkspaceActions {
   reorderArtboards: (order: string[]) => void;
   switchArtboard: (direction: 1 | -1) => void;
   setSaved: (id: string, saved: ArtboardState) => void;
-  setThumbnail: (thumbnail: Blob) => void;
+  setThumbnail: (id: string, thumbnail: Blob) => void;
+  /** Reloads the open artboard from storage, telling its new editor why. */
+  reloadArtboard: (notice: string) => void;
+  takeNotice: () => string | null;
   startBackgroundRemoval: (layer: Layer) => void;
   setArtboardListShown: (isShown: boolean) => void;
 }

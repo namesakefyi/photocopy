@@ -16,7 +16,6 @@
   transition: width 200ms ease-out;
 }
 
-/* Opposite the status toast, so the two never overlap. */
 .message {
   width: fit-content;
   max-width: calc(50% - 18px);

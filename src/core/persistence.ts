@@ -311,9 +311,12 @@ export function applyStoredCutout(
   });
 }
 
+/** `version` is when it was last saved, to notice another tab saving it since. */
+export type RestoredArtboard = ArtboardState & { version: number };
+
 export async function restoreArtboard(
   id: string,
-): Promise<ArtboardState | null> {
+): Promise<RestoredArtboard | null> {
   try {
     const artboard = await getArtboard(id);
     if (!artboard) return null;
@@ -333,6 +336,7 @@ export async function restoreArtboard(
       settings: artboard.settings,
       canvasFormat: artboard.canvasFormat,
       background: themeById(artboard.backgroundId),
+      version: artboard.updatedAt,
     };
   } catch (cause) {
     console.warn("Couldn’t restore the artboard", cause);
@@ -354,8 +358,15 @@ export function saveArtboardState(
   artboardId: string,
   { layers, settings, canvasFormat, background }: ArtboardState,
   revisions: Map<string, number>,
+  /** The version this tab loaded or last saved; kept current here. */
+  version?: { current: number | undefined },
 ) {
-  return exclusive(async () => {
+  return exclusive(async (): Promise<"saved" | "stale"> => {
+    const artboard = await getArtboard(artboardId);
+    if (!artboard) return "saved";
+    // Another tab saved since this one loaded; writing would mix the two.
+    const known = version?.current;
+    if (known !== undefined && artboard.updatedAt !== known) return "stale";
     const changed = layers.filter(
       (layer) => revisions.get(layer.id) !== layer.revision,
     );
@@ -369,15 +380,16 @@ export function saveArtboardState(
       ),
     );
     for (const layer of changed) revisions.set(layer.id, layer.revision);
-    const artboard = await getArtboard(artboardId);
-    if (!artboard) return;
+    const updatedAt = Date.now();
     await putArtboard({
       ...artboard,
       layers: layers.map(toSaved),
       settings,
       canvasFormat,
       backgroundId: background.id,
-      updatedAt: Date.now(),
+      updatedAt,
     });
+    if (version) version.current = updatedAt;
+    return "saved";
   });
 }

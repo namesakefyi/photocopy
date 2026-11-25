@@ -114,7 +114,7 @@ describe("restoreArtboard", () => {
     await putArtboard(
       artboard({ canvasFormat, settings, backgroundId: THEMES[1].id }),
     );
-    expect(await restoreArtboard("artboard-1")).toEqual({
+    expect(await restoreArtboard("artboard-1")).toMatchObject({
       layers: [],
       settings,
       canvasFormat,

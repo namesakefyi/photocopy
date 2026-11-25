@@ -22,7 +22,10 @@ export function App() {
   const isNarrow = useMediaQuery(NARROW);
   useVisualViewport();
   const editorRef = useRef<EditorHandle>(null);
-  const { workspace, removals } = useWorkspaceState(editorRef, isNarrow);
+  const { workspace, removals, editorKey } = useWorkspaceState(
+    editorRef,
+    isNarrow,
+  );
 
   if (!workspace) return <div className={styles.app} />;
   const showsArtboardList = !isNarrow && workspace.isArtboardListShown;
@@ -40,7 +43,7 @@ export function App() {
               <ArtboardListPane />
             </nav>
           )}
-          <Editor key={workspace.activeId} ref={editorRef} />
+          <Editor key={editorKey} ref={editorRef} />
           {isNarrow && (
             <ModalOverlay
               className={cx(dialogStyles.overlay, styles.drawerOverlay)}

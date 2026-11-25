@@ -24,7 +24,6 @@ export function Section({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Children are the section's control, beside the toggle, never nested inside it. */
 export function SectionHeader({
   title,
   children,

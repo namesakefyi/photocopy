@@ -62,10 +62,20 @@ import { Canvas, type CanvasHandle } from "./Canvas";
 import styles from "./Editor.module.css";
 import { Progress, type ProgressProps } from "./Progress";
 
+const STALE_NOTICE =
+  "This artboard changed in another tab, so it was reloaded.";
+
 export interface EditorHandle {
   flush: () => Promise<void>;
   /** `revision` is the photo's version when removal started. */
-  applyCutout: (layerId: string, revision: number, cutout: ImageBitmap) => void;
+  /** Which mount of the editor this is; a reopened artboard gets a new one. */
+  instanceId: string;
+  /** `revision` is the photo's version when removal started, or null if reopened since. */
+  applyCutout: (
+    layerId: string,
+    revision: number | null,
+    cutout: ImageBitmap,
+  ) => void;
   showError: (message: string) => void;
 }
 
@@ -93,9 +103,15 @@ export function Editor({ ref }: EditorProps) {
     [layers, settings, canvasFormat, background],
   );
   const [error, setError] = useState<string | null>(null);
+  const [instanceId] = useState(() => crypto.randomUUID());
+  useEffect(() => {
+    const notice = workspace.takeNotice();
+    if (notice) setError(notice);
+  }, [workspace.takeNotice]);
   const sync = useArtboardSync(artboardId, content, {
     onLoad: (loaded) => dispatch({ type: "load", state: loaded }),
     onSaved: (saved) => workspace.setSaved(artboardId, saved),
+    onStale: () => workspace.reloadArtboard(STALE_NOTICE),
     onSaveError: (cause) => {
       if (isQuotaError(cause)) setError(QUOTA_MESSAGE);
     },
@@ -158,13 +174,17 @@ export function Editor({ ref }: EditorProps) {
 
   const { width, height } = canvasSize(canvasFormat);
   const artboard = useMemo(() => ({ width, height }), [width, height]);
+  const onThumbnail = useCallback(
+    (thumbnail: Blob) => workspace.setThumbnail(artboardId, thumbnail),
+    [workspace.setThumbnail, artboardId],
+  );
   const { preview, setViewScale, saveThumbnail } = usePreview({
     content,
     width,
     height,
     restored,
     needsThumbnail: !summary?.thumbnail,
-    onThumbnail: workspace.setThumbnail,
+    onThumbnail,
   });
   const { photocopy, isExporting, runExport, closeExport } = useExport(
     layers,
@@ -270,12 +290,13 @@ export function Editor({ ref }: EditorProps) {
       async flush() {
         await Promise.all([sync.flush(), saveThumbnail()]);
       },
+      instanceId,
       applyCutout(layerId, revision, cutout) {
         // The cutout only fits the photo version it started from.
         const current = latestLayers.current.find(
           (other) => other.id === layerId,
         );
-        if (!current || current.revision !== revision) {
+        if (!current || (revision !== null && current.revision !== revision)) {
           if (current) {
             setError("The photo changed during background removal. Try again.");
           }
@@ -290,7 +311,7 @@ export function Editor({ ref }: EditorProps) {
       },
       showError: setError,
     }),
-    [sync.flush, saveThumbnail],
+    [instanceId, sync.flush, saveThumbnail],
   );
 
   const status = statusMessage(tool);

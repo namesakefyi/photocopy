@@ -150,17 +150,16 @@ export function useWorkspaceState(
     }
   }
 
-  const setThumbnail = useCallback(
-    (thumbnail: Blob) => {
-      setArtboards((current) =>
-        current ? withChanges(current, activeId, { thumbnail }) : current,
-      );
-      saveThumbnail(activeId, thumbnail).catch((cause) =>
-        console.warn("Couldn’t save the thumbnail", cause),
-      );
-    },
-    [activeId],
-  );
+  const setThumbnail = useCallback((id: string, thumbnail: Blob) => {
+    setArtboards((current) =>
+      current ? withChanges(current, id, { thumbnail }) : current,
+    );
+    saveThumbnail(id, thumbnail).catch((cause) =>
+      console.warn("Couldn’t save the thumbnail", cause),
+    );
+  }, []);
+  const [reloadKey, setReloadKey] = useState(0);
+  const notice = useRef<string | null>(null);
 
   function setSaved(
     id: string,
@@ -212,7 +211,16 @@ export function useWorkspaceState(
       if (id) open(id);
     },
     setSaved: (id, saved) => latest.current.setSaved(id, saved),
-    setThumbnail: (thumbnail) => latest.current.setThumbnail(thumbnail),
+    setThumbnail: (id, thumbnail) => latest.current.setThumbnail(id, thumbnail),
+    reloadArtboard(message) {
+      notice.current = message;
+      setReloadKey((key) => key + 1);
+    },
+    takeNotice() {
+      const message = notice.current;
+      notice.current = null;
+      return message;
+    },
     startBackgroundRemoval: (layer) => latest.current.startRemoval(layer),
     setArtboardListShown(isShown) {
       if (latest.current.isNarrow) setIsDrawerOpen(isShown);
@@ -234,5 +242,9 @@ export function useWorkspaceState(
     [actions, artboards, activeId, isArtboardListShown, isNarrow],
   );
 
-  return { workspace, removals: removals.state };
+  return {
+    workspace,
+    removals: removals.state,
+    editorKey: `${activeId}:${reloadKey}`,
+  };
 }
