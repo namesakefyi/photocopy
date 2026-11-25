@@ -21,7 +21,6 @@ export interface ArtboardListProps {
   onOpen: (id: string) => void;
   onNew: () => void;
   onDuplicate: (id: string) => void;
-  /** Asks first; the confirmation is shared with the File menu's Delete. */
   onRequestDelete: (id: string) => void;
   onReorder: (order: string[]) => void;
 }

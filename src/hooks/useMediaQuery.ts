@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-/** Phones, and windows too narrow for side panels. Matches the CSS breakpoint. */
+/** Matches the CSS breakpoint. */
 export const NARROW = "(width < 760px)";
 
 export function useMediaQuery(query: string) {

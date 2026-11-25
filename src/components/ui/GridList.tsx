@@ -9,7 +9,6 @@ import styles from "./GridList.module.css";
 export const GridList = withClassName(AriaGridList, styles.list);
 export const GridListItem = withClassName(AriaGridListItem, styles.item);
 
-/** The row's reorder handle, out in the list's side padding. */
 export function GridListDragHandle({ label }: { label: string }) {
   return (
     <Button

@@ -58,11 +58,7 @@ const client = createWorkerClient<RemovalRequest, RemovalResponse>(
   "Background removal",
 );
 
-/**
- * Cuts out the subject on-device, loading the model (tens of MB) on first use.
- * It all runs in a worker: downloading, setting up and running the model are
- * heavy enough to freeze the page otherwise.
- */
+/** Cuts out the subject on-device, loading the model (tens of MB) on first use. */
 export async function removeBackground(
   source: HTMLCanvasElement,
   onProgress: RemovalProgress,

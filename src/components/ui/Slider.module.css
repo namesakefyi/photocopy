@@ -42,7 +42,6 @@
       box-shadow: inset -2px 0 0 var(--highlight);
     }
 
-    /* One ring on the whole box, whether the slider or its value has focus. */
     &:has(.thumb[data-focus-visible], .input[data-focused]) {
       outline: 2px solid var(--highlight);
       outline-offset: 2px;
@@ -56,7 +55,6 @@
 
   .value {
     position: relative;
-    /* The field's padding sits in the track's, so the number stays put. */
     margin-inline-end: -4px;
   }
 
@@ -80,7 +78,6 @@
     }
   }
 
-  /* Not while dragging: passing over the value isn't an invitation to type in it. */
   .track:not(:has(.thumb[data-dragging])) .input[data-hovered] {
     color: var(--text);
     background: var(--surface);

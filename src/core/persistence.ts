@@ -30,7 +30,6 @@ interface SavedIndex {
   activeId: string;
 }
 
-/** Kept in memory for every artboard, so opening one shows its settings at once. */
 export interface ArtboardSummary {
   id: string;
   backgroundId: string;
@@ -148,7 +147,6 @@ function summarize(artboard: SavedArtboard, thumbnail?: Blob): ArtboardSummary {
   };
 }
 
-/** For when storage is off: a fresh artboard's summary, never saved. */
 export function unsavedArtboard() {
   return summarize(newArtboard());
 }
@@ -222,10 +220,6 @@ export function saveIndex(order: string[], activeId: string) {
   return exclusive(() => writeIndex(order, activeId));
 }
 
-/**
- * Starts with the canvas size and style of `fromId` (the open artboard),
- * or else of the most recently edited one.
- */
 export function createArtboard(backgroundId: string, fromId?: string) {
   return exclusive(async () => {
     const source =

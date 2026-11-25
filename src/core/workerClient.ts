@@ -14,11 +14,6 @@ interface Pending<Response> {
   onProgress?: (response: Progress<Response>) => void;
 }
 
-/**
- * Requests to a worker, matched to responses by id. A response with `progress`
- * is interim; one with `error` rejects. If the worker crashes, everything
- * waiting rejects and the next request starts a fresh worker.
- */
 export function createWorkerClient<
   Request extends Message,
   Response extends Message,
@@ -26,7 +21,6 @@ export function createWorkerClient<
   /** Written out by each caller, so the bundler finds and builds the worker. */
   create: () => Worker,
   name: string,
-  /** Forgets anything the client knew the crashed worker held. */
   onReset?: () => void,
 ) {
   let worker: Worker | null = null;

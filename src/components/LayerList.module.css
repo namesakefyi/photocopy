@@ -25,7 +25,6 @@
   }
 }
 
-/* The name and its field fill the same box, so the text doesn't move when editing. */
 .nameInput {
   flex: 1;
   height: 100%;
@@ -46,7 +45,6 @@
   }
 }
 
-/* The size of one layer row, so adding the first doesn't move what's below. */
 .empty {
   display: grid;
   place-items: center;

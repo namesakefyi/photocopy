@@ -116,7 +116,6 @@ describe("viewport", () => {
       { pointer: { x: 0, y: 0 }, factor: 1, pan: { x: -10000, y: 10000 } },
       frame,
     );
-    // At half scale, 548 − 48 screen pixels left of the middle is 1000 artboard pixels.
     expect(next.center).toEqual({ x: -1000, y: 1600 });
   });
 });

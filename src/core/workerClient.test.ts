@@ -7,7 +7,6 @@ type Response =
   | { id: number; value: string }
   | { id: number; error: string };
 
-/** Stands in for a Worker; the test plays its side of the conversation. */
 class FakeWorker {
   onmessage: ((event: { data: Response }) => void) | null = null;
   onerror:

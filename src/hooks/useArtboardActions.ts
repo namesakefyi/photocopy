@@ -1,10 +1,8 @@
 import { createContext, useContext } from "react";
 
-/** Artboard-level commands, from the library rather than the open editor. */
 export interface ArtboardActions {
   newArtboard: () => void;
   duplicateArtboard: () => void;
-  /** Asks first. */
   deleteArtboard: () => void;
 }
 

@@ -74,7 +74,6 @@ export interface ArtboardEditorHandle {
 
 export interface ArtboardEditorProps {
   artboardId: string;
-  /** What the library already knows, so settings show before the photos load. */
   summary: ArtboardSummary | undefined;
   removals: Record<string, Removal>;
   toolbarStart?: React.ReactNode;
@@ -130,7 +129,6 @@ export function ArtboardEditor({
   const [restored, setRestored] = useState<ArtboardState | null>();
   const isRestored = restored !== undefined;
   const isNarrow = useMediaQuery(NARROW);
-  // Until the photos load, the saved list stands in, so panels don't flash empty.
   const listedLayers = isRestored ? layers : (summary?.layers ?? []);
   const canExport = listedLayers.some((layer) => layer.visible);
   const [error, setError] = useState<string | null>(null);
@@ -456,7 +454,6 @@ export function ArtboardEditor({
     }
   });
 
-  // On phones the controls float over the canvas, below whichever toolbars show.
   const controls = (
     <ControlStrip
       layers={listedLayers}

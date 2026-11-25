@@ -13,7 +13,6 @@ import inputStyles from "./ui/input.module.css";
 export interface LayerListProps {
   layers: LayerEntry[];
   selectedId: string | null;
-  /** Shown from the saved list while photos load, so nothing can change yet. */
   isLoading: boolean;
 }
 
@@ -48,7 +47,6 @@ export const LayerList = memo(function LayerList({
       items={topFirst}
       dependencies={[isLoading, renamingId]}
       selectionMode={isLoading ? "none" : "single"}
-      // Click selects; Enter (or a double-click) renames.
       selectionBehavior="replace"
       onAction={isLoading ? undefined : (key) => setRenamingId(String(key))}
       selectedKeys={selectedId ? [selectedId] : []}
@@ -113,7 +111,6 @@ export const LayerList = memo(function LayerList({
   );
 });
 
-/** Enter or leaving the field keeps the name; Escape puts the old one back. */
 function NameInput({
   name,
   onDone,
@@ -129,7 +126,6 @@ function NameInput({
     ref.current?.select();
   }, []);
 
-  // Focus goes back to the row, whose keys the field would otherwise lose.
   const leave = () =>
     ref.current?.closest<HTMLElement>('[role="row"]')?.focus();
 

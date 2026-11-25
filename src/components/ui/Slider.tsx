@@ -17,7 +17,6 @@ export interface SliderProps extends AriaSliderProps<number> {
 /** Pressing the number edits it instead of starting a drag on the track. */
 const keepFromTrack = (event: React.SyntheticEvent) => event.stopPropagation();
 
-/** A first press selects the whole value, rather than placing the caret in it. */
 function selectOnFirstPress(event: React.MouseEvent<HTMLInputElement>) {
   event.stopPropagation();
   const input = event.currentTarget;
@@ -26,7 +25,6 @@ function selectOnFirstPress(event: React.MouseEvent<HTMLInputElement>) {
   input.focus();
 }
 
-/** One tab stop: Enter on the slider types a value, Enter in the value goes back. */
 export function Slider({ label, ...props }: SliderProps) {
   const thumbInput = useRef<HTMLInputElement>(null);
   const valueInput = useRef<HTMLInputElement>(null);
@@ -40,7 +38,6 @@ export function Slider({ label, ...props }: SliderProps) {
               style={{ width: `${state.getThumbPercent(0) * 100}%` }}
             />
             <Label className={styles.label}>{label}</Label>
-            {/* Typed values are clamped and snapped to the step on commit. */}
             <AriaNumberField
               aria-label={label}
               className={styles.value}
@@ -59,7 +56,6 @@ export function Slider({ label, ...props }: SliderProps) {
                 className={styles.input}
                 tabIndex={-1}
                 onKeyDown={(event) => {
-                  // Leaving the field commits it, clamped, like a blur.
                   if (event.key === "Enter") thumbInput.current?.focus();
                 }}
                 onFocus={(event) => event.target.select()}

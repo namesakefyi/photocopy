@@ -80,7 +80,6 @@ export interface CanvasProps {
   isMaskMode: boolean;
   preview: { image: ImageBitmap; region: Region } | null;
   canvasFill: string;
-  /** Loaded with no layers: offers ways to add a photo, over the artboard. */
   isEmpty: boolean;
   ref?: React.Ref<CanvasHandle>;
 }

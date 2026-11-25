@@ -17,7 +17,6 @@ export interface FileMenuProps {
   className?: string;
 }
 
-/** Artboards first, then what goes into one, what comes out, and deleting last. */
 export function FileMenu({ canExport, className }: FileMenuProps) {
   const editor = useEditor();
   const artboard = useArtboardActions();

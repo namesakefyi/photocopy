@@ -17,7 +17,7 @@ function Harness<Result>({ useHook, onRender }: HarnessProps<Result>) {
   return null;
 }
 
-/** Renders a component into the page (so focus works), for tests that look at its DOM. */
+/** Renders a component into the page, for tests that look at its DOM. */
 export function render(ui: React.ReactNode) {
   const container = document.createElement("div");
   document.body.append(container);
@@ -42,7 +42,6 @@ export function find<T extends HTMLElement = HTMLElement>(
   return element;
 }
 
-/** A full pointer press, as React Aria's buttons listen for. */
 export function press(element: Element) {
   const init = { bubbles: true, pointerId: 1, pointerType: "mouse", button: 0 };
   act(() => {

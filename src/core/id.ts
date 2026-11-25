@@ -1,7 +1,4 @@
-/**
- * A random v4 UUID. `crypto.randomUUID` exists only on secure origins, so a page
- * opened over plain http (like a phone on the local network) builds one itself.
- */
+/** `crypto.randomUUID` exists only on secure origins, not plain http. */
 export function newId(): string {
   if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
   const bytes = crypto.getRandomValues(new Uint8Array(16));

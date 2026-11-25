@@ -63,7 +63,6 @@
   }
 }
 
-/* Sized and spaced like Export across the window, so the two bars line up. */
 .new {
   flex-shrink: 0;
   margin: var(--panel-inset);

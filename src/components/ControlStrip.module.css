@@ -7,10 +7,7 @@
   border-inline-start: 1px solid var(--border);
 }
 
-/* Phones: a toolbar floating over the bottom of the canvas. */
 .floating {
-  /* Over the canvas, below whichever toolbars show and above any keyboard (the
-     app stays within the visible area); the panel only shrinks if that's too short. */
   position: absolute;
   inset-block: calc(var(--canvas-inset-top, 0px) + 12px)
     calc(12px + env(safe-area-inset-bottom, 0px));
@@ -28,7 +25,6 @@
   }
 }
 
-/* The bar and the open section's panel above it, matched in width and look. */
 .floatingBar,
 .panel {
   width: 100%;

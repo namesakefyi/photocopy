@@ -129,14 +129,8 @@ export function zoomViewport(
   return { zoom, center };
 }
 
-/** Screen pixels of the artboard kept in view, however far it's panned. */
 const KEEP_VISIBLE = 48;
 
-/**
- * Where the view's middle may go: far enough for any artboard edge to reach the
- * opposite side of the view, so it can be panned clear of controls floating over
- * the canvas, while a strip of it always stays in view.
- */
 function pannableCenters({ view, artboard }: Frame, scale: number): Region {
   const reach = (side: number) => Math.max(0, side / 2 - KEEP_VISIBLE) / scale;
   const x = reach(view.width);

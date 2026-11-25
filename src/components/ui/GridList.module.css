@@ -22,8 +22,7 @@
   }
 }
 
-/* The reorder handle, in the gutter left of the row and revealed with it.
-   Outside the layer, so it sizes the handle over the quiet button's defaults. */
+/* Outside the layer, so it sizes the handle over the quiet button's defaults. */
 .dragHandle {
   position: absolute;
   inset-block: 0;
@@ -45,7 +44,6 @@
 .item {
   position: relative;
 
-  /* Keeps the row hovered while the pointer crosses to the handle. */
   &::before {
     position: absolute;
     inset-block: 0;

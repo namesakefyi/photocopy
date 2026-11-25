@@ -116,7 +116,6 @@
     }
   }
 
-  /* Over a photo or artboard of any color: white on dark, so it stays legible. */
   .overlay {
     min-height: 32px;
     padding: 0 12px;

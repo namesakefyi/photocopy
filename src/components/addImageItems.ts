@@ -1,6 +1,5 @@
 import type { EditorCommands } from "../hooks/useEditor";
 
-/** The ways to add a photo, shared by the File menu and the Layers + menu. */
 export const ADD_IMAGE_ITEMS = [
   {
     id: "upload",

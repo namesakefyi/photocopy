@@ -1,7 +1,6 @@
 .app {
   --strip-width: 260px;
   --artboard-list-width: 144px;
-  /* Pinned to the visible area, so an on-screen keyboard shrinks the app rather than covering it. */
   position: fixed;
   inset-block-start: var(--viewport-top, 0px);
   inset-inline: 0;

@@ -26,7 +26,6 @@
   }
 }
 
-/* Covers the artboard on screen, so it moves with panning and zooming. */
 .empty {
   position: absolute;
   display: flex;

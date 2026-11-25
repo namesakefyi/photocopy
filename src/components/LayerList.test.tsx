@@ -26,7 +26,6 @@ function renderList(isLoading: boolean) {
 const pressHide = (container: HTMLElement) =>
   press(find(container, '[aria-label="Hide Cat"]'));
 
-/** Opens the name field on Cat's row with Enter, attached so focus works. */
 function startRenaming() {
   const view = renderList(false);
   const row = find(view.container, '[data-key="a"]');

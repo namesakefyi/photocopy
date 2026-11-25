@@ -35,7 +35,6 @@ export function App() {
     () => readSetting(ARTBOARD_LIST_KEY) !== "closed",
   );
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  // From the artboard list or the File menu; both confirm the same way.
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const editorRef = useRef<ArtboardEditorHandle>(null);
   const library = useArtboardLibrary(editorRef, () => setIsDrawerOpen(false));
@@ -62,7 +61,6 @@ export function App() {
     />
   );
   const showsArtboardList = !isNarrow && isArtboardListOpen;
-  // On narrow screens the list is a drawer instead of a panel.
   const isArtboardListShown = isNarrow ? isDrawerOpen : isArtboardListOpen;
   const setArtboardListShown = isNarrow
     ? setIsDrawerOpen
@@ -70,7 +68,6 @@ export function App() {
 
   const artboardActions: ArtboardActions = {
     newArtboard() {
-      // Shows where the new artboard went; the narrow drawer would just cover it.
       if (!isNarrow) setIsArtboardListOpen(true);
       library.create();
     },

@@ -32,7 +32,6 @@ import { Popover } from "./ui/Popover";
 import { Slider } from "./ui/Slider";
 
 export interface ControlStripProps {
-  /** The saved list while photos load, so the panel doesn't flash empty. */
   layers: LayerEntry[];
   isLoading: boolean;
   selectedId: string | null;
@@ -124,7 +123,6 @@ export const ControlStrip = memo(function ControlStrip({
   const exportLabel = isExporting ? "Exporting…" : "Export";
   const isExportDisabled = isExporting || !canExport;
 
-  // On phones, a floating toolbar: each section opens in a panel above it.
   if (isNarrow) {
     return (
       <FloatingControls
@@ -170,12 +168,6 @@ export const ControlStrip = memo(function ControlStrip({
   );
 });
 
-/**
- * Phones: a toolbar floating over the canvas. Each section opens in a panel
- * just above it, laid out by CSS in the app (which stays within the visible
- * area), so an on-screen keyboard can't squeeze it. Non-modal: the canvas
- * and other buttons stay usable, and a tap switches sections.
- */
 function FloatingControls({
   sections,
   error,
@@ -241,7 +233,6 @@ const PANEL_ID = "control-panel";
 
 interface SectionContent {
   title: string;
-  /** Above the title on the phone toolbar. */
   icon: React.ReactNode;
   action: React.ReactNode;
   body: React.ReactNode;
