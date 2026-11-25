@@ -1,0 +1,237 @@
+import { memo, useRef, useState } from "react";
+import { Form, GridList, GridListItem, type Key } from "react-aria-components";
+import {
+  type ImageResult,
+  type ImageSource,
+  searchErrorMessage,
+} from "../../core/imageSearch";
+import { IMAGE_SOURCES } from "../../core/sources";
+import { useEditor } from "../../hooks/editor/useEditor";
+import { Button } from "../ui/Button";
+import { Dialog } from "../ui/Dialog";
+import { XIcon } from "../ui/icons";
+import messageStyles from "../ui/message.module.css";
+import { SearchField } from "../ui/SearchField";
+import { Tab, TabList, TabPanel, Tabs } from "../ui/Tabs";
+import { ToolButton } from "../ui/ToolButton";
+import styles from "./ImageSearchDialog.module.css";
+
+export interface ImageSearchDialogProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+}
+
+interface TabState {
+  /** The search behind the results, so "Load more" continues it. */
+  search: string;
+  results: ImageResult[];
+  nextPage: number | null;
+  isSearching: boolean;
+  error: string | null;
+}
+
+const emptyTab: TabState = {
+  search: "",
+  results: [],
+  nextPage: null,
+  isSearching: false,
+  error: null,
+};
+
+export const ImageSearchDialog = memo(function ImageSearchDialog({
+  isOpen,
+  onOpenChange,
+}: ImageSearchDialogProps) {
+  const { addFiles } = useEditor();
+  const [search, setSearch] = useState("");
+  // The last search submitted, which a tab runs when it's opened.
+  const [submitted, setSubmitted] = useState("");
+  const [sourceId, setSourceId] = useState(IMAGE_SOURCES[0].id);
+  const [tabs, setTabs] = useState<Record<string, TabState>>({});
+  const [adding, setAdding] = useState<string | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
+  // Per source, a new request cancels the one before it.
+  const requests = useRef<Record<string, AbortController>>({});
+
+  function updateTab(
+    id: string,
+    changes: Partial<TabState> | ((tab: TabState) => Partial<TabState>),
+  ) {
+    setTabs((current) => {
+      const tab = current[id] ?? emptyTab;
+      const next = typeof changes === "function" ? changes(tab) : changes;
+      return { ...current, [id]: { ...tab, ...next } };
+    });
+  }
+
+  async function runSearch(source: ImageSource, search: string, page: number) {
+    requests.current[source.id]?.abort();
+    const request = new AbortController();
+    requests.current[source.id] = request;
+    const isLatest = () => !request.signal.aborted;
+    updateTab(source.id, {
+      isSearching: true,
+      error: null,
+      ...(page === 1 && { search, results: [], nextPage: null }),
+    });
+    try {
+      const found = await source.search(search, page, request.signal);
+      if (!isLatest()) return;
+      updateTab(source.id, (tab) => {
+        // Pages can overlap when results reorder between requests.
+        const seen = new Set(tab.results.map((result) => result.id));
+        const results =
+          page === 1
+            ? found.results
+            : [
+                ...tab.results,
+                ...found.results.filter((result) => !seen.has(result.id)),
+              ];
+        return {
+          search,
+          results,
+          nextPage: found.nextPage,
+          isSearching: false,
+        };
+      });
+    } catch (error) {
+      if (!isLatest()) return;
+      updateTab(source.id, {
+        isSearching: false,
+        error: searchErrorMessage(error, source.name),
+      });
+    }
+  }
+
+  function selectSource(key: Key) {
+    const source = IMAGE_SOURCES.find((option) => option.id === key);
+    if (!source) return;
+    setSourceId(source.id);
+    setAddError(null);
+    const tab = tabs[source.id];
+    if (submitted && tab?.search !== submitted && !tab?.isSearching) {
+      runSearch(source, submitted, 1);
+    }
+  }
+
+  async function add(result: ImageResult) {
+    setAdding(result.id);
+    setAddError(null);
+    try {
+      await addFiles([await result.download()], result.credit);
+      onOpenChange(false);
+    } catch {
+      setAddError("Couldn’t download that image. Try another.");
+    } finally {
+      setAdding(null);
+    }
+  }
+
+  const source =
+    IMAGE_SOURCES.find((option) => option.id === sourceId) ?? IMAGE_SOURCES[0];
+  const tab = tabs[source.id] ?? emptyTab;
+  const error = addError ?? tab.error;
+
+  return (
+    <Dialog
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      aria-label="Search images"
+      className={styles.modal}
+      contentClassName={styles.imageSearch}
+    >
+      <div className={styles.header}>
+        <Form
+          className={styles.form}
+          onSubmit={(event) => {
+            event.preventDefault();
+            const trimmed = search.trim();
+            if (!trimmed) return;
+            setSubmitted(trimmed);
+            setAddError(null);
+            runSearch(source, trimmed, 1);
+          }}
+        >
+          <SearchField
+            className={styles.searchField}
+            aria-label="Search openly licensed images"
+            value={search}
+            onChange={setSearch}
+            autoFocus
+            placeholder="Search openly licensed images"
+          />
+          <Button type="submit" isDisabled={tab.isSearching || !search.trim()}>
+            {tab.isSearching ? "Searching…" : "Search"}
+          </Button>
+        </Form>
+        <ToolButton label="Close" slot="close" className={styles.close}>
+          <XIcon />
+        </ToolButton>
+      </div>
+      <Tabs selectedKey={source.id} onSelectionChange={selectSource}>
+        <TabList aria-label="Collections" items={IMAGE_SOURCES}>
+          {(option) => <Tab id={option.id}>{option.label ?? option.name}</Tab>}
+        </TabList>
+        {IMAGE_SOURCES.map((option) => (
+          <TabPanel key={option.id} id={option.id}>
+            {error && (
+              <p role="alert" className={messageStyles.error}>
+                {error}
+              </p>
+            )}
+            <GridList
+              aria-label={`Results from ${source.name}`}
+              className={styles.results}
+              layout="grid"
+              items={tab.results}
+              disabledKeys={
+                adding ? tab.results.map((result) => result.id) : []
+              }
+              onAction={(key) => {
+                const result = tab.results.find((option) => option.id === key);
+                if (result) add(result);
+              }}
+              renderEmptyState={() => (
+                <p className={messageStyles.hint}>
+                  {tab.isSearching
+                    ? "Searching…"
+                    : tab.search
+                      ? `No images found for “${tab.search}” in ${source.name}.`
+                      : `Search public domain and openly licensed images from ${source.name}.`}
+                </p>
+              )}
+            >
+              {(result) => (
+                <GridListItem
+                  className={styles.result}
+                  id={result.id}
+                  textValue={`${result.credit.title}, ${result.credit.license}`}
+                >
+                  <img
+                    className={styles.thumb}
+                    src={result.thumbnail}
+                    alt=""
+                    loading="lazy"
+                  />
+                  <span className={styles.license}>
+                    {adding === result.id ? "Adding…" : result.credit.license}
+                  </span>
+                </GridListItem>
+              )}
+            </GridList>
+            {tab.nextPage !== null && (
+              <Button
+                onPress={() =>
+                  tab.nextPage && runSearch(source, tab.search, tab.nextPage)
+                }
+                isDisabled={tab.isSearching}
+              >
+                {tab.isSearching ? "Loading…" : "Load more"}
+              </Button>
+            )}
+          </TabPanel>
+        ))}
+      </Tabs>
+    </Dialog>
+  );
+});

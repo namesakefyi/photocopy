@@ -1,38 +1,38 @@
 .app {
-  --strip-width: 260px;
+  --panes-width: 260px;
   --artboard-list-width: 144px;
   position: fixed;
   inset-block-start: var(--viewport-top, 0px);
   inset-inline: 0;
 
   display: grid;
-  grid-template-areas: "workspace strip";
+  grid-template-areas: "editor panes";
   grid-template-rows: minmax(0, 1fr);
-  grid-template-columns: minmax(0, 1fr) var(--strip-width);
+  grid-template-columns: minmax(0, 1fr) var(--panes-width);
   height: var(--viewport-height, 100dvh);
   padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0
     env(safe-area-inset-left, 0px);
 
   @media (width < 760px) {
-    grid-template-areas: "workspace";
+    grid-template-areas: "editor";
     grid-template-columns: minmax(0, 1fr);
   }
 
   &[data-artboard-list] {
     grid-template-areas:
-      "toolbar toolbar strip"
-      "files canvas strip";
+      "toolbar toolbar panes"
+      "artboards canvas panes";
     grid-template-rows: auto minmax(0, 1fr);
     grid-template-columns: var(--artboard-list-width) minmax(0, 1fr) var(
-        --strip-width
+        --panes-width
       );
   }
 }
 
-.filesPanel {
+.artboardsPanel {
   display: flex;
   flex-direction: column;
-  grid-area: files;
+  grid-area: artboards;
   min-height: 0;
   background: var(--surface);
   border-inline-end: 1px solid var(--border);

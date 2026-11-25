@@ -146,7 +146,7 @@ function summarize(artboard: SavedArtboard, thumbnail?: Blob): ArtboardSummary {
   };
 }
 
-export function unsavedArtboard() {
+export function unsavedSummary() {
   return summarize(newArtboard());
 }
 
@@ -177,7 +177,7 @@ function writeIndex(order: string[], activeId: string) {
   return storage.put(storage.STATE_STORE, INDEX_KEY, index);
 }
 
-export function loadLibrary() {
+export function loadArtboards() {
   return exclusive(async () => {
     const artboards = await allArtboards();
     if (artboards.length === 0) {

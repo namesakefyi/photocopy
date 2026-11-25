@@ -86,14 +86,12 @@ describe("selectionState", () => {
 });
 
 describe("statusMessage", () => {
-  it("puts another tab's lock first, then removal progress, then the brush", () => {
-    const removal = { label: "Cutting out", fraction: 0.5 };
-    expect(statusMessage(true, removal, "erase")).toMatch(/another tab/);
-    expect(statusMessage(false, removal, "erase")).toBe("Cutting out…");
-    expect(statusMessage(false, undefined, "erase")).toBe(
-      "Masking · Esc to stop",
-    );
-    expect(statusMessage(false, undefined, "move")).toBeNull();
+  it("names the brush in use, with how to stop", () => {
+    expect(statusMessage("erase")).toEqual({
+      label: "Masking",
+      hint: "Esc to stop",
+    });
+    expect(statusMessage("move")).toBeNull();
   });
 });
 

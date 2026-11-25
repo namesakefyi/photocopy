@@ -55,15 +55,16 @@ export function ToolToggleButton({
   label,
   shortcut,
   hasText = false,
+  className,
   ...props
 }: Omit<ToggleButtonProps, "className"> &
-  ToolTipProps & { hasText?: boolean }) {
+  ToolTipProps & { hasText?: boolean; className?: string }) {
   return (
     <WithTooltip label={label} shortcut={shortcut}>
       <ToggleButton
         {...props}
         aria-label={label}
-        className={buttonClassName(hasText ? "toolbar" : "icon")}
+        className={buttonClassName(hasText ? "toolbar" : "icon", className)}
       />
     </WithTooltip>
   );

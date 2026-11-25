@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { find, pressKey, render } from "../../test/renderHook";
+import { find, pressKey, render } from "../../test/render";
 import { Slider } from "./Slider";
 
 /** Types into the field the way React notices, then presses Enter. */
