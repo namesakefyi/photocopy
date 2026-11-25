@@ -13,14 +13,12 @@ import inputStyles from "./ui/input.module.css";
 export interface LayerListProps {
   layers: LayerEntry[];
   selectedId: string | null;
-  isLoading: boolean;
 }
 
 /** Lists layers top-first, like a stack of paper seen from above. */
 export const LayerList = memo(function LayerList({
   layers,
   selectedId,
-  isLoading,
 }: LayerListProps) {
   const { dispatch } = useEditor();
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -28,7 +26,7 @@ export const LayerList = memo(function LayerList({
 
   // Disabled rather than removed: the list's hooks depend on these staying set.
   const { dragAndDropHooks } = useDragAndDrop({
-    isDisabled: isLoading || renamingId !== null,
+    isDisabled: renamingId !== null,
     getItems: (keys) => [...keys].map((key) => ({ "text/plain": String(key) })),
     onReorder: ({ keys, target }) => {
       const order = reorder(
@@ -45,10 +43,10 @@ export const LayerList = memo(function LayerList({
       aria-label="Layers"
       className={styles.layerList}
       items={topFirst}
-      dependencies={[isLoading, renamingId]}
-      selectionMode={isLoading ? "none" : "single"}
+      dependencies={[renamingId]}
+      selectionMode="single"
       selectionBehavior="replace"
-      onAction={isLoading ? undefined : (key) => setRenamingId(String(key))}
+      onAction={(key) => setRenamingId(String(key))}
       selectedKeys={selectedId ? [selectedId] : []}
       onSelectionChange={(keys) => {
         const [key] = keys;
@@ -95,7 +93,6 @@ export const LayerList = memo(function LayerList({
               layer.visible ? `Hide ${layer.name}` : `Show ${layer.name}`
             }
             onPress={() =>
-              !isLoading &&
               dispatch({
                 type: "updateLayer",
                 id: layer.id,

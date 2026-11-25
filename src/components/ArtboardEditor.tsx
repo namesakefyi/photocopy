@@ -456,8 +456,8 @@ export function ArtboardEditor({
 
   const controls = (
     <ControlStrip
+      isFloating={isNarrow}
       layers={listedLayers}
-      isLoading={!isRestored}
       selectedId={selectedId}
       settings={settings}
       canvasFormat={canvasFormat}

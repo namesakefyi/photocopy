@@ -11,7 +11,6 @@ import type { Theme } from "../core/themes";
 import type { CanvasFormat, LayerEntry } from "../core/types";
 import { useEditor } from "../hooks/useEditor";
 import { useEventListener } from "../hooks/useEventListener";
-import { NARROW, useMediaQuery } from "../hooks/useMediaQuery";
 import { ADD_IMAGE_ITEMS } from "./addImageItems";
 import { CanvasPanel, CanvasPresetPicker } from "./CanvasPanel";
 import styles from "./ControlStrip.module.css";
@@ -32,8 +31,9 @@ import { Popover } from "./ui/Popover";
 import { Slider } from "./ui/Slider";
 
 export interface ControlStripProps {
+  /** Phones: a toolbar floating over the canvas, with each section in a panel above it. */
+  isFloating: boolean;
   layers: LayerEntry[];
-  isLoading: boolean;
   selectedId: string | null;
   settings: PhotocopySettings;
   canvasFormat: CanvasFormat;
@@ -51,8 +51,8 @@ const SLIDERS = [
 ] as const;
 
 export const ControlStrip = memo(function ControlStrip({
+  isFloating,
   layers,
-  isLoading,
   selectedId,
   settings,
   canvasFormat,
@@ -63,7 +63,6 @@ export const ControlStrip = memo(function ControlStrip({
   onExport,
 }: ControlStripProps) {
   const editor = useEditor();
-  const isNarrow = useMediaQuery(NARROW);
   const onSettings = (changes: Partial<PhotocopySettings>) =>
     editor.dispatch({ type: "changeSettings", changes });
 
@@ -87,13 +86,7 @@ export const ControlStrip = memo(function ControlStrip({
           </Popover>
         </MenuTrigger>
       ),
-      body: (
-        <LayerList
-          layers={layers}
-          selectedId={selectedId}
-          isLoading={isLoading}
-        />
-      ),
+      body: <LayerList layers={layers} selectedId={selectedId} />,
     },
     {
       title: "Style",
@@ -123,7 +116,7 @@ export const ControlStrip = memo(function ControlStrip({
   const exportLabel = isExporting ? "Exporting…" : "Export";
   const isExportDisabled = isExporting || !canExport;
 
-  if (isNarrow) {
+  if (isFloating) {
     return (
       <FloatingControls
         sections={sections}

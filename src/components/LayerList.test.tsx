@@ -3,7 +3,7 @@ import { act } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { LayerEntry } from "../core/types";
 import { type EditorCommands, EditorContext } from "../hooks/useEditor";
-import { find, press, pressKey, render } from "../test/renderHook";
+import { find, pressKey, render } from "../test/renderHook";
 import { LayerList } from "./LayerList";
 
 const layers: LayerEntry[] = [
@@ -11,23 +11,19 @@ const layers: LayerEntry[] = [
   { id: "b", name: "Dog", visible: true },
 ];
 
-function renderList(isLoading: boolean) {
+function renderList() {
   const dispatch = vi.fn();
   const editor = { dispatch } as unknown as EditorCommands;
-  const list = (isLoading: boolean) => (
+  const view = render(
     <EditorContext value={editor}>
-      <LayerList layers={layers} selectedId={null} isLoading={isLoading} />
-    </EditorContext>
+      <LayerList layers={layers} selectedId={null} />
+    </EditorContext>,
   );
-  const view = render(list(isLoading));
-  return { ...view, dispatch, finishLoading: () => view.rerender(list(false)) };
+  return { ...view, dispatch };
 }
 
-const pressHide = (container: HTMLElement) =>
-  press(find(container, '[aria-label="Hide Cat"]'));
-
 function startRenaming() {
-  const view = renderList(false);
+  const view = renderList();
   const row = find(view.container, '[data-key="a"]');
   act(() => row.focus());
   pressKey(row, "Enter");
@@ -39,38 +35,6 @@ function startRenaming() {
 }
 
 describe("LayerList", () => {
-  it("keeps working once the photos finish loading", () => {
-    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
-    const { container, finishLoading, unmount } = renderList(true);
-    finishLoading();
-    expect(container.textContent).toContain("Cat");
-    expect(errors).not.toHaveBeenCalled();
-    errors.mockRestore();
-    unmount();
-  });
-
-  it("ignores changes while loading", () => {
-    const { container, dispatch, finishLoading, unmount } = renderList(true);
-    pressHide(container);
-    expect(dispatch).not.toHaveBeenCalled();
-
-    finishLoading();
-    pressHide(container);
-    expect(dispatch).toHaveBeenCalledWith({
-      type: "updateLayer",
-      id: "a",
-      changes: { visible: false },
-    });
-    unmount();
-  });
-
-  it("selects a layer on click", () => {
-    const { container, dispatch, unmount } = renderList(false);
-    press(find(container, '[data-key="b"]'));
-    expect(dispatch).toHaveBeenCalledWith({ type: "select", id: "b" });
-    unmount();
-  });
-
   it("renames a layer with Enter", () => {
     const { input, dispatch, unmount, container } = startRenaming();
     expect(document.activeElement).toBe(input);

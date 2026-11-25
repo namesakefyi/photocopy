@@ -9,18 +9,12 @@ import { find, press, pressKey, render } from "../test/renderHook";
 import { ControlStrip } from "./ControlStrip";
 
 function renderPhoneStrip() {
-  vi.stubGlobal("matchMedia", (query: string) => ({
-    matches: true,
-    media: query,
-    addEventListener: () => {},
-    removeEventListener: () => {},
-  }));
   const editor = { dispatch: vi.fn() } as unknown as EditorCommands;
   return render(
     <EditorContext value={editor}>
       <ControlStrip
+        isFloating
         layers={[]}
-        isLoading={false}
         selectedId={null}
         settings={DEFAULT_SETTINGS}
         canvasFormat={DEFAULT_CANVAS}

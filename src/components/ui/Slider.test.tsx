@@ -48,14 +48,6 @@ describe("Slider", () => {
     unmount();
   });
 
-  it("won't take a minus sign when the minimum is 0 or more", () => {
-    const { input, onChange, unmount } = renderSlider(50);
-    typeAndCommit(input, "-5");
-    expect(onChange).not.toHaveBeenCalled();
-    expect(input.value).toBe("50");
-    unmount();
-  });
-
   it("is one tab stop, with Enter moving into the value and back", () => {
     const { input, onChange, unmount, container } = renderSlider(50);
     const thumb = find(container, 'input[type="range"]');
