@@ -5,12 +5,71 @@
   min-height: 0;
   background: var(--surface);
   border-inline-start: 1px solid var(--border);
+}
 
-  @media (width < 760px) {
-    height: 45dvh;
-    border-block-start: 1px solid var(--border);
-    border-inline-start: none;
+/* Phones: a toolbar floating over the bottom of the canvas. */
+.floating {
+  /* Over the canvas, below whichever toolbars show and above any keyboard (the
+     app stays within the visible area); the panel only shrinks if that's too short. */
+  position: absolute;
+  inset-block: calc(var(--canvas-inset-top, 0px) + 12px)
+    calc(12px + env(safe-area-inset-bottom, 0px));
+  inset-inline: 12px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-gap);
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
   }
+}
+
+/* The bar and the open section's panel above it, matched in width and look. */
+.floatingBar,
+.panel {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface-raised);
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow: var(--shadow-raised);
+}
+
+.floatingBar {
+  display: grid;
+  flex-shrink: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+}
+
+.floatingButton {
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  height: auto;
+  padding: 6px 4px;
+  font-size: 12px;
+}
+
+.panel {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 70%;
+  padding: 12px var(--panel-inset) var(--panel-inset);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.panelHeading {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 24px;
 }
 
 .scroll {
@@ -27,7 +86,7 @@
 .section {
   --heading-inset: calc((var(--bar-height) - 1px - 24px) / 2);
   position: relative;
-  padding: var(--heading-inset) 16px 16px;
+  padding: var(--heading-inset) var(--panel-inset) var(--panel-inset);
   border-block-end: 1px solid var(--border);
 
   &:last-child {
@@ -73,7 +132,7 @@
 .action {
   position: absolute;
   inset-block-start: var(--heading-inset);
-  inset-inline-end: 16px;
+  inset-inline-end: var(--panel-inset);
   display: flex;
   align-items: center;
   height: 24px;
@@ -86,17 +145,14 @@
   margin-block-start: var(--gap);
 }
 
-.layersEmpty {
-  display: flex;
-  flex-direction: column;
-  gap: var(--row-gap);
-}
-
 .footer {
   display: flex;
   flex-direction: column;
   gap: var(--gap);
-  padding: 16px;
-  padding-block-end: calc(16px + env(safe-area-inset-bottom, 0px));
+  padding: var(--panel-inset);
+  padding-block-end: calc(
+    var(--panel-inset) +
+    env(safe-area-inset-bottom, 0px)
+  );
   border-block-start: 1px solid var(--border);
 }

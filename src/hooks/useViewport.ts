@@ -25,10 +25,8 @@ export function useViewport(
   containerRef: React.RefObject<HTMLElement | null>,
   artboard: { width: number; height: number },
   onPinchStart: () => void,
-  initialViewport: Viewport = FIT_VIEWPORT,
-  onChange?: (viewport: Viewport) => void,
 ) {
-  const [viewport, setViewport] = useState(initialViewport);
+  const [viewport, setViewport] = useState<Viewport>(FIT_VIEWPORT);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const frame: Frame = { view: size, artboard };
   const { scale, center } = resolveViewport(viewport, frame);
@@ -60,9 +58,6 @@ export function useViewport(
     fittedSize.current = artboard;
     setViewport(FIT_VIEWPORT);
   }, [artboard]);
-
-  const reportChange = useEffectEvent((next: Viewport) => onChange?.(next));
-  useEffect(() => reportChange(viewport), [viewport]);
 
   // Wheel, pinch and pan moves are batched to render once per frame.
   const queuedMoves = useRef<ViewMove[]>([]);

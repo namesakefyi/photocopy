@@ -141,21 +141,44 @@ describe("managing artboards", () => {
     expect((await readArtboard(created.id))?.layers).toEqual([]);
   });
 
-  it("starts at the canvas size of the most recently edited artboard", async () => {
+  it("starts like the most recently edited artboard by default", async () => {
     const square: CanvasFormat = { ...DEFAULT_CANVAS, preset: "square" };
     const custom: CanvasFormat = {
       preset: "custom",
       customWidth: 800,
       customHeight: 600,
     };
+    const inky = { ...DEFAULT_SETTINGS, darkness: 90 };
     await putArtboard(
-      artboard({ id: "a", updatedAt: 2, canvasFormat: custom }),
+      artboard({ id: "a", updatedAt: 2, canvasFormat: custom, settings: inky }),
     );
     await putArtboard(
       artboard({ id: "b", updatedAt: 1, canvasFormat: square }),
     );
-    const created = await createArtboard(DEFAULT_THEME.id);
-    expect((await readArtboard(created.id))?.canvasFormat).toEqual(custom);
+    const created = await readArtboard(
+      (await createArtboard(DEFAULT_THEME.id)).id,
+    );
+    expect(created?.canvasFormat).toEqual(custom);
+    expect(created?.settings).toEqual(inky);
+  });
+
+  it("starts like the open artboard when given one", async () => {
+    const square: CanvasFormat = { ...DEFAULT_CANVAS, preset: "square" };
+    const grainy = { ...DEFAULT_SETTINGS, grain: 80 };
+    await putArtboard(artboard({ id: "a", updatedAt: 2 }));
+    await putArtboard(
+      artboard({
+        id: "b",
+        updatedAt: 1,
+        canvasFormat: square,
+        settings: grainy,
+      }),
+    );
+    const created = await readArtboard(
+      (await createArtboard(DEFAULT_THEME.id, "b")).id,
+    );
+    expect(created?.canvasFormat).toEqual(square);
+    expect(created?.settings).toEqual(grainy);
   });
 
   it("starts at the default size when there are no artboards", async () => {

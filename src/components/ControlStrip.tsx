@@ -1,27 +1,45 @@
-import { memo } from "react";
-import { Keyboard, MenuTrigger, Text } from "react-aria-components";
+import { memo, useRef, useState } from "react";
+import {
+  Keyboard,
+  MenuTrigger,
+  ToggleButton,
+  Toolbar,
+} from "react-aria-components";
 import type { PhotocopySettings } from "../core/photocopy";
 import { SHORTCUTS } from "../core/shortcuts";
 import type { Theme } from "../core/themes";
-import type { CanvasFormat, Layer } from "../core/types";
+import type { CanvasFormat, LayerEntry } from "../core/types";
 import { useEditor } from "../hooks/useEditor";
+import { useEventListener } from "../hooks/useEventListener";
+import { NARROW, useMediaQuery } from "../hooks/useMediaQuery";
+import { ADD_IMAGE_ITEMS } from "./addImageItems";
 import { CanvasPanel, CanvasPresetPicker } from "./CanvasPanel";
 import styles from "./ControlStrip.module.css";
 import { LayerList } from "./LayerList";
 import { PresetPicker } from "./PresetPicker";
-import { Button } from "./ui/Button";
-import { ChevronIcon, PlusIcon } from "./ui/icons";
+import { Button, buttonClassName } from "./ui/Button";
+import {
+  CanvasIcon,
+  ChevronIcon,
+  ExportIcon,
+  LayersIcon,
+  PlusIcon,
+  StyleIcon,
+} from "./ui/icons";
 import { Menu, MenuItem } from "./ui/Menu";
 import messageStyles from "./ui/message.module.css";
 import { Popover } from "./ui/Popover";
 import { Slider } from "./ui/Slider";
 
 export interface ControlStripProps {
-  layers: Layer[];
+  /** The saved list while photos load, so the panel doesn't flash empty. */
+  layers: LayerEntry[];
+  isLoading: boolean;
   selectedId: string | null;
   settings: PhotocopySettings;
   canvasFormat: CanvasFormat;
   background: Theme;
+  canExport: boolean;
   isExporting: boolean;
   error: string | null;
   onExport: () => void;
@@ -35,98 +53,199 @@ const SLIDERS = [
 
 export const ControlStrip = memo(function ControlStrip({
   layers,
+  isLoading,
   selectedId,
   settings,
   canvasFormat,
   background,
+  canExport,
   isExporting,
   error,
   onExport,
 }: ControlStripProps) {
-  const { dispatch, openUpload, openSearch } = useEditor();
+  const editor = useEditor();
+  const isNarrow = useMediaQuery(NARROW);
   const onSettings = (changes: Partial<PhotocopySettings>) =>
-    dispatch({ type: "changeSettings", changes });
+    editor.dispatch({ type: "changeSettings", changes });
+
+  const sections: SectionContent[] = [
+    {
+      title: "Layers",
+      icon: <LayersIcon />,
+      action: (
+        <MenuTrigger>
+          <Button variant="quiet" aria-label="Add layer">
+            <PlusIcon />
+          </Button>
+          <Popover placement="bottom end">
+            <Menu aria-label="Add layer" items={ADD_IMAGE_ITEMS}>
+              {(item) => (
+                <MenuItem onAction={() => item.run(editor)}>
+                  {item.label}
+                </MenuItem>
+              )}
+            </Menu>
+          </Popover>
+        </MenuTrigger>
+      ),
+      body: (
+        <LayerList
+          layers={layers}
+          selectedId={selectedId}
+          isLoading={isLoading}
+        />
+      ),
+    },
+    {
+      title: "Style",
+      icon: <StyleIcon />,
+      action: <PresetPicker settings={settings} onChange={onSettings} />,
+      body: SLIDERS.map(([label, key]) => (
+        <Slider
+          key={key}
+          label={label}
+          value={settings[key]}
+          onChange={(value) => onSettings({ [key]: value })}
+        />
+      )),
+    },
+    {
+      title: "Canvas",
+      icon: <CanvasIcon />,
+      action: <CanvasPresetPicker canvasFormat={canvasFormat} />,
+      body: <CanvasPanel canvasFormat={canvasFormat} background={background} />,
+    },
+  ];
+  const errorMessage = error && (
+    <p role="alert" className={messageStyles.error}>
+      {error}
+    </p>
+  );
+  const exportLabel = isExporting ? "Exporting…" : "Export";
+  const isExportDisabled = isExporting || !canExport;
+
+  // On phones, a floating toolbar: each section opens in a panel above it.
+  if (isNarrow) {
+    return (
+      <FloatingControls
+        sections={sections}
+        error={errorMessage}
+        exportButton={
+          <Button
+            variant="primary"
+            className={styles.floatingButton}
+            onPress={onExport}
+            isDisabled={isExportDisabled}
+          >
+            <ExportIcon />
+            {exportLabel}
+          </Button>
+        }
+      />
+    );
+  }
+
   return (
     <aside className={styles.strip} aria-label="Controls">
       <div className={styles.scroll}>
-        <Section
-          title="Layers"
-          action={
-            layers.length > 0 && (
-              <MenuTrigger>
-                <Button variant="quiet" aria-label="Add layer">
-                  <PlusIcon />
-                </Button>
-                <Popover placement="bottom end">
-                  <Menu
-                    aria-label="Add layer"
-                    onAction={(key) =>
-                      key === "upload" ? openUpload() : openSearch()
-                    }
-                  >
-                    <MenuItem id="upload" textValue="Upload image…">
-                      <Text slot="label">Upload image…</Text>
-                    </MenuItem>
-                    <MenuItem id="search" textValue="Search for images…">
-                      <Text slot="label">Search for images…</Text>
-                    </MenuItem>
-                  </Menu>
-                </Popover>
-              </MenuTrigger>
-            )
-          }
-        >
-          {layers.length > 0 ? (
-            <LayerList layers={layers} selectedId={selectedId} />
-          ) : (
-            <div className={styles.layersEmpty}>
-              <Button onPress={openUpload}>Upload image…</Button>
-              <Button onPress={openSearch}>Search for images…</Button>
-            </div>
-          )}
-        </Section>
-
-        <Section
-          title="Appearance"
-          action={<PresetPicker settings={settings} onChange={onSettings} />}
-        >
-          {SLIDERS.map(([label, key]) => (
-            <Slider
-              key={key}
-              label={label}
-              value={settings[key]}
-              onChange={(value) => onSettings({ [key]: value })}
-            />
-          ))}
-        </Section>
-
-        <Section
-          title="Canvas"
-          action={<CanvasPresetPicker canvasFormat={canvasFormat} />}
-        >
-          <CanvasPanel canvasFormat={canvasFormat} background={background} />
-        </Section>
+        {sections.map(({ title, action, body }) => (
+          <Section key={title} title={title} action={action}>
+            {body}
+          </Section>
+        ))}
       </div>
-
       <div className={styles.footer}>
-        {error && (
-          <p role="alert" className={messageStyles.error}>
-            {error}
-          </p>
-        )}
+        {errorMessage}
         <Button
           variant="primary"
           size="large"
           onPress={onExport}
-          isDisabled={isExporting || !layers.some((layer) => layer.visible)}
+          isDisabled={isExportDisabled}
         >
-          {isExporting ? "Exporting…" : "Export"}
+          {exportLabel}
           {!isExporting && <Keyboard>{SHORTCUTS.export}</Keyboard>}
         </Button>
       </div>
     </aside>
   );
 });
+
+/**
+ * Phones: a toolbar floating over the canvas. Each section opens in a panel
+ * just above it, laid out by CSS in the app (which stays within the visible
+ * area), so an on-screen keyboard can't squeeze it. Non-modal: the canvas
+ * and other buttons stay usable, and a tap switches sections.
+ */
+function FloatingControls({
+  sections,
+  error,
+  exportButton,
+}: {
+  sections: SectionContent[];
+  error: React.ReactNode;
+  exportButton: React.ReactNode;
+}) {
+  const [openTitle, setOpenTitle] = useState<string | null>(null);
+  const containerRef = useRef<HTMLElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const open = sections.find((section) => section.title === openTitle);
+
+  // Native, so Escape in menus opened from the panel (rendered elsewhere) never arrives.
+  useEventListener(containerRef, "keydown", (event) => {
+    if (event.key !== "Escape" || !openTitle) return;
+    if (!panelRef.current?.contains(event.target as Node)) return;
+    event.stopPropagation();
+    containerRef.current
+      ?.querySelector<HTMLElement>(`[aria-controls="${PANEL_ID}"]`)
+      ?.focus();
+    setOpenTitle(null);
+  });
+
+  return (
+    <aside ref={containerRef} className={styles.floating} aria-label="Controls">
+      {open && (
+        <section
+          ref={panelRef}
+          id={PANEL_ID}
+          className={styles.panel}
+          aria-label={open.title}
+        >
+          <div className={styles.panelHeading}>
+            <h2 className={styles.title}>{open.title}</h2>
+            {open.action}
+          </div>
+          <div className={styles.body}>{open.body}</div>
+        </section>
+      )}
+      {error}
+      <Toolbar aria-label="Control sections" className={styles.floatingBar}>
+        {sections.map(({ title, icon }) => (
+          <ToggleButton
+            key={title}
+            className={buttonClassName("toolbar", styles.floatingButton)}
+            isSelected={openTitle === title}
+            onChange={(isSelected) => setOpenTitle(isSelected ? title : null)}
+            aria-controls={openTitle === title ? PANEL_ID : undefined}
+          >
+            {icon}
+            {title}
+          </ToggleButton>
+        ))}
+        {exportButton}
+      </Toolbar>
+    </aside>
+  );
+}
+
+const PANEL_ID = "control-panel";
+
+interface SectionContent {
+  title: string;
+  /** Above the title on the phone toolbar. */
+  icon: React.ReactNode;
+  action: React.ReactNode;
+  body: React.ReactNode;
+}
 
 /** The trailing control sits beside the toggle, never nested inside it. */
 function Section({

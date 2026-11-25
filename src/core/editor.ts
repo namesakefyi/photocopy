@@ -35,7 +35,7 @@ export type EditorAction =
   | { type: "addLayers"; layers: Layer[] }
   | { type: "updateLayer"; id: string; changes: LayerChanges }
   | { type: "replaceLayer"; layer: Layer }
-  | { type: "reorderLayers"; layers: Layer[] }
+  | { type: "reorderLayers"; ids: string[] }
   | { type: "deleteSelected" }
   | { type: "moveSelected"; direction: 1 | -1 }
   | { type: "flipSelected"; axis: "flipX" | "flipY" }
@@ -104,8 +104,11 @@ export function editorReducer(
       }));
     case "replaceLayer":
       return mapLayer(state, action.layer.id, () => action.layer);
-    case "reorderLayers":
-      return { ...state, layers: action.layers };
+    case "reorderLayers": {
+      const byId = new Map(state.layers.map((layer) => [layer.id, layer]));
+      const layers = action.ids.flatMap((id) => byId.get(id) ?? []);
+      return { ...state, layers };
+    }
     case "deleteSelected":
       return select(
         {

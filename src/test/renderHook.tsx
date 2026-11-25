@@ -17,16 +17,48 @@ function Harness<Result>({ useHook, onRender }: HarnessProps<Result>) {
   return null;
 }
 
-/** Renders a component, for tests that look at the DOM it makes. */
+/** Renders a component into the page (so focus works), for tests that look at its DOM. */
 export function render(ui: React.ReactNode) {
   const container = document.createElement("div");
+  document.body.append(container);
   const root = createRoot(container);
   act(() => root.render(ui));
   return {
     container,
     rerender: (next: React.ReactNode) => act(() => root.render(next)),
-    unmount: () => act(() => root.unmount()),
+    unmount: () => {
+      act(() => root.unmount());
+      container.remove();
+    },
   };
+}
+
+export function find<T extends HTMLElement = HTMLElement>(
+  container: ParentNode,
+  selector: string,
+) {
+  const element = container.querySelector<T>(selector);
+  if (!element) throw new Error(`Nothing matches ${selector}`);
+  return element;
+}
+
+/** A full pointer press, as React Aria's buttons listen for. */
+export function press(element: Element) {
+  const init = { bubbles: true, pointerId: 1, pointerType: "mouse", button: 0 };
+  act(() => {
+    element.dispatchEvent(new PointerEvent("pointerdown", init));
+    element.dispatchEvent(new PointerEvent("pointerup", init));
+    element.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, detail: 1 }),
+    );
+  });
+}
+
+export function pressKey(element: Element, key: string) {
+  act(() => {
+    element.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+    element.dispatchEvent(new KeyboardEvent("keyup", { key, bubbles: true }));
+  });
 }
 
 /** Renders a hook (needs a DOM environment) and keeps `result.current` updated. */

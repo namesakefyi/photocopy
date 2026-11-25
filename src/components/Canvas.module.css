@@ -25,3 +25,18 @@
     cursor: none;
   }
 }
+
+/* Covers the artboard on screen, so it moves with panning and zooming. */
+.empty {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-gap);
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+}

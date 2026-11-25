@@ -9,7 +9,7 @@ A browser tool for making photocopy-style collage illustrations.
 1. Go to [photocopy.namesake.fyi](https://photocopy.namesake.fyi).
 2. **Upload, drop, or paste** an image, or **search for images** to find openly licensed photos from Wikimedia and other sources.
 3. Use the toolbar to **Remove Background** automatically. If the automatic removal isn't great, use the **Mask** brushes to add or remove parts of the image.
-4. Modify **Appearance** settings like **Ink** and **Grain** to taste.
+4. Modify **Style** settings like **Ink** and **Grain** to taste.
 5. Press **Export** (or ⌘E / Ctrl+E), then **Download PNG**.
 
 Work is saved in the browser as you go.

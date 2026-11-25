@@ -1,3 +1,4 @@
+import { newId } from "./id";
 import { composeLayer, nextRevision } from "./layers";
 import { context2d, createCanvas } from "./render";
 import type { Layer } from "./types";
@@ -82,7 +83,7 @@ export function pasteLayer(artboard: Size, existing: Layer[]): Layer | null {
   const pasted: Layer = {
     ...layer,
     ...pastePosition(layer, source, artboard, existing),
-    id: crypto.randomUUID(),
+    id: newId(),
     mask: cloneCanvas(layer.mask),
     composed: createCanvas(layer),
     crop: null,

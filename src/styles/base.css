@@ -21,6 +21,12 @@
     --radius-small: 4px;
     --gap: 12px;
     --row-gap: 6px;
+    /* Fields, sliders, layer rows and select boxes share one size. */
+    --control-height: 32px;
+    --control-font-size: 13px;
+    /* Side padding of the panels; list drag handles sit centered in it. */
+    --panel-inset: 16px;
+    --shadow-raised: 0 8px 24px rgb(0 0 0 / 0.5);
 
     color-scheme: dark;
   }

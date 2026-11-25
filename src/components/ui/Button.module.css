@@ -116,10 +116,11 @@
     }
   }
 
+  /* Over a photo or artboard of any color: white on dark, so it stays legible. */
   .overlay {
-    width: 24px;
-    height: 24px;
-    padding: 0;
+    min-height: 32px;
+    padding: 0 12px;
+    color: #fff;
     background: rgb(0 0 0 / 0.55);
     border-radius: var(--radius-small);
 

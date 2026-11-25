@@ -12,6 +12,9 @@ export interface Credit {
   attributionRequired: boolean;
 }
 
+/** What the layer list shows, known before a layer's photo has loaded. */
+export type LayerEntry = Pick<Layer, "id" | "name" | "visible">;
+
 export interface Layer {
   id: string;
   name: string;
@@ -41,6 +44,7 @@ export interface Layer {
 export type LayerChanges = Partial<
   Pick<
     Layer,
+    | "name"
     | "x"
     | "y"
     | "scale"

@@ -21,3 +21,40 @@
     }
   }
 }
+
+/* The reorder handle, in the gutter left of the row and revealed with it.
+   Outside the layer, so it sizes the handle over the quiet button's defaults. */
+.dragHandle {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 100%;
+  width: var(--panel-inset);
+  min-height: 0;
+  padding: 0;
+  opacity: 0;
+
+  &:is([data-focus-visible], [data-pressed]) {
+    opacity: 1;
+  }
+
+  @media (hover: none) {
+    opacity: 1;
+  }
+}
+
+.item {
+  position: relative;
+
+  /* Keeps the row hovered while the pointer crosses to the handle. */
+  &::before {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 100%;
+    width: var(--panel-inset);
+    content: "";
+  }
+
+  &:is([data-hovered], [data-selected], [data-focus-visible]) .dragHandle {
+    opacity: 1;
+  }
+}

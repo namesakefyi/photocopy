@@ -3,10 +3,13 @@ import { Group, Separator, Toolbar } from "react-aria-components";
 import { SHORTCUTS } from "../core/shortcuts";
 import type { Tool } from "../core/types";
 import { useEditor } from "../hooks/useEditor";
+import { AppMenu } from "./AppMenu";
 import { BrushSizeMenu } from "./BrushSizeMenu";
 import { EditMenu } from "./EditMenu";
+import { FileMenu } from "./FileMenu";
 import styles from "./LayerToolbar.module.css";
 import { Button } from "./ui/Button";
+import { cx } from "./ui/cx";
 import {
   BringForwardIcon,
   EraserIcon,
@@ -22,6 +25,7 @@ export interface LayerToolbarProps {
   selectedId: string | null;
   canUndo: boolean;
   canRedo: boolean;
+  canExport: boolean;
   start?: React.ReactNode;
   isArtboardListShown: boolean;
   onArtboardListShownChange: (isShown: boolean) => void;
@@ -45,6 +49,7 @@ export const LayerToolbar = memo(function LayerToolbar({
   selectedId,
   canUndo,
   canRedo,
+  canExport,
   start,
   isArtboardListShown,
   onArtboardListShownChange,
@@ -61,25 +66,25 @@ export const LayerToolbar = memo(function LayerToolbar({
   return (
     <div className={styles.toolbar}>
       {start}
-      <Button
-        variant="toolbar"
-        className={styles.brand}
-        onPress={editor.openAbout}
-      >
-        Photocopy
-      </Button>
-      <EditMenu
-        className={styles.menuTitle}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        canCopy={selectedId !== null}
-      />
-      <ViewMenu
-        className={styles.menuTitle}
-        onZoom={editor.zoom}
-        isArtboardListShown={isArtboardListShown}
-        onArtboardListShownChange={onArtboardListShownChange}
-      />
+      <Toolbar aria-label="Menu bar" className={styles.menus}>
+        <AppMenu
+          className={cx(styles.menuTitle, styles.brand)}
+          onAbout={editor.openAbout}
+        />
+        <FileMenu className={styles.menuTitle} canExport={canExport} />
+        <EditMenu
+          className={styles.menuTitle}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          canCopy={selectedId !== null}
+        />
+        <ViewMenu
+          className={styles.menuTitle}
+          onZoom={editor.zoom}
+          isArtboardListShown={isArtboardListShown}
+          onArtboardListShownChange={onArtboardListShownChange}
+        />
+      </Toolbar>
       {selectedId !== null && (
         <div className={styles.scroll} onWheel={scrollSideways}>
           <Toolbar aria-label="Layer" className={styles.actions}>

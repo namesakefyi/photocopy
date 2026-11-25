@@ -130,3 +130,38 @@ export function XIcon() {
     </svg>
   );
 }
+
+export function LayersIcon() {
+  return (
+    <svg {...sharpIconProps}>
+      <path d="m12 4-9 5 9 5 9-5-9-5Z" />
+      <path d="m3 14 9 5 9-5" />
+    </svg>
+  );
+}
+
+export function StyleIcon() {
+  return (
+    <svg {...sharpIconProps}>
+      <path d="M3 7h11M18 7h3M3 17h3M10 17h11" />
+      <path d="M14 5h4v4h-4zM6 15h4v4H6z" />
+    </svg>
+  );
+}
+
+export function CanvasIcon() {
+  return (
+    <svg {...sharpIconProps}>
+      <path d="M4 6h16v12H4z" />
+    </svg>
+  );
+}
+
+export function ExportIcon() {
+  return (
+    <svg {...sharpIconProps}>
+      <path d="M12 15V4M7 9l5-5 5 5" />
+      <path d="M4 14v6h16v-6" />
+    </svg>
+  );
+}

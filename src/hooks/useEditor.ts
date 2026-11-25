@@ -19,6 +19,8 @@ export interface EditorCommands {
   openUpload: () => void;
   openSearch: () => void;
   openAbout: () => void;
+  /** Does nothing until the artboard's photos have loaded. */
+  exportImage: () => void;
 }
 
 export const EditorContext = createContext<EditorCommands | null>(null);

@@ -20,10 +20,12 @@ import {
 import { composeLayer, nextRevision, paintMask } from "../core/layers";
 import { screenPixelRatio } from "../core/render";
 import type { Layer, LayerChanges, Region, Tool } from "../core/types";
-import type { Viewport, ZoomAction } from "../core/zoom";
+import type { ZoomAction } from "../core/zoom";
 import { useEditor } from "../hooks/useEditor";
 import { useViewport } from "../hooks/useViewport";
+import { ADD_IMAGE_ITEMS } from "./addImageItems";
 import styles from "./Canvas.module.css";
+import { Button } from "./ui/Button";
 
 // Set before any stage is created; Konva reads it for each canvas it makes.
 Konva.pixelRatio = screenPixelRatio();
@@ -78,9 +80,8 @@ export interface CanvasProps {
   isMaskMode: boolean;
   preview: { image: ImageBitmap; region: Region } | null;
   canvasFill: string;
-  /** Where the view was left when this artboard was last open. */
-  initialViewport?: Viewport;
-  onViewportChange?: (viewport: Viewport) => void;
+  /** Loaded with no layers: offers ways to add a photo, over the artboard. */
+  isEmpty: boolean;
   ref?: React.Ref<CanvasHandle>;
 }
 
@@ -98,11 +99,11 @@ export const Canvas = memo(function Canvas({
   isMaskMode,
   preview,
   canvasFill,
-  initialViewport,
-  onViewportChange,
+  isEmpty,
   ref,
 }: CanvasProps) {
-  const { dispatch, addFiles, reportZoom } = useEditor();
+  const editor = useEditor();
+  const { dispatch, addFiles, reportZoom } = editor;
   const select = (id: string | null) => dispatch({ type: "select", id });
   const updateLayer = (id: string, changes: LayerChanges) =>
     dispatch({ type: "updateLayer", id, changes });
@@ -118,18 +119,12 @@ export const Canvas = memo(function Canvas({
   const [stalePreview, setStalePreview] =
     useState<CanvasProps["preview"]>(null);
   // The canvas owns its zoom and pan, so panning re-renders only the canvas.
-  const view = useViewport(
-    containerRef,
-    artboard,
-    () => {
-      for (const node of nodes.current.values()) {
-        if (node.isDragging()) node.stopDrag();
-      }
-      transformerRef.current?.stopTransform();
-    },
-    initialViewport,
-    onViewportChange,
-  );
+  const view = useViewport(containerRef, artboard, () => {
+    for (const node of nodes.current.values()) {
+      if (node.isDragging()) node.stopDrag();
+    }
+    transformerRef.current?.stopTransform();
+  });
   const { size, scale, offset } = view;
   useImperativeHandle(ref, () => ({ zoom: view.zoom }));
 
@@ -428,6 +423,27 @@ export const Canvas = memo(function Canvas({
           </KonvaLayer>
         </Stage>
       </div>
+      {isEmpty && (
+        <div
+          className={styles.empty}
+          style={{
+            left: offset.x,
+            top: offset.y,
+            width: artboard.width * scale,
+            height: artboard.height * scale,
+          }}
+        >
+          {ADD_IMAGE_ITEMS.map((item) => (
+            <Button
+              key={item.id}
+              variant="overlay"
+              onPress={() => item.run(editor)}
+            >
+              {item.label}
+            </Button>
+          ))}
+        </div>
+      )}
     </DropZone>
   );
 });
