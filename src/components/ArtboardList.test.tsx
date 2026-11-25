@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_CANVAS } from "../core/canvasFormat";
 import type { ArtboardSummary } from "../core/persistence";
+import { DEFAULT_SETTINGS } from "../core/photocopy";
 import { render } from "../test/renderHook";
 import { ArtboardList, type ArtboardListProps } from "./ArtboardList";
 
@@ -9,6 +10,8 @@ const summary = (id: string): ArtboardSummary => ({
   id,
   backgroundId: "white",
   canvasFormat: DEFAULT_CANVAS,
+  settings: DEFAULT_SETTINGS,
+  layers: [],
 });
 
 const props = (artboards: ArtboardSummary[]): ArtboardListProps => ({
@@ -18,7 +21,7 @@ const props = (artboards: ArtboardSummary[]): ArtboardListProps => ({
   onOpen: () => {},
   onNew: () => {},
   onDuplicate: () => {},
-  onDelete: () => {},
+  onRequestDelete: () => {},
   onReorder: () => {},
 });
 

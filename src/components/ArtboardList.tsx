@@ -9,7 +9,7 @@ import styles from "./ArtboardList.module.css";
 import { Button } from "./ui/Button";
 import { cx } from "./ui/cx";
 import { Dialog, DialogActions, DialogHeading } from "./ui/Dialog";
-import { GridList, GridListItem } from "./ui/GridList";
+import { GridList, GridListDragHandle, GridListItem } from "./ui/GridList";
 import { MoreIcon, PlusIcon } from "./ui/icons";
 import { Menu, MenuItem } from "./ui/Menu";
 import { Popover } from "./ui/Popover";
@@ -21,7 +21,7 @@ export interface ArtboardListProps {
   onOpen: (id: string) => void;
   onNew: () => void;
   onDuplicate: (id: string) => void;
-  onDelete: (id: string) => void;
+  onRequestDelete: (id: string) => void;
   onReorder: (order: string[]) => void;
 }
 
@@ -57,10 +57,9 @@ export function ArtboardList({
   onOpen,
   onNew,
   onDuplicate,
-  onDelete,
+  onRequestDelete,
   onReorder,
 }: ArtboardListProps) {
-  const [deleting, setDeleting] = useState<ArtboardSummary | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const labels = new Map(
     artboards.map((artboard, index) => [artboard.id, `Artboard ${index + 1}`]),
@@ -85,10 +84,8 @@ export function ArtboardList({
     const row = (event.target as HTMLElement).closest("[data-key]");
     // Only from the row itself, not its More button.
     if (!row || row !== event.target) return;
-    const artboard = artboards.find(
-      (other) => other.id === row.getAttribute("data-key"),
-    );
-    if (artboard) setDeleting(artboard);
+    const id = row.getAttribute("data-key");
+    if (id) onRequestDelete(id);
   });
 
   return (
@@ -119,14 +116,7 @@ export function ArtboardList({
               textValue={label}
             >
               <Thumbnail artboard={artboard} />
-              <Button
-                slot="drag"
-                variant="quiet"
-                className={styles.drag}
-                aria-label={`Reorder ${label}`}
-              >
-                ⋮⋮
-              </Button>
+              <GridListDragHandle label={`Reorder ${label}`} />
               {busyIds.has(artboard.id) && (
                 <span
                   className={styles.spinner}
@@ -147,11 +137,11 @@ export function ArtboardList({
                     aria-label={label}
                     onAction={(action) => {
                       if (action === "duplicate") onDuplicate(artboard.id);
-                      if (action === "delete") setDeleting(artboard);
+                      if (action === "delete") onRequestDelete(artboard.id);
                     }}
                   >
-                    <MenuItem id="duplicate">Duplicate</MenuItem>
-                    <MenuItem id="delete">Delete…</MenuItem>
+                    <MenuItem id="duplicate">Duplicate Artboard</MenuItem>
+                    <MenuItem id="delete">Delete Artboard…</MenuItem>
                   </Menu>
                 </Popover>
               </MenuTrigger>
@@ -159,20 +149,15 @@ export function ArtboardList({
           );
         }}
       </GridList>
-      <Button className={styles.new} onPress={onNew}>
+      <Button size="large" className={styles.new} onPress={onNew}>
         <PlusIcon />
         New
       </Button>
-      <DeleteDialog
-        artboard={deleting}
-        onClose={() => setDeleting(null)}
-        onDelete={onDelete}
-      />
     </>
   );
 }
 
-function DeleteDialog({
+export function DeleteDialog({
   artboard,
   onClose,
   onDelete,

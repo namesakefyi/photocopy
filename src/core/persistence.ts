@@ -1,10 +1,9 @@
-import { announceArtboardChange, forgetCachedArtboard } from "./artboardCache";
 import { DEFAULT_CANVAS } from "./canvasFormat";
 import { canvasToBlob, cropLayerCanvases, loadPhoto, setMask } from "./layers";
 import { DEFAULT_SETTINGS, type PhotocopySettings } from "./photocopy";
 import * as storage from "./storage";
 import { savedBackground, themeById } from "./themes";
-import type { ArtboardState, CanvasFormat, Layer } from "./types";
+import type { ArtboardState, CanvasFormat, Layer, LayerEntry } from "./types";
 
 const INDEX_KEY = "index";
 
@@ -34,6 +33,8 @@ export interface ArtboardSummary {
   id: string;
   backgroundId: string;
   canvasFormat: CanvasFormat;
+  settings: PhotocopySettings;
+  layers: LayerEntry[];
   thumbnail?: Blob;
 }
 
@@ -134,8 +135,19 @@ function putArtboard(artboard: SavedArtboard) {
 }
 
 function summarize(artboard: SavedArtboard, thumbnail?: Blob): ArtboardSummary {
-  const { id, backgroundId, canvasFormat } = artboard;
-  return { id, backgroundId, canvasFormat, thumbnail };
+  const { id, backgroundId, canvasFormat, settings } = artboard;
+  return {
+    id,
+    backgroundId,
+    canvasFormat,
+    settings,
+    layers: artboard.layers.map(toEntry),
+    thumbnail,
+  };
+}
+
+export function unsavedArtboard() {
+  return summarize(newArtboard());
 }
 
 /** Runs at start-up, not on delete, so undoing a layer's deletion keeps its photo. */
@@ -207,15 +219,15 @@ export function saveIndex(order: string[], activeId: string) {
   return exclusive(() => writeIndex(order, activeId));
 }
 
-/** Starts at the canvas size of the most recently edited artboard. */
-export function createArtboard(backgroundId: string) {
+export function createArtboard(backgroundId: string, fromId?: string) {
   return exclusive(async () => {
-    const [latest] = (await allArtboards()).sort(
-      (a, b) => b.updatedAt - a.updatedAt,
-    );
+    const source =
+      (fromId && (await getArtboard(fromId))) ||
+      (await allArtboards()).sort((a, b) => b.updatedAt - a.updatedAt)[0];
     const artboard = newArtboard({
       backgroundId,
-      canvasFormat: latest?.canvasFormat ?? DEFAULT_CANVAS,
+      canvasFormat: source?.canvasFormat ?? DEFAULT_CANVAS,
+      settings: source?.settings ?? DEFAULT_SETTINGS,
     });
     await putArtboard(artboard);
     return summarize(artboard);
@@ -234,7 +246,6 @@ export function deleteArtboard(id: string) {
         storage.remove(storage.BLOB_STORE, key),
       ),
     ]);
-    forgetCachedArtboard(id);
   });
 }
 
@@ -297,7 +308,6 @@ export function applyStoredCutout(
       ),
       updatedAt: Date.now(),
     });
-    forgetCachedArtboard(artboardId);
   });
 }
 
@@ -328,6 +338,10 @@ export async function restoreArtboard(
     console.warn("Couldn’t restore the artboard", cause);
     return null;
   }
+}
+
+export function toEntry({ id, name, visible }: LayerEntry): LayerEntry {
+  return { id, name, visible };
 }
 
 function toSaved(layer: Layer): SavedLayer {
@@ -365,6 +379,5 @@ export function saveArtboardState(
       backgroundId: background.id,
       updatedAt: Date.now(),
     });
-    announceArtboardChange(artboardId);
   });
 }

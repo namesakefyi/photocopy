@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 
+/** Matches the CSS breakpoint. */
+export const NARROW = "(width < 760px)";
+
 export function useMediaQuery(query: string) {
   const [matches, setMatches] = useState(() => matchMedia(query).matches);
   useEffect(() => {

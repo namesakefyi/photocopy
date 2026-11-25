@@ -22,19 +22,8 @@ export function AboutDialog({ isOpen, onOpenChange }: AboutDialogProps) {
         <a href="https://namesake.fyi" target="_blank" rel="noreferrer">
           Namesake
         </a>
-        . Code on{" "}
-        <a
-          href="https://github.com/namesakefyi/photocopy"
-          target="_blank"
-          rel="noreferrer"
-        >
-          GitHub
-        </a>
         .
       </p>
-      <a className={styles.credit} href="https://namesake.fyi/donate">
-        Donate to support Namesake
-      </a>
     </Dialog>
   );
 }

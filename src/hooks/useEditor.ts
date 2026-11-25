@@ -19,6 +19,7 @@ export interface EditorCommands {
   openUpload: () => void;
   openSearch: () => void;
   openAbout: () => void;
+  exportImage: () => void;
 }
 
 export const EditorContext = createContext<EditorCommands | null>(null);

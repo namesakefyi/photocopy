@@ -1,4 +1,8 @@
 import { canvasToBlob } from "./layers";
+import type {
+  RemovalRequest,
+  RemovalResponse,
+} from "./removeBackground.worker";
 
 export type RemovalProgress = (label: string, fraction: number) => void;
 
@@ -45,24 +49,44 @@ export function overallProgress(onProgress: RemovalProgress) {
   };
 }
 
-type Device = "gpu" | "cpu";
-
-/** Some browsers expose `navigator.gpu` without a usable adapter. */
-async function detectDevice(): Promise<Device> {
-  const gpu = (
-    navigator as Navigator & {
-      gpu?: { requestAdapter(): Promise<unknown | null> };
-    }
-  ).gpu;
-  try {
-    return (await gpu?.requestAdapter()) ? "gpu" : "cpu";
-  } catch {
-    return "cpu";
-  }
+interface Pending {
+  resolve: (result: Blob) => void;
+  reject: (error: Error) => void;
+  progress: (key: string, current: number, total: number) => void;
 }
 
-/** Checked once: asking for an adapter can take a while and wake the GPU. */
-let preferred: Promise<Device> | null = null;
+let worker: Worker | null = null;
+let nextId = 0;
+const pending = new Map<number, Pending>();
+
+function failAll(error: Error) {
+  for (const request of pending.values()) request.reject(error);
+  pending.clear();
+  worker?.terminate();
+  worker = null;
+}
+
+function getWorker() {
+  if (!worker) {
+    worker = new Worker(
+      new URL("./removeBackground.worker.ts", import.meta.url),
+      { type: "module" },
+    );
+    worker.onmessage = ({ data }: MessageEvent<RemovalResponse>) => {
+      const request = pending.get(data.id);
+      if (!request) return;
+      if ("progress" in data) return request.progress(...data.progress);
+      pending.delete(data.id);
+      if ("error" in data) request.reject(new Error(data.error));
+      else request.resolve(data.result);
+    };
+    worker.onerror = (event) => {
+      event.preventDefault();
+      failAll(new Error(event.message || "Background removal failed"));
+    };
+  }
+  return worker;
+}
 
 /** Cuts out the subject on-device, loading the model (tens of MB) on first use. */
 export async function removeBackground(
@@ -71,23 +95,11 @@ export async function removeBackground(
 ) {
   const progress = overallProgress(onProgress);
   progress.loading();
-  preferred ??= detectDevice();
-  const [{ removeBackground: run }, blob, device] = await Promise.all([
-    import("@imgly/background-removal"),
-    canvasToBlob(source),
-    preferred,
-  ]);
-  const cutOut = (device: Device) =>
-    run(blob, { device, progress: progress.library });
-  let result: Blob;
-  try {
-    result = await cutOut(device);
-  } catch (cause) {
-    // Some GPUs have an adapter but can't run the model; stay on the CPU after.
-    if (device === "cpu") throw cause;
-    console.warn("Background removal on the GPU failed; using the CPU", cause);
-    preferred = Promise.resolve("cpu");
-    result = await cutOut("cpu");
-  }
+  const image = await canvasToBlob(source);
+  const result = await new Promise<Blob>((resolve, reject) => {
+    const request: RemovalRequest = { id: nextId++, image };
+    pending.set(request.id, { resolve, reject, progress: progress.library });
+    getWorker().postMessage(request);
+  });
   return createImageBitmap(result);
 }

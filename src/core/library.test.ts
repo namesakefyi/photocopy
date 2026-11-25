@@ -6,12 +6,15 @@ import {
   reorderArtboards,
   withoutArtboard,
 } from "./library";
+import { DEFAULT_SETTINGS } from "./photocopy";
 
 const boards = (...ids: string[]) =>
   ids.map((id) => ({
     id,
     backgroundId: "",
     canvasFormat: DEFAULT_CANVAS,
+    settings: DEFAULT_SETTINGS,
+    layers: [],
   }));
 const idsOf = (artboards: { id: string }[]) => artboards.map((a) => a.id);
 

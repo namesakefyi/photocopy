@@ -19,7 +19,7 @@
     align-items: center;
     justify-content: center;
     width: 12px;
-    font-size: 12px;
+    font-size: var(--control-font-size);
     color: var(--text-secondary);
     pointer-events: none;
   }

@@ -6,8 +6,9 @@
   border-radius: var(--thumb-radius, var(--radius-small));
 }
 
-.corner,
-.drag {
+.corner {
+  position: absolute;
+  inset-block-start: calc(4px + var(--inset));
   opacity: 0;
 
   &:is([data-focus-visible], [data-pressed], [aria-expanded="true"]) {
@@ -19,22 +20,12 @@
   }
 }
 
-.corner {
-  position: absolute;
-  inset-block-start: calc(4px + var(--inset));
-}
-
-.drag {
-  position: absolute;
-  inset-block: 0;
-  inset-inline-end: 100%;
-  width: 10px;
-  min-height: 0;
-  padding: 0;
-}
-
 .more {
   inset-inline-end: calc(4px + var(--inset));
+  width: 24px;
+  height: 24px;
+  min-height: 0;
+  padding: 0;
   border-radius: var(--radius-small);
 }
 
@@ -44,7 +35,7 @@
   flex: 1;
   gap: 2px;
   min-height: 0;
-  padding: 10px;
+  padding: 10px var(--panel-inset);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-color: var(--border-strong) transparent;
@@ -53,22 +44,12 @@
 }
 
 .item {
-  position: relative;
   flex-direction: column;
   padding: 4px;
   user-select: none;
   border-radius: calc(var(--thumb-radius) + 4px);
 
-  &::before {
-    position: absolute;
-    inset-block: 0;
-    inset-inline-end: 100%;
-    width: 10px;
-    content: "";
-  }
-
-  &:is([data-hovered], [data-selected], [data-focus-visible])
-    :is(.corner, .drag) {
+  &:is([data-hovered], [data-selected], [data-focus-visible]) .corner {
     opacity: 1;
   }
 
@@ -84,7 +65,8 @@
 
 .new {
   flex-shrink: 0;
-  margin: 10px 14px;
+  margin: var(--panel-inset);
+  margin-block-end: calc(var(--panel-inset) + env(safe-area-inset-bottom, 0px));
 }
 
 .spinner {

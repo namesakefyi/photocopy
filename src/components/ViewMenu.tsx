@@ -48,7 +48,7 @@ export function ViewMenu({
           }
         >
           <MenuItem id={ARTBOARDS}>
-            {isArtboardListShown ? "Hide artboard list" : "Show artboard list"}
+            {isArtboardListShown ? "Hide Artboard List" : "Show Artboard List"}
           </MenuItem>
           <MenuSeparator />
           <MenuSection>

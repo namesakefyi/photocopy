@@ -12,6 +12,8 @@ export interface Credit {
   attributionRequired: boolean;
 }
 
+export type LayerEntry = Pick<Layer, "id" | "name" | "visible">;
+
 export interface Layer {
   id: string;
   name: string;
@@ -41,6 +43,7 @@ export interface Layer {
 export type LayerChanges = Partial<
   Pick<
     Layer,
+    | "name"
     | "x"
     | "y"
     | "scale"

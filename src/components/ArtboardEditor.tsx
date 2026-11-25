@@ -8,7 +8,6 @@ import {
   useState,
 } from "react";
 import { ProgressBar } from "react-aria-components";
-import { cacheArtboard, cachedArtboard } from "../core/artboardCache";
 import { canvasSize } from "../core/canvasFormat";
 import { creditsOf } from "../core/credits";
 import {
@@ -33,22 +32,16 @@ import {
   setMask,
 } from "../core/layers";
 import {
+  type ArtboardSummary,
   isQuotaError,
   QUOTA_MESSAGE,
   restoreArtboard,
   saveSource,
 } from "../core/persistence";
 import { shortcutFor } from "../core/shortcuts";
-import { saveBackground, savedBackground } from "../core/themes";
-import type {
-  ArtboardState,
-  CanvasFormat,
-  Credit,
-  Layer,
-  Removal,
-} from "../core/types";
+import { saveBackground, savedBackground, themeById } from "../core/themes";
+import type { ArtboardState, Credit, Layer, Removal } from "../core/types";
 import { createValueStore } from "../core/valueStore";
-import { FIT_VIEWPORT, type Viewport } from "../core/zoom";
 import { useArtboardLock } from "../hooks/useArtboardLock";
 import { useAutosave } from "../hooks/useAutosave";
 import { useBrushPreview } from "../hooks/useBrushPreview";
@@ -56,6 +49,7 @@ import { type EditorCommands, EditorContext } from "../hooks/useEditor";
 import { useEventListener } from "../hooks/useEventListener";
 import { useExport } from "../hooks/useExport";
 import { useHistory } from "../hooks/useHistory";
+import { NARROW, useMediaQuery } from "../hooks/useMediaQuery";
 import { usePreview } from "../hooks/usePreview";
 import { useThumbnail } from "../hooks/useThumbnail";
 import { AboutDialog } from "./AboutDialog";
@@ -79,14 +73,14 @@ export interface ArtboardEditorHandle {
 
 export interface ArtboardEditorProps {
   artboardId: string;
+  summary: ArtboardSummary | undefined;
   removals: Record<string, Removal>;
-  needsThumbnail: boolean;
   toolbarStart?: React.ReactNode;
   isArtboardListShown: boolean;
   onArtboardListShownChange: (isShown: boolean) => void;
   onRemoveBackground: (layer: Layer) => void;
   onThumbnail: (thumbnail: Blob) => void;
-  onSaved: (id: string, canvasFormat: CanvasFormat) => void;
+  onSaved: (id: string, saved: ArtboardState) => void;
   onSwitchArtboard: (direction: 1 | -1) => void;
   onReload: () => void;
   ref?: React.Ref<ArtboardEditorHandle>;
@@ -107,8 +101,8 @@ const hasNoTextSelected = () => window.getSelection()?.isCollapsed ?? true;
 
 export function ArtboardEditor({
   artboardId,
+  summary,
   removals,
-  needsThumbnail,
   toolbarStart,
   isArtboardListShown,
   onArtboardListShownChange,
@@ -119,23 +113,23 @@ export function ArtboardEditor({
   onReload,
   ref,
 }: ArtboardEditorProps) {
-  // Reopened from the cache, it shows at once, without loading or decoding.
-  const [cached] = useState(() => cachedArtboard(artboardId));
-  const [state, dispatch] = useReducer(
-    editorReducer,
-    savedBackground(),
-    (background) => ({
-      ...initialEditorState(background),
-      ...cached?.state,
-    }),
+  const [state, dispatch] = useReducer(editorReducer, summary, (summary) =>
+    summary
+      ? {
+          ...initialEditorState(themeById(summary.backgroundId)),
+          settings: summary.settings,
+          canvasFormat: summary.canvasFormat,
+        }
+      : initialEditorState(savedBackground()),
   );
   const { layers, settings, canvasFormat, background, selectedId, tool } =
     state;
   // What was loaded, or null for a new artboard; undefined while loading.
-  const [restored, setRestored] = useState<ArtboardState | null | undefined>(
-    cached?.state,
-  );
+  const [restored, setRestored] = useState<ArtboardState | null>();
   const isRestored = restored !== undefined;
+  const isNarrow = useMediaQuery(NARROW);
+  const listedLayers = isRestored ? layers : (summary?.layers ?? []);
+  const canExport = listedLayers.some((layer) => layer.visible);
   const [error, setError] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -151,7 +145,6 @@ export function ArtboardEditor({
   const lock = useArtboardLock(artboardId, onReload);
 
   useEffect(() => {
-    if (cached) return;
     let isCurrent = true;
     restoreArtboard(artboardId).then((loaded) => {
       if (!isCurrent) return;
@@ -161,7 +154,7 @@ export function ArtboardEditor({
     return () => {
       isCurrent = false;
     };
-  }, [artboardId, cached]);
+  }, [artboardId]);
 
   // The last background picked becomes the default for new artboards.
   useEffect(() => {
@@ -172,33 +165,13 @@ export function ArtboardEditor({
     () => ({ layers, settings, canvasFormat, background }),
     [layers, settings, canvasFormat, background],
   );
-  // Kept for the cache on close; only while this tab holds the artboard, so it's current.
-  const viewport = useRef<Viewport>(cached?.viewport ?? FIT_VIEWPORT);
-  const rememberViewport = useCallback((next: Viewport) => {
-    viewport.current = next;
-  }, []);
-  const closing = useRef({ content, isRestored, lock });
-  closing.current = { content, isRestored, lock };
-  useEffect(
-    () => () => {
-      const { content, isRestored, lock } = closing.current;
-      if (isRestored && lock === "held") {
-        cacheArtboard(artboardId, {
-          state: content,
-          viewport: viewport.current,
-        });
-      }
-    },
-    [artboardId],
-  );
-
   const autosave = useAutosave(artboardId, content, {
     isRestored,
     canSave: lock === "held",
     onError: (cause) => {
       if (isQuotaError(cause)) setError(QUOTA_MESSAGE);
     },
-    onSaved: (saved) => onSaved(artboardId, saved.canvasFormat),
+    onSaved: (saved) => onSaved(artboardId, saved),
   });
   const undoTo = useCallback(
     (snapshot: ArtboardState) => dispatch({ type: "undoTo", state: snapshot }),
@@ -217,7 +190,7 @@ export function ArtboardEditor({
   const saveThumbnail = useThumbnail({
     content,
     restored,
-    needsThumbnail,
+    needsThumbnail: !summary?.thumbnail,
     width,
     height,
     preview,
@@ -308,6 +281,11 @@ export function ArtboardEditor({
     clipboard.copySelected(isCut, token);
   };
 
+  // Read when a command runs, so the commands stay the same object across edits.
+  const current = { runExport, isRestored };
+  const latest = useRef(current);
+  latest.current = current;
+
   const commands = useMemo<EditorCommands>(() => {
     const find = (id: string) =>
       latestLayers.current.find((layer) => layer.id === id);
@@ -340,6 +318,9 @@ export function ArtboardEditor({
       openUpload: () => fileInput.current?.click(),
       openSearch: () => setIsSearchOpen(true),
       openAbout: () => setIsAboutOpen(true),
+      exportImage() {
+        if (latest.current.isRestored) latest.current.runExport();
+      },
     };
   }, [
     undo,
@@ -437,7 +418,7 @@ export function ArtboardEditor({
       case "redo":
         return redo();
       case "export":
-        return void runExport();
+        return commands.exportImage();
       case "zoomIn":
       case "zoomOut":
       case "zoomActual":
@@ -472,6 +453,21 @@ export function ArtboardEditor({
     }
   });
 
+  const controls = (
+    <ControlStrip
+      isFloating={isNarrow}
+      layers={listedLayers}
+      selectedId={selectedId}
+      settings={settings}
+      canvasFormat={canvasFormat}
+      background={background}
+      canExport={canExport}
+      isExporting={isExporting}
+      error={error}
+      onExport={commands.exportImage}
+    />
+  );
+
   return (
     <EditorContext value={commands}>
       <input
@@ -500,6 +496,7 @@ export function ArtboardEditor({
           brushSize={state.brushSize}
           canUndo={canUndo}
           canRedo={canRedo}
+          canExport={canExport}
           isArtboardListShown={isArtboardListShown}
           onArtboardListShownChange={onArtboardListShownChange}
         />
@@ -528,25 +525,16 @@ export function ArtboardEditor({
             isMaskMode={tool !== "move"}
             preview={preview}
             canvasFill={background.color}
-            initialViewport={cached?.viewport}
-            onViewportChange={rememberViewport}
+            isEmpty={isRestored && layers.length === 0}
             ref={canvasRef}
           />
           <p className={styles.toast} role="status">
             {status}
           </p>
+          {isNarrow && controls}
         </div>
       </main>
-      <ControlStrip
-        layers={layers}
-        selectedId={selectedId}
-        settings={settings}
-        canvasFormat={canvasFormat}
-        background={background}
-        isExporting={isExporting}
-        error={error}
-        onExport={runExport}
-      />
+      {!isNarrow && controls}
       <AboutDialog isOpen={isAboutOpen} onOpenChange={setIsAboutOpen} />
       <ImageSearch isOpen={isSearchOpen} onOpenChange={setIsSearchOpen} />
       <ExportDialog

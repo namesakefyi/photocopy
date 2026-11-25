@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ArtboardEditorHandle } from "../components/ArtboardEditor";
-import { DEFAULT_CANVAS } from "../core/canvasFormat";
 import {
   artboardBeside,
   indexKey,
@@ -19,9 +18,11 @@ import {
   QUOTA_MESSAGE,
   saveIndex,
   saveThumbnail,
+  toEntry,
+  unsavedArtboard,
 } from "../core/persistence";
 import { savedBackground } from "../core/themes";
-import type { CanvasFormat } from "../core/types";
+import type { ArtboardState } from "../core/types";
 
 /** Asks the browser not to evict saved work under storage pressure. */
 function persistStorage() {
@@ -55,9 +56,9 @@ export function useArtboardLibrary(
         // Storage is off (some private windows): work in one unsaved artboard.
         console.warn("Couldn’t load saved artboards", cause);
         if (!isCurrent) return;
-        const id = crypto.randomUUID();
-        setArtboards([{ id, backgroundId: "", canvasFormat: DEFAULT_CANVAS }]);
-        setActiveId(id);
+        const artboard = unsavedArtboard();
+        setArtboards([artboard]);
+        setActiveId(artboard.id);
       });
     return () => {
       isCurrent = false;
@@ -95,9 +96,12 @@ export function useArtboardLibrary(
 
   async function create() {
     try {
-      // Saves a size change just made, so the new artboard picks it up.
+      // Saves changes just made, so the new artboard picks them up.
       await editorRef.current?.flush();
-      const artboard = await createArtboard(savedBackground().id);
+      const artboard = await createArtboard(
+        savedBackground().id,
+        latestActiveId.current,
+      );
       setArtboards((current) => [...(current ?? []), artboard]);
       persistStorage();
       await open(artboard.id);
@@ -162,9 +166,19 @@ export function useArtboardLibrary(
       if (id) open(id);
     },
     setThumbnail,
-    setSaved(id: string, canvasFormat: CanvasFormat) {
+    setSaved(
+      id: string,
+      { layers, canvasFormat, settings, background }: ArtboardState,
+    ) {
       setArtboards((current) =>
-        current ? withChanges(current, id, { canvasFormat }) : current,
+        current
+          ? withChanges(current, id, {
+              canvasFormat,
+              settings,
+              layers: layers.map(toEntry),
+              backgroundId: background.id,
+            })
+          : current,
       );
     },
   };

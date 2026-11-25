@@ -110,12 +110,12 @@ describe("viewport", () => {
     expect(next).toEqual({ zoom: 1, center: { x: 600, y: 250 } });
   });
 
-  it("stops panning once the view's middle reaches the artboard's edge", () => {
+  it("pans an edge across the view until only a strip of the artboard shows", () => {
     const next = moveViewport(
       FIT_VIEWPORT,
       { pointer: { x: 0, y: 0 }, factor: 1, pan: { x: -10000, y: 10000 } },
       frame,
     );
-    expect(next.center).toEqual({ x: 0, y: 1000 });
+    expect(next.center).toEqual({ x: -1000, y: 1600 });
   });
 });

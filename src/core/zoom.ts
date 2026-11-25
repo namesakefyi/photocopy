@@ -129,6 +129,20 @@ export function zoomViewport(
   return { zoom, center };
 }
 
+const KEEP_VISIBLE = 48;
+
+function pannableCenters({ view, artboard }: Frame, scale: number): Region {
+  const reach = (side: number) => Math.max(0, side / 2 - KEEP_VISIBLE) / scale;
+  const x = reach(view.width);
+  const y = reach(view.height);
+  return {
+    x: -x,
+    y: -y,
+    width: artboard.width + x * 2,
+    height: artboard.height + y * 2,
+  };
+}
+
 export interface ViewMove {
   /** Screen pixels from the view's top left. */
   pointer: Point;
@@ -153,7 +167,7 @@ export function moveViewport(
     zoom: next,
     center: clampPoint(
       { x: zoomed.x + pan.x / next, y: zoomed.y + pan.y / next },
-      { x: 0, y: 0, ...frame.artboard },
+      pannableCenters(frame, next),
     ),
   };
 }

@@ -1,6 +1,6 @@
 @layer ui {
   .slider {
-    font-size: 12px;
+    font-size: var(--control-font-size);
 
     & + & {
       margin-block-start: calc(var(--row-gap) - var(--gap));
@@ -20,7 +20,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 28px;
+    height: var(--control-height);
     padding: 0 10px;
     overflow: hidden;
     cursor: ew-resize;
@@ -42,21 +42,45 @@
       box-shadow: inset -2px 0 0 var(--highlight);
     }
 
-    /* Focus shows on the whole box, since the thumb is just a marker. */
-    &:has([data-focus-visible]) {
+    &:has(.thumb[data-focus-visible], .input[data-focused]) {
       outline: 2px solid var(--highlight);
       outline-offset: 2px;
     }
   }
 
-  .label,
-  .output {
+  .label {
     position: relative;
     pointer-events: none;
   }
 
-  .output {
+  .value {
+    position: relative;
+    margin-inline-end: -4px;
+  }
+
+  .input {
+    width: calc(4ch + 8px);
+    height: 24px;
+    padding: 0 4px;
+    font-size: inherit;
+    font-variant-numeric: tabular-nums;
     color: var(--text-secondary);
+    text-align: end;
+    cursor: text;
+    outline: none;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-small);
+
+    &[data-focused] {
+      color: var(--text);
+      background: var(--surface);
+    }
+  }
+
+  .track:not(:has(.thumb[data-dragging])) .input[data-hovered] {
+    color: var(--text);
+    background: var(--surface);
   }
 
   /* Invisible, but still the focus target for keyboard and screen readers. */
