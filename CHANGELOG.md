@@ -4,7 +4,8 @@
 
 ### Minor Changes
 
-- [#20](https://github.com/namesakefyi/photocopy/pull/20) [`65076fc`](https://github.com/namesakefyi/photocopy/commit/65076fc6b110cde05193f4be4cb18f2d32d0463e) - - Rename layers inline with Enter or a double-click
+- [#20](https://github.com/namesakefyi/photocopy/pull/20) [`65076fc`](https://github.com/namesakefyi/photocopy/commit/65076fc6b110cde05193f4be4cb18f2d32d0463e)
+  - Rename layers inline with Enter or a double-click
   - Type an exact slider value by clicking its number or pressing Enter on the slider
   - New artboards start with the open artboard’s style and canvas size
   - Add menu items for reporting bugs and donating
@@ -14,7 +15,8 @@
 
 ### Patch Changes
 
-- [#20](https://github.com/namesakefyi/photocopy/pull/20) [`65076fc`](https://github.com/namesakefyi/photocopy/commit/65076fc6b110cde05193f4be4cb18f2d32d0463e) - - Remove backgrounds in a worker to prevent the page from hanging
+- [#20](https://github.com/namesakefyi/photocopy/pull/20) [`65076fc`](https://github.com/namesakefyi/photocopy/commit/65076fc6b110cde05193f4be4cb18f2d32d0463e)
+  - Remove backgrounds in a worker to prevent the page from hanging
   - Allow panning an artboard until only an edge remains in view
   - Make controls larger and rename the "Appearance" pane to "Style"
 
